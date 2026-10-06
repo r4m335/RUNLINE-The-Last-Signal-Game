@@ -1,0 +1,154 @@
+mod types;
+mod zones;
+mod director;
+mod story;
+mod audio;
+mod player;
+mod obstacles;
+mod collectibles;
+mod enemies;
+mod track;
+mod ui;
+mod patterns;
+mod pooling;
+mod benchmark;
+
+use bevy::prelude::*;
+use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, EntityCountDiagnosticsPlugin};
+use types::*;
+use director::DirectorPlugin;
+use audio::AudioSystemPlugin;
+use player::PlayerPlugin;
+use track::TrackPlugin;
+use obstacles::ObstaclePlugin;
+use collectibles::CollectiblePlugin;
+use enemies::EnemyPlugin;
+use ui::UiPlugin;
+use pooling::PoolingPlugin;
+use benchmark::BenchmarkPlugin;
+
+fn main() {
+    App::new()
+        .add_plugins(
+            DefaultPlugins.set(WindowPlugin {
+                primary_window: Some(Window {
+                    title: "RUNLINE — The Last Signal (Aurelia 2097)".to_string(),
+                    resolution: (1280.0_f32, 720.0_f32).into(),
+                    resizable: true,
+                    ..default()
+                }),
+                ..default()
+            }),
+        )
+        // Performance instrumentation diagnostics
+        .add_plugins((
+            FrameTimeDiagnosticsPlugin,
+            EntityCountDiagnosticsPlugin,
+        ))
+        // Game States & Core Resources
+        .init_state::<AppState>()
+        .init_resource::<GameRunStats>()
+        .init_resource::<ActivePowerUps>()
+        .init_resource::<BossBattleState>()
+        .init_resource::<PlayerMovementHistory>()
+        .init_resource::<ThreatAlertState>()
+        .init_resource::<QualitySettings>()
+        .insert_resource(ClearColor(Color::srgb(0.06, 0.08, 0.12)))
+        // Architectural Plugins
+        .add_plugins((
+            DirectorPlugin,
+            AudioSystemPlugin,
+            PlayerPlugin,
+            TrackPlugin,
+            ObstaclePlugin,
+            CollectiblePlugin,
+            EnemyPlugin,
+            UiPlugin,
+            PoolingPlugin,
+            BenchmarkPlugin,
+        ))
+        .add_systems(Startup, setup_scene)
+        .add_systems(
+            Update,
+            camera_follow_player.run_if(in_state(AppState::InGame)),
+        )
+        .run();
+}
+
+fn setup_scene(mut commands: Commands) {
+    // 3D Third-Person Follow Camera
+    commands.spawn((
+        Camera3dBundle {
+            transform: Transform::from_xyz(0.0, 3.8, 6.8).looking_at(Vec3::new(0.0, 1.4, -6.0), Vec3::Y),
+            ..default()
+        },
+        MainCamera,
+    ));
+
+    // Directional Lighting
+    commands.spawn(DirectionalLightBundle {
+        directional_light: DirectionalLight {
+            color: Color::srgb(0.5, 0.7, 0.9),
+            illuminance: 8000.0,
+            shadows_enabled: false,
+            ..default()
+        },
+        transform: Transform::from_rotation(Quat::from_euler(EulerRot::XYZ, -0.75, -0.4, 0.0)),
+        ..default()
+    });
+
+    // Ambient Lighting
+    commands.insert_resource(AmbientLight {
+        color: Color::srgb(0.12, 0.16, 0.22),
+        brightness: 400.0,
+    });
+}
+
+fn camera_follow_player(
+    time: Res<Time>,
+    player_q: Query<&Transform, (With<Player>, Without<MainCamera>)>,
+    mut cam_q: Query<&mut Transform, (With<MainCamera>, Without<Player>)>,
+    stats: Res<GameRunStats>,
+    boss_state: Res<BossBattleState>,
+) {
+    let p_trans = match player_q.get_single() {
+        Ok(t) => t,
+        Err(_) => return,
+    };
+
+    let mut c_trans = match cam_q.get_single_mut() {
+        Ok(t) => t,
+        Err(_) => return,
+    };
+
+    let dt = time.delta_seconds();
+    let t = time.elapsed_seconds();
+
+    // Camera smoothly follows player horizontally with damping
+    let target_x = p_trans.translation.x * 0.45;
+    let target_z = p_trans.translation.z + 6.8;
+
+    // Stumble & Boss encounter tension screen-shake
+    let boss_shake = if boss_state.is_active { (t * 24.0).sin() * 0.06 } else { 0.0 };
+    let shake_x = if stats.stumble_intensity > 0.0 {
+        (t * 35.0).sin() * stats.stumble_intensity * 0.35 + boss_shake
+    } else {
+        boss_shake
+    };
+    let shake_y = if stats.stumble_intensity > 0.0 {
+        (t * 40.0).cos() * stats.stumble_intensity * 0.25
+    } else {
+        0.0
+    };
+
+    c_trans.translation.x += (target_x + shake_x - c_trans.translation.x) * 14.0 * dt;
+    c_trans.translation.y = 3.8 + shake_y;
+    c_trans.translation.z = target_z;
+
+    let look_target = Vec3::new(
+        p_trans.translation.x * 0.3,
+        1.4,
+        p_trans.translation.z - 7.0,
+    );
+    c_trans.look_at(look_target, Vec3::Y);
+}

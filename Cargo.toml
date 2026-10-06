@@ -1,0 +1,36 @@
+[package]
+name = "runline"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bevy = { version = "0.14.2", default-features = false, features = [
+    "bevy_winit",
+    "bevy_render",
+    "bevy_core_pipeline",
+    "bevy_pbr",
+    "bevy_ui",
+    "bevy_text",
+    "bevy_asset",
+    "bevy_audio",
+    "bevy_state",
+    "default_font",
+    "tonemapping_luts",
+    "png",
+    "vorbis",
+    "multi_threaded"
+] }
+rand = "0.8"
+
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 3
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+strip = true
+panic = "abort"
