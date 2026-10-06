@@ -621,7 +621,7 @@ fn setup_hud(mut commands: Commands) {
                 ));
 
                 bot.spawn(TextBundle::from_section(
-                    "[ESC] Pause | [F2] Quality | [F3] Perf Overlay",
+                    "[A/D] Lane  |  [W/Space] Jump  |  [S] Slide  |  [ESC] Pause  |  [F2] Quality",
                     TextStyle {
                         font_size: 13.0,
                         color: Color::srgb(0.5, 0.6, 0.7),
