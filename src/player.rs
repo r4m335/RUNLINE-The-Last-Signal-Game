@@ -11,6 +11,9 @@ pub struct MagnetVisual;
 #[derive(Component)]
 pub struct OverdriveVisual;
 
+#[derive(Component)]
+pub struct SlideSparksVisual;
+
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
@@ -218,6 +221,22 @@ pub fn spawn_player_entity(
                     ..default()
                 },
                 OverdriveVisual,
+            ));
+
+            // Rail Slide Sparks (Kinetic amber sparks during slide)
+            let sparks_mat = materials.add(StandardMaterial {
+                base_color: Color::srgb(1.0, 0.65, 0.1),
+                emissive: LinearRgba::new(4.5, 2.0, 0.2, 1.0),
+                ..default()
+            });
+            parent.spawn((
+                PbrBundle {
+                    mesh: meshes.add(Cuboid::new(0.65, 0.08, 0.9)),
+                    material: sparks_mat,
+                    transform: Transform::from_xyz(0.0, -0.68, 0.35).with_scale(Vec3::ZERO),
+                    ..default()
+                },
+                SlideSparksVisual,
             ));
         });
 }
@@ -440,11 +459,26 @@ fn player_visual_smoothing(
 fn player_powerup_visuals(
     mut powerups: ResMut<ActivePowerUps>,
     time: Res<Time>,
-    mut shield_q: Query<&mut Transform, (With<ShieldVisual>, Without<MagnetVisual>, Without<OverdriveVisual>)>,
-    mut magnet_q: Query<&mut Transform, (With<MagnetVisual>, Without<ShieldVisual>, Without<OverdriveVisual>)>,
-    mut boost_q: Query<&mut Transform, (With<OverdriveVisual>, Without<ShieldVisual>, Without<MagnetVisual>)>,
+    player_q: Query<&Player, Without<SlideSparksVisual>>,
+    mut shield_q: Query<&mut Transform, (With<ShieldVisual>, Without<MagnetVisual>, Without<OverdriveVisual>, Without<SlideSparksVisual>)>,
+    mut magnet_q: Query<&mut Transform, (With<MagnetVisual>, Without<ShieldVisual>, Without<OverdriveVisual>, Without<SlideSparksVisual>)>,
+    mut boost_q: Query<&mut Transform, (With<OverdriveVisual>, Without<ShieldVisual>, Without<MagnetVisual>, Without<SlideSparksVisual>)>,
+    mut sparks_q: Query<&mut Transform, (With<SlideSparksVisual>, Without<ShieldVisual>, Without<MagnetVisual>, Without<OverdriveVisual>)>,
 ) {
     let dt = time.delta_seconds();
+
+    // Rail Slide Sparks
+    if let Ok(player) = player_q.get_single() {
+        if let Ok(mut st) = sparks_q.get_single_mut() {
+            let target_scale = if player.is_sliding {
+                let jitter = (time.elapsed_seconds() * 45.0).sin() * 0.25 + 1.0;
+                Vec3::new(jitter, 1.0, 1.3)
+            } else {
+                Vec3::ZERO
+            };
+            st.scale = st.scale.lerp(target_scale, (25.0 * dt).min(1.0));
+        }
+    }
 
     // Shield
     if let Ok(mut st) = shield_q.get_single_mut() {

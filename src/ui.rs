@@ -643,24 +643,22 @@ fn update_hud_display(
     mut pow_q: Query<&mut Text, (With<HudPowerupText>, Without<HudDistanceText>, Without<HudFragmentsText>, Without<HudDataChipsText>, Without<HudScoreText>, Without<HudZoneText>)>,
 ) {
     if let Ok(mut t) = dist_q.get_single_mut() {
-        t.sections[0].value = format!("{:.0} M", stats.distance);
+        t.sections[0].value = format!("DIST: {:05.0} M  //  VEL: {:.1} M/S", stats.distance, stats.speed);
     }
     if let Ok(mut t) = frag_q.get_single_mut() {
-        t.sections[0].value = format!("ECHO: {}", stats.fragments);
+        let pip_count = ((stats.fragments % 10) as usize).max(1);
+        let bar: String = (0..10).map(|i| if i < pip_count { '■' } else { '□' }).collect();
+        t.sections[0].value = format!("ECHO RESONANCE [{}] {:03}", bar, stats.fragments);
     }
     if let Ok(mut t) = chip_q.get_single_mut() {
-        t.sections[0].value = format!("CHIPS: {}", stats.data_chips);
+        t.sections[0].value = format!("DATA CHIPS: [{:02}/05]  //  COMBO: ×{:.1}", stats.data_chips, stats.multiplier);
     }
     if let Ok(mut t) = score_q.get_single_mut() {
-        t.sections[0].value = format!("SCORE: {}", stats.score);
+        t.sections[0].value = format!("SCORE: {:07}", stats.score);
     }
     if let Ok(mut t) = zone_q.get_single_mut() {
         let zone = get_zone_for_distance(stats.distance);
-        if zone.end_distance.is_finite() {
-            t.sections[0].value = format!("{} // {:.0}m - {:.0}m", zone.name, zone.start_distance, zone.end_distance);
-        } else {
-            t.sections[0].value = format!("{} // {:.0}m+", zone.name, zone.start_distance);
-        }
+        t.sections[0].value = format!("{} // {}", zone.name, zone.subtitle);
     }
     if let Ok(mut t) = pow_q.get_single_mut() {
         let mut active = Vec::new();
@@ -831,22 +829,22 @@ fn update_threat_alert_ui(
 
     if threat_alerts.scout_grappling {
         style.display = Display::Flex;
-        *bg = BackgroundColor(Color::srgba(0.25, 0.02, 0.05, 0.95));
+        *bg = BackgroundColor(Color::srgba(0.28, 0.02, 0.05, 0.95));
         *border = BorderColor(Color::srgb(1.0, 0.1, 0.2));
-        text.sections[0].value = "⚠ PURSUER CLOSING IN // RECOVER BALANCE! ⚠".to_string();
+        text.sections[0].value = "⚠ SCOUT PURSUIT LOCK // REAR 2.0M // RECOVER BALANCE! ⚠".to_string();
         text.sections[0].style.color = Color::srgb(1.0, 0.2, 0.3);
     } else if let Some(lane) = threat_alerts.hunter_telegraph_lane {
         style.display = Display::Flex;
-        *bg = BackgroundColor(Color::srgba(0.22, 0.1, 0.02, 0.95));
+        *bg = BackgroundColor(Color::srgba(0.25, 0.08, 0.02, 0.95));
         *border = BorderColor(Color::srgb(1.0, 0.55, 0.0));
-        text.sections[0].value = format!("⚠ INTERCEPTOR TARGETING LANE: {:?} // EVADE! ⚠", lane);
-        text.sections[0].style.color = Color::srgb(1.0, 0.75, 0.1);
+        text.sections[0].value = format!("⚠ THREAT LOCK: HUNTER SWEEP // {:?} LANE // EVADE FLANK → ⚠", lane).to_uppercase();
+        text.sections[0].style.color = Color::srgb(1.0, 0.80, 0.1);
     } else if let Some(lane) = threat_alerts.heavy_warning_lane {
         style.display = Display::Flex;
-        *bg = BackgroundColor(Color::srgba(0.04, 0.12, 0.18, 0.95));
-        *border = BorderColor(Color::srgb(0.0, 0.8, 1.0));
-        text.sections[0].value = format!("⚠ EMP BULKHEAD AHEAD IN LANE: {:?} ⚠", lane);
-        text.sections[0].style.color = Color::srgb(0.2, 0.9, 1.0);
+        *bg = BackgroundColor(Color::srgba(0.04, 0.12, 0.22, 0.95));
+        *border = BorderColor(Color::srgb(0.0, 0.85, 1.0));
+        text.sections[0].value = format!("⚠ HEAVY ROUTE BLOCKER // {:?} LANE DENIED // TRANSITION REQUIRED ⚠", lane).to_uppercase();
+        text.sections[0].style.color = Color::srgb(0.2, 0.95, 1.0);
     } else {
         style.display = Display::None;
     }

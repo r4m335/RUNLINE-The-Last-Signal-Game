@@ -29,12 +29,12 @@ pub const ZONES: [ZoneConfig; 7] = [
         subtitle: "Abandoned Sector 04 // Warning: Veyron patrols inbound",
         start_distance: 0.0,
         end_distance: 800.0,
-        ambient_color: Color::srgb(0.08, 0.10, 0.12),
-        directional_color: Color::srgb(0.4, 0.45, 0.5),
-        track_base_color: Color::srgb(0.12, 0.12, 0.14),
-        rail_emissive: LinearRgba::new(0.0, 0.6, 0.8, 1.0),
-        arch_color: Color::srgb(0.2, 0.18, 0.16),
-        accent_glow: LinearRgba::new(0.9, 0.5, 0.1, 1.0), // Amber warning lights
+        ambient_color: Color::srgb(0.04, 0.05, 0.07),
+        directional_color: Color::srgb(0.30, 0.35, 0.42),
+        track_base_color: Color::srgb(0.09, 0.09, 0.11),
+        rail_emissive: LinearRgba::new(0.0, 0.70, 0.95, 1.0),
+        arch_color: Color::srgb(0.18, 0.16, 0.14),
+        accent_glow: LinearRgba::new(1.0, 0.55, 0.1, 1.0), // Warm amber incandescent work lamps
         speed_modifier: 1.0,
         obstacle_density: 0.22,
     },

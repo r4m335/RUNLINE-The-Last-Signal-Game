@@ -104,20 +104,20 @@ fn init_pool_assets(
         mesh_powerup: meshes.add(Cuboid::new(0.6, 0.6, 0.6)),
 
         mat_hazard: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.95, 0.45, 0.1),
-            emissive: LinearRgba::new(1.6, 0.5, 0.0, 1.0),
-            perceptual_roughness: 0.3,
+            base_color: Color::srgb(1.0, 0.45, 0.05),
+            emissive: LinearRgba::new(2.4, 0.8, 0.0, 1.0),
+            perceptual_roughness: 0.25,
             ..default()
         }),
         mat_pillar: materials.add(StandardMaterial {
             base_color: Color::srgb(0.2, 0.22, 0.26),
-            metallic: 0.8,
-            perceptual_roughness: 0.25,
+            metallic: 0.85,
+            perceptual_roughness: 0.20,
             ..default()
         }),
         mat_wire: materials.add(StandardMaterial {
-            base_color: Color::srgb(1.0, 0.85, 0.1),
-            emissive: LinearRgba::new(1.8, 1.3, 0.0, 1.0),
+            base_color: Color::srgb(1.0, 0.85, 0.0),
+            emissive: LinearRgba::new(2.8, 2.0, 0.1, 1.0),
             ..default()
         }),
         mat_train_body: materials.add(StandardMaterial {
@@ -132,10 +132,10 @@ fn init_pool_assets(
             ..default()
         }),
         mat_fragment: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.0, 0.9, 1.0),
-            emissive: LinearRgba::new(0.6, 2.5, 3.5, 1.0),
-            perceptual_roughness: 0.1,
-            metallic: 0.9,
+            base_color: Color::srgb(0.05, 0.95, 1.0),
+            emissive: LinearRgba::new(0.6, 3.8, 5.2, 1.0), // Piercing cyber cyan path beacon
+            perceptual_roughness: 0.08,
+            metallic: 0.95,
             ..default()
         }),
         mat_chip: materials.add(StandardMaterial {

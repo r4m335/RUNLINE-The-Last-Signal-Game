@@ -1,6 +1,5 @@
 use bevy::prelude::*;
 use crate::types::*;
-use crate::zones::get_zone_for_distance;
 use crate::director::RunDirector;
 use crate::pooling::{PoolAssets, EntityPool};
 use crate::patterns::{select_validated_pattern, PatternChunk};
@@ -46,8 +45,7 @@ fn handle_run_reset_track(
     mut events: EventReader<RunResetEvent>,
     mut commands: Commands,
     mut track_mgr: ResMut<TrackManager>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
+    env_assets: Res<crate::environment::EnvironmentAssets>,
     pool_assets: Res<PoolAssets>,
     mut pool: ResMut<EntityPool>,
     director: Res<RunDirector>,
@@ -98,8 +96,7 @@ fn handle_run_reset_track(
 
             spawn_segment(
                 &mut commands,
-                &mut meshes,
-                &mut materials,
+                &env_assets,
                 z_center,
                 SEGMENT_LENGTH,
                 0.0,
@@ -131,8 +128,7 @@ fn handle_run_reset_track(
 fn maintain_rolling_track(
     mut commands: Commands,
     mut track_mgr: ResMut<TrackManager>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
+    env_assets: Res<crate::environment::EnvironmentAssets>,
     pool_assets: Res<PoolAssets>,
     mut pool: ResMut<EntityPool>,
     player_q: Query<&Transform, With<Player>>,
@@ -151,8 +147,7 @@ fn maintain_rolling_track(
 
         spawn_segment(
             &mut commands,
-            &mut meshes,
-            &mut materials,
+            &env_assets,
             z_center,
             SEGMENT_LENGTH,
             stats.distance,
@@ -574,127 +569,10 @@ fn handle_zone_lighting_events(
 
 fn spawn_segment(
     commands: &mut Commands,
-    meshes: &mut ResMut<Assets<Mesh>>,
-    materials: &mut ResMut<Assets<StandardMaterial>>,
+    env_assets: &crate::environment::EnvironmentAssets,
     z_center: f32,
     length: f32,
     distance: f32,
 ) {
-    let zone = get_zone_for_distance(distance);
-
-    let floor_mat = materials.add(StandardMaterial {
-        base_color: zone.track_base_color,
-        perceptual_roughness: 0.6,
-        metallic: 0.2,
-        ..default()
-    });
-
-    let rail_mat = materials.add(StandardMaterial {
-        base_color: Color::srgb(0.7, 0.75, 0.8),
-        emissive: zone.rail_emissive,
-        metallic: 0.95,
-        perceptual_roughness: 0.1,
-        ..default()
-    });
-
-    let arch_mat = materials.add(StandardMaterial {
-        base_color: zone.arch_color,
-        metallic: 0.7,
-        perceptual_roughness: 0.4,
-        ..default()
-    });
-
-    let accent_mat = materials.add(StandardMaterial {
-        base_color: Color::WHITE,
-        emissive: zone.accent_glow,
-        ..default()
-    });
-
-    commands
-        .spawn((
-            SpatialBundle::from_transform(Transform::from_xyz(0.0, 0.0, z_center)),
-            TrackSegmentMarker,
-            Despawnable { z_center },
-        ))
-        .with_children(|seg| {
-            // Main Track Bed / Floor
-            seg.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(8.6, 0.4, length)),
-                material: floor_mat,
-                transform: Transform::from_xyz(0.0, -0.2, 0.0),
-                ..default()
-            });
-
-            // Side Balustrades / Low Walls
-            seg.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.5, 0.8, length)),
-                material: arch_mat.clone(),
-                transform: Transform::from_xyz(-4.3, 0.2, 0.0),
-                ..default()
-            });
-            seg.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.5, 0.8, length)),
-                material: arch_mat.clone(),
-                transform: Transform::from_xyz(4.3, 0.2, 0.0),
-                ..default()
-            });
-
-            // 6 Glowing Steel Rails (2 for each of 3 lanes)
-            let rail_mesh = meshes.add(Cuboid::new(0.08, 0.08, length));
-            for lane_idx in -1..=1 {
-                let center_x = Lane::from_index(lane_idx).x_pos();
-                seg.spawn(PbrBundle {
-                    mesh: rail_mesh.clone(),
-                    material: rail_mat.clone(),
-                    transform: Transform::from_xyz(center_x - 0.48, 0.04, 0.0),
-                    ..default()
-                });
-                seg.spawn(PbrBundle {
-                    mesh: rail_mesh.clone(),
-                    material: rail_mat.clone(),
-                    transform: Transform::from_xyz(center_x + 0.48, 0.04, 0.0),
-                    ..default()
-                });
-            }
-
-            // Cross ties (sleepers)
-            let tie_mesh = meshes.add(Cuboid::new(8.0, 0.05, 0.35));
-            let num_ties = (length / 2.5) as i32;
-            for i in -num_ties / 2..=num_ties / 2 {
-                seg.spawn(PbrBundle {
-                    mesh: tie_mesh.clone(),
-                    material: arch_mat.clone(),
-                    transform: Transform::from_xyz(0.0, 0.01, i as f32 * 2.5),
-                    ..default()
-                });
-            }
-
-            // Overhead Cyber Arch & Neon Beam
-            seg.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(9.2, 0.5, 0.8)),
-                material: arch_mat.clone(),
-                transform: Transform::from_xyz(0.0, 4.2, 0.0),
-                ..default()
-            });
-            seg.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(8.4, 0.15, 0.2)),
-                material: accent_mat,
-                transform: Transform::from_xyz(0.0, 4.0, 0.0),
-                ..default()
-            });
-
-            // Support Pillars
-            seg.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.6, 4.4, 0.8)),
-                material: arch_mat.clone(),
-                transform: Transform::from_xyz(-4.5, 2.0, 0.0),
-                ..default()
-            });
-            seg.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.6, 4.4, 0.8)),
-                material: arch_mat,
-                transform: Transform::from_xyz(4.5, 2.0, 0.0),
-                ..default()
-            });
-        });
+    crate::environment::spawn_modular_environment_slice(commands, env_assets, z_center, length, distance);
 }

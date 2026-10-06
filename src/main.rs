@@ -12,6 +12,7 @@ mod ui;
 mod patterns;
 mod pooling;
 mod benchmark;
+mod environment;
 
 use bevy::prelude::*;
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, EntityCountDiagnosticsPlugin};
@@ -26,6 +27,7 @@ use enemies::EnemyPlugin;
 use ui::UiPlugin;
 use pooling::PoolingPlugin;
 use benchmark::BenchmarkPlugin;
+use environment::EnvironmentPlugin;
 
 fn main() {
     App::new()
@@ -54,7 +56,7 @@ fn main() {
         .init_resource::<ThreatAlertState>()
         .init_resource::<QualitySettings>()
         .add_event::<RunResetEvent>()
-        .insert_resource(ClearColor(Color::srgb(0.06, 0.08, 0.12)))
+        .insert_resource(ClearColor(Color::srgb(0.04, 0.05, 0.07)))
         // Architectural Plugins
         .add_plugins((
             DirectorPlugin,
@@ -67,6 +69,7 @@ fn main() {
             UiPlugin,
             PoolingPlugin,
             BenchmarkPlugin,
+            EnvironmentPlugin,
         ))
         .add_systems(Startup, setup_scene)
         .add_systems(
@@ -89,22 +92,22 @@ fn setup_scene(mut commands: Commands) {
         MainCamera,
     ));
 
-    // Directional Lighting
+    // Directional Lighting (Low-angle subterranean rake)
     commands.spawn(DirectionalLightBundle {
         directional_light: DirectionalLight {
-            color: Color::srgb(0.5, 0.7, 0.9),
-            illuminance: 8000.0,
+            color: Color::srgb(0.40, 0.45, 0.52),
+            illuminance: 3200.0,
             shadows_enabled: false,
             ..default()
         },
-        transform: Transform::from_rotation(Quat::from_euler(EulerRot::XYZ, -0.75, -0.4, 0.0)),
+        transform: Transform::from_rotation(Quat::from_euler(EulerRot::XYZ, -0.75, -0.35, 0.0)),
         ..default()
     });
 
-    // Ambient Lighting
+    // Strategic Ambient Lighting (Dark subterranean envelope)
     commands.insert_resource(AmbientLight {
-        color: Color::srgb(0.12, 0.16, 0.22),
-        brightness: 400.0,
+        color: Color::srgb(0.08, 0.10, 0.14),
+        brightness: 80.0,
     });
 }
 
@@ -114,6 +117,7 @@ fn camera_follow_player(
     mut cam_q: Query<&mut Transform, (With<MainCamera>, Without<Player>)>,
     stats: Res<GameRunStats>,
     boss_state: Res<BossBattleState>,
+    history: Res<PlayerMovementHistory>,
 ) {
     let p_trans = match player_q.get_single() {
         Ok(t) => t,
@@ -157,6 +161,10 @@ fn camera_follow_player(
         p_trans.translation.z - 7.0,
     );
     c_trans.look_at(look_target, Vec3::Y);
+
+    // Subtle lateral roll banking into turn on lane shifts
+    let lateral_bank = (-history.current_lateral_velocity * 0.0030).clamp(-0.045, 0.045);
+    c_trans.rotation *= Quat::from_rotation_z(lateral_bank);
 
     // Subtle rotational roll disorientation during stumble
     if stats.stumble_intensity > 0.0 {
