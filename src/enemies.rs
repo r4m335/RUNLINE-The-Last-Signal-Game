@@ -171,7 +171,6 @@ fn handle_run_reset_enemies(
     mut squad_mgr: ResMut<EnemySquadManager>,
     mut threat_alerts: ResMut<ThreatAlertState>,
     mut boss_state: ResMut<BossBattleState>,
-    enemy_assets: Res<EnemyAssets>,
     enemies_q: Query<Entity, With<ActiveEnemy>>,
 ) {
     for _ in events.read() {
@@ -183,9 +182,6 @@ fn handle_run_reset_enemies(
         *squad_mgr = EnemySquadManager::default();
         *threat_alerts = ThreatAlertState::default();
         *boss_state = BossBattleState::default();
-
-        // Spawn starting Scout Drone (Level 1)
-        spawn_scout_drone(&mut commands, &enemy_assets, Lane::Center, 6.5);
     }
 }
 
@@ -388,8 +384,8 @@ fn update_enemy_spawning_and_pacing(
     let has_hunter = enemies_q.iter().any(|e| e.enemy_type == EnemyType::Hunter);
     let heavy_count = enemies_q.iter().filter(|e| e.enemy_type == EnemyType::Heavy).count();
 
-    // 1. Level 1 Scout persistence
-    if !has_scout {
+    // 1. Level 1 Scout persistence: introduced at 600m in Zone 1 (Old Metro) for pedagogical pacing
+    if (stats.distance >= 600.0 || director.active_zone_id >= 2) && !has_scout {
         spawn_scout_drone(&mut commands, &assets, Lane::Center, 7.5);
         enemy_spawn_events.send(EnemySpawnedEvent {
             enemy_type: EnemyType::Scout,

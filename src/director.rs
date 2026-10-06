@@ -112,9 +112,23 @@ impl Plugin for DirectorPlugin {
 fn handle_run_reset_director(
     mut events: EventReader<RunResetEvent>,
     mut director: ResMut<RunDirector>,
+    mut stats: ResMut<GameRunStats>,
+    mut powerups: ResMut<ActivePowerUps>,
 ) {
     for _ in events.read() {
         *director = RunDirector::default();
+        stats.distance = 0.0;
+        stats.speed = 16.0;
+        stats.base_speed = 16.0;
+        stats.fragments = 0;
+        stats.data_chips = 0;
+        stats.score = 0;
+        stats.score_accum = 0.0;
+        stats.multiplier = 1.0;
+        stats.current_zone = 1;
+        stats.stumble_intensity = 0.0;
+        stats.story_dialogue = None;
+        *powerups = ActivePowerUps::default();
     }
 }
 
@@ -161,6 +175,109 @@ fn update_run_director(
             });
 
             director.milestone_index += 1;
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_aggressive_reset_sequence_and_state_isolation() {
+        let mut app = App::new();
+        app.add_event::<RunResetEvent>();
+        app.init_resource::<RunDirector>();
+        app.init_resource::<GameRunStats>();
+        app.init_resource::<ActivePowerUps>();
+        app.add_systems(Update, handle_run_reset_director);
+
+        // SEQUENCE: Start -> die -> Restart -> pause -> resume -> die -> Restart -> pause -> resume -> quit/start again
+
+        // 1. START RUN & ACCRUE STATE
+        {
+            let mut stats = app.world_mut().resource_mut::<GameRunStats>();
+            stats.distance = 750.0;
+            stats.score = 1500;
+            stats.fragments = 42;
+            stats.data_chips = 3;
+            stats.speed = 18.4;
+            stats.current_zone = 2;
+            let mut director = app.world_mut().resource_mut::<RunDirector>();
+            director.active_zone_id = 2;
+            director.milestone_index = 2;
+            let mut powerups = app.world_mut().resource_mut::<ActivePowerUps>();
+            powerups.shield = true;
+            powerups.overdrive_timer = 5.0;
+        }
+
+        // 2. DIE -> RESTART
+        app.world_mut().send_event(RunResetEvent);
+        app.update();
+
+        // Verify clean restart state isolation
+        {
+            let stats = app.world().resource::<GameRunStats>();
+            assert_eq!(stats.distance, 0.0, "Distance must reset to 0m");
+            assert_eq!(stats.score, 0, "Score must reset to 0");
+            assert_eq!(stats.fragments, 0, "Fragments must reset to 0");
+            assert_eq!(stats.data_chips, 0, "Data chips must reset to 0");
+            assert_eq!(stats.speed, 16.0, "Speed must reset to 16 m/s");
+            assert_eq!(stats.current_zone, 1, "Zone must reset to Zone 1");
+
+            let director = app.world().resource::<RunDirector>();
+            assert_eq!(director.active_zone_id, 1, "Director zone must reset to 1");
+            assert_eq!(director.milestone_index, 0, "Milestone index must reset to 0");
+            assert_eq!(director.profile.pattern_complexity, 1, "Complexity must reset to 1");
+
+            let powerups = app.world().resource::<ActivePowerUps>();
+            assert!(!powerups.shield, "Shield must not survive restart");
+            assert_eq!(powerups.overdrive_timer, 0.0, "Overdrive must not survive restart");
+        }
+
+        // 3. ADVANCE -> PAUSE -> RESUME
+        {
+            let mut stats = app.world_mut().resource_mut::<GameRunStats>();
+            stats.distance = 250.0;
+            stats.score = 500;
+        }
+        // Simulated Pause (fixed simulation does not tick):
+        {
+            let stats = app.world().resource::<GameRunStats>();
+            assert_eq!(stats.distance, 250.0, "Pause maintains exact distance");
+        }
+        // Resume and advance further
+        {
+            let mut stats = app.world_mut().resource_mut::<GameRunStats>();
+            stats.distance = 1200.0;
+            stats.score = 3000;
+            let mut powerups = app.world_mut().resource_mut::<ActivePowerUps>();
+            powerups.magnet_timer = 4.0;
+        }
+
+        // 4. DIE AGAIN -> RESTART
+        app.world_mut().send_event(RunResetEvent);
+        app.update();
+
+        // Verify second restart wiped cleanly
+        {
+            let stats = app.world().resource::<GameRunStats>();
+            assert_eq!(stats.distance, 0.0);
+            assert_eq!(stats.score, 0);
+            let powerups = app.world().resource::<ActivePowerUps>();
+            assert_eq!(powerups.magnet_timer, 0.0);
+        }
+
+        // 5. PAUSE -> RESUME -> QUIT TO MENU / START AGAIN
+        app.world_mut().send_event(RunResetEvent);
+        app.update();
+
+        {
+            let stats = app.world().resource::<GameRunStats>();
+            assert_eq!(stats.distance, 0.0);
+            assert_eq!(stats.current_zone, 1);
+            let director = app.world().resource::<RunDirector>();
+            assert_eq!(director.active_zone_id, 1);
         }
     }
 }

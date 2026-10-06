@@ -58,7 +58,8 @@ fn handle_run_reset_track(
         &PooledItem,
         Option<&mut Transform>,
         Option<&mut Visibility>,
-    )>,
+    ), With<Despawnable>>,
+    unpooled_q: Query<Entity, (Or<(With<ActiveObstacle>, With<CollectibleItem>)>, Without<PooledItem>)>,
 ) {
     for _ in events.read() {
         // 1. Recycle all active pooled obstacles & items cleanly back to pool
@@ -75,6 +76,11 @@ fn handle_run_reset_track(
                 .remove::<CollectibleItem>()
                 .remove::<MovingObstacle>();
             pool.push(pooled.pool_type, entity);
+        }
+
+        // 1b. Despawn any unpooled items to prevent entity leaks
+        for unpooled in unpooled_q.iter() {
+            commands.entity(unpooled).despawn_recursive();
         }
 
         // 2. Despawn existing road segments
@@ -180,10 +186,10 @@ pub fn spawn_pattern_chunk(
     complexity: u8,
     prev_chunk: Option<&PatternChunk>,
     player_speed: f32,
-    _distance: f32,
+    distance: f32,
 ) -> PatternChunk {
     use rand::Rng;
-    let chunk = select_validated_pattern(complexity, prev_chunk, player_speed);
+    let chunk = select_validated_pattern(complexity, prev_chunk, player_speed, distance);
     let mut rng = rand::thread_rng();
 
     // 1. Coordinated obstacle placement with guaranteed physical clearance

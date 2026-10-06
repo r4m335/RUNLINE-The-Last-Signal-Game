@@ -71,7 +71,10 @@ fn main() {
         .add_systems(Startup, setup_scene)
         .add_systems(
             Update,
-            camera_follow_player.run_if(in_state(AppState::InGame)),
+            (
+                camera_follow_player.run_if(in_state(AppState::InGame)),
+                handle_run_reset_camera,
+            ),
         )
         .run();
 }
@@ -159,5 +162,16 @@ fn camera_follow_player(
     if stats.stumble_intensity > 0.0 {
         let shake_roll = (t * 28.0).sin() * stats.stumble_intensity * 0.025;
         c_trans.rotation *= Quat::from_rotation_z(shake_roll);
+    }
+}
+
+fn handle_run_reset_camera(
+    mut events: EventReader<RunResetEvent>,
+    mut cam_q: Query<&mut Transform, With<MainCamera>>,
+) {
+    for _ in events.read() {
+        if let Ok(mut c_trans) = cam_q.get_single_mut() {
+            *c_trans = Transform::from_xyz(0.0, 3.8, 6.8).looking_at(Vec3::new(0.0, 1.4, -6.0), Vec3::Y);
+        }
     }
 }

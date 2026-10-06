@@ -1247,8 +1247,6 @@ fn menu_actions_system(
     archive_q: Query<&Interaction, (Changed<Interaction>, With<OpenStoryLogButton>)>,
     back_q: Query<&Interaction, (Changed<Interaction>, With<BackToMenuButton>)>,
     next_char_q: Query<&Interaction, (Changed<Interaction>, With<NextCharacterButton>)>,
-    all_game_entities: Query<Entity, Or<(With<Player>, With<TrackSegmentMarker>, With<ActiveObstacle>, With<CollectibleItem>, With<ChaserDrone>)>>,
-    mut commands: Commands,
 ) {
     let mut do_start = false;
     let mut do_restart = false;
@@ -1325,9 +1323,7 @@ fn menu_actions_system(
     }
 
     if do_back {
-        for e in all_game_entities.iter() {
-            commands.entity(e).despawn_recursive();
-        }
+        run_reset_events.send(RunResetEvent);
         next_state.set(AppState::MainMenu);
     }
 }

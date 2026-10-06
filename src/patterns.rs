@@ -387,29 +387,60 @@ pub fn get_pattern_catalog() -> Vec<PatternChunk> {
 
     vec![
         // -------------------------------------------------------------
-        // COMPLEXITY 1: TUTORIAL & RHYTHMIC FLOW (0 - 800m)
+        // COMPLEXITY 1: ZONE 1 OLD METRO PROGRESSIVE ONBOARDING (0 - 800m)
         // -------------------------------------------------------------
-        // Pattern 1: Jump Tutorial (Center hurdle with crystal arc)
+        // Tier 1 (0–150m): Basic Lane Switching & Diverts
+        PatternChunk::new("Intro Divert Left", 1, 35.0)
+            .with_obstacle(Lane::Center, -15.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2))
+            .with_fragment_line(Lane::Left, -8.0, 5, 3.5, 0.85),
+
+        PatternChunk::new("Intro Divert Right", 1, 35.0)
+            .with_obstacle(Lane::Center, -15.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2))
+            .with_fragment_line(Lane::Right, -8.0, 5, 3.5, 0.85),
+
+        PatternChunk::new("Center Clear Trail", 1, 35.0)
+            .with_obstacle(Lane::Left, -15.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2))
+            .with_obstacle(Lane::Right, -15.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2))
+            .with_fragment_line(Lane::Center, -8.0, 5, 3.5, 0.85),
+
+        // Tier 2 (150–300m): Jump Obstacles (Vault & Arcs)
         PatternChunk::new("Vault Sequence", 1, 35.0)
             .with_obstacle(Lane::Center, -14.0, ObstacleType::LowBarrier, Vec3::new(2.1, 0.85, 0.4))
             .with_fragment_arc(Lane::Center, -8.0, 5, 3.0, 2.2),
 
-        // Pattern 2: Slide Tutorial (Hanging wire with low fragments)
+        PatternChunk::new("Side Hurdle Vault", 1, 35.0)
+            .with_obstacle(Lane::Left, -14.0, ObstacleType::LowBarrier, Vec3::new(2.1, 0.85, 0.4))
+            .with_fragment_arc(Lane::Left, -8.0, 5, 3.0, 2.2)
+            .with_fragment_line(Lane::Center, -8.0, 4, 3.5, 0.85),
+
+        // Tier 3 (300–450m): Slide Obstacles (Ducking under wires)
         PatternChunk::new("Slide Under", 1, 35.0)
             .with_obstacle(Lane::Center, -15.0, ObstacleType::HighHangingWire, Vec3::new(2.2, 0.5, 0.3))
             .with_fragment_line(Lane::Center, -10.0, 4, 3.0, 0.45),
 
-        // Pattern 3: Basic Lane Switch (Pillar in center, crystals guide to left)
-        PatternChunk::new("Center Gate Divert", 1, 35.0)
-            .with_obstacle(Lane::Center, -15.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2))
-            .with_fragment_line(Lane::Left, -8.0, 5, 3.5, 0.85),
+        PatternChunk::new("High Wire Duct", 1, 35.0)
+            .with_obstacle(Lane::Right, -15.0, ObstacleType::HighHangingWire, Vec3::new(2.2, 0.5, 0.3))
+            .with_fragment_line(Lane::Right, -10.0, 4, 3.0, 0.45)
+            .with_fragment_line(Lane::Center, -10.0, 4, 3.5, 0.85),
 
-        // Pattern 4: Dual Barrier Flow (Jump left or ride open right)
+        // Tier 4 (450–600m): Multi-Lane Choices & Split Gates
         PatternChunk::new("Split Gate", 1, 35.0)
             .with_obstacle(Lane::Left, -14.0, ObstacleType::LowBarrier, Vec3::new(2.1, 0.85, 0.4))
             .with_obstacle(Lane::Center, -14.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2))
             .with_fragment_arc(Lane::Left, -8.0, 5, 3.0, 2.2)
             .with_fragment_line(Lane::Right, -8.0, 5, 3.5, 0.85),
+
+        PatternChunk::new("Weave Gate", 1, 35.0)
+            .with_obstacle(Lane::Right, -14.0, ObstacleType::LowBarrier, Vec3::new(2.1, 0.85, 0.4))
+            .with_obstacle(Lane::Center, -14.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2))
+            .with_fragment_arc(Lane::Right, -8.0, 5, 3.0, 2.2)
+            .with_fragment_line(Lane::Left, -8.0, 5, 3.5, 0.85),
+
+        // Tier 5 (600–800m): Rhythm & Approaching Neon Transition
+        PatternChunk::new("Old Metro Rhythm", 1, 35.0)
+            .with_obstacle(Lane::Left, -10.0, ObstacleType::LowBarrier, Vec3::new(2.1, 0.85, 0.4))
+            .with_obstacle(Lane::Center, -22.0, ObstacleType::HighHangingWire, Vec3::new(2.2, 0.5, 0.3))
+            .with_fragment_line(Lane::Right, -6.0, 6, 3.5, 0.85),
 
         // -------------------------------------------------------------
         // COMPLEXITY 2: NEON DISTRICT (800 - 1,800m)
@@ -502,17 +533,43 @@ pub fn get_pattern_catalog() -> Vec<PatternChunk> {
     ]
 }
 
-/// Selects a pattern guaranteed to be solvably linked to the previous chunk
+/// Selects a pattern guaranteed to be solvably linked to the previous chunk,
+/// adhering to the progressive teaching rhythm of Zone 1 (Old Metro).
 pub fn select_validated_pattern(
     complexity: u8,
     prev_chunk: Option<&PatternChunk>,
     player_speed: f32,
+    distance: f32,
 ) -> PatternChunk {
     let catalog = get_pattern_catalog();
-    let mut candidates: Vec<PatternChunk> = catalog
-        .into_iter()
-        .filter(|p| p.min_complexity <= complexity)
-        .collect();
+
+    // Rhythmic pedagogy in Zone 1 (Old Metro: 0 - 800m):
+    // 0–150m: basic lane switching & clear trails
+    // 150–300m: jump obstacles (vault hurdles with crystal arcs)
+    // 300–450m: slide obstacles (hanging wires with low crystal trails)
+    // 450–600m: multi-lane choice gates
+    // 600–800m: combinations + Scout pursuer pressure
+    let mut candidates: Vec<PatternChunk> = if complexity == 1 && distance < 800.0 {
+        let matching: Vec<PatternChunk> = if distance < 150.0 {
+            catalog.iter().filter(|p| p.name.starts_with("Intro") || p.name.contains("Clear")).cloned().collect()
+        } else if distance < 300.0 {
+            catalog.iter().filter(|p| p.name.contains("Vault")).cloned().collect()
+        } else if distance < 450.0 {
+            catalog.iter().filter(|p| p.name.contains("Slide") || p.name.contains("Wire")).cloned().collect()
+        } else if distance < 600.0 {
+            catalog.iter().filter(|p| p.name.contains("Gate")).cloned().collect()
+        } else {
+            catalog.iter().filter(|p| p.min_complexity == 1).cloned().collect()
+        };
+
+        if matching.is_empty() {
+            catalog.into_iter().filter(|p| p.min_complexity <= complexity).collect()
+        } else {
+            matching
+        }
+    } else {
+        catalog.into_iter().filter(|p| p.min_complexity <= complexity).collect()
+    };
 
     if candidates.is_empty() {
         return PatternChunk::new("Fallback", 1, 35.0);
@@ -840,5 +897,72 @@ mod tests {
         // ECHO Hunter 25-second gauntlet: catalog chunks provide alternating jump/slide routes throughout.
         let boss_gauntlet_duration = 25.0_f32;
         assert_eq!(boss_gauntlet_duration, 25.0, "Boss gauntlet must run for exactly 25.0s");
+    }
+
+    #[test]
+    fn test_zone_1_pedagogical_rhythm_progression() {
+        // Tier 1: 0–150m (Basic lane switching & clear trails only)
+        for d in [0.0, 50.0, 100.0, 149.0] {
+            let pattern = select_validated_pattern(1, None, 16.0, d);
+            assert!(
+                pattern.name.starts_with("Intro") || pattern.name.contains("Clear"),
+                "Tier 1 (0-150m) at {}m selected non-intro pattern: {}",
+                d,
+                pattern.name
+            );
+            for obs in &pattern.obstacles {
+                assert_eq!(
+                    obs.obstacle_type,
+                    ObstacleType::TallPillar,
+                    "Tier 1 at {}m contained non-pillar obstacle: {:?}",
+                    d,
+                    obs.obstacle_type
+                );
+            }
+        }
+
+        // Tier 2: 150–300m (Jump hurdles with crystal arcs)
+        for d in [150.0, 200.0, 250.0, 299.0] {
+            let pattern = select_validated_pattern(1, None, 16.0, d);
+            assert!(
+                pattern.name.contains("Vault"),
+                "Tier 2 (150-300m) at {}m selected non-vault pattern: {}",
+                d,
+                pattern.name
+            );
+            let has_jump_hurdle = pattern.obstacles.iter().any(|o| o.obstacle_type == ObstacleType::LowBarrier);
+            assert!(has_jump_hurdle, "Tier 2 at {}m must teach jump hurdle", d);
+        }
+
+        // Tier 3: 300–450m (Slide obstacles with low crystal trails)
+        for d in [300.0, 350.0, 400.0, 449.0] {
+            let pattern = select_validated_pattern(1, None, 16.0, d);
+            assert!(
+                pattern.name.contains("Slide") || pattern.name.contains("Wire"),
+                "Tier 3 (300-450m) at {}m selected non-slide pattern: {}",
+                d,
+                pattern.name
+            );
+            let has_slide_obstacle = pattern.obstacles.iter().any(|o| o.obstacle_type == ObstacleType::HighHangingWire);
+            assert!(has_slide_obstacle, "Tier 3 at {}m must teach slide obstacle", d);
+        }
+
+        // Tier 4: 450–600m (Multi-lane choice gates)
+        for d in [450.0, 500.0, 550.0, 599.0] {
+            let pattern = select_validated_pattern(1, None, 16.0, d);
+            assert!(
+                pattern.name.contains("Gate"),
+                "Tier 4 (450-600m) at {}m selected non-gate pattern: {}",
+                d,
+                pattern.name
+            );
+        }
+
+        // Tier 5: 600–800m (Combinations + Scout pressure rhythm)
+        for d in [600.0, 650.0, 700.0, 799.0] {
+            let pattern = select_validated_pattern(1, None, 16.0, d);
+            assert_eq!(pattern.min_complexity, 1, "Tier 5 at {}m must remain complexity 1", d);
+            assert!(verify_intra_chunk_solvability(&pattern).is_ok(), "Tier 5 at {}m must be solvable", d);
+        }
     }
 }
