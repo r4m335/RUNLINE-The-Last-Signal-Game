@@ -233,6 +233,7 @@ fn init_environment_assets(
     };
 
     commands.insert_resource(env_assets);
+    crate::environment_props::init_prop_assets(&mut commands, &mut meshes, &mut materials);
 }
 
 fn animate_environment_fans(
@@ -248,10 +249,25 @@ fn animate_environment_fans(
 pub fn spawn_modular_environment_slice(
     commands: &mut Commands,
     env: &EnvironmentAssets,
+    props: Option<&crate::environment_props::PropAssets>,
     z_center: f32,
     length: f32,
     distance: f32,
 ) -> Entity {
+    let segment_dist = (-z_center).max(0.0);
+    if segment_dist < 800.0 {
+        if let Some(props_ref) = props {
+            return crate::old_metro::spawn_old_metro_segment(
+                commands,
+                env,
+                props_ref,
+                z_center,
+                length,
+                segment_dist,
+            );
+        }
+    }
+
     let _zone = get_zone_for_distance(distance);
     let is_even_segment = ((z_center.abs() / length).floor() as i32) % 2 == 0;
 

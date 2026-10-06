@@ -46,6 +46,7 @@ fn handle_run_reset_track(
     mut commands: Commands,
     mut track_mgr: ResMut<TrackManager>,
     env_assets: Res<crate::environment::EnvironmentAssets>,
+    prop_assets: Option<Res<crate::environment_props::PropAssets>>,
     pool_assets: Res<PoolAssets>,
     mut pool: ResMut<EntityPool>,
     director: Res<RunDirector>,
@@ -97,9 +98,10 @@ fn handle_run_reset_track(
             spawn_segment(
                 &mut commands,
                 &env_assets,
+                prop_assets.as_deref(),
                 z_center,
                 SEGMENT_LENGTH,
-                0.0,
+                (-z_center).max(0.0),
             );
 
             if track_mgr.next_spawn_z < -40.0 {
@@ -129,6 +131,7 @@ fn maintain_rolling_track(
     mut commands: Commands,
     mut track_mgr: ResMut<TrackManager>,
     env_assets: Res<crate::environment::EnvironmentAssets>,
+    prop_assets: Option<Res<crate::environment_props::PropAssets>>,
     pool_assets: Res<PoolAssets>,
     mut pool: ResMut<EntityPool>,
     player_q: Query<&Transform, With<Player>>,
@@ -148,9 +151,10 @@ fn maintain_rolling_track(
         spawn_segment(
             &mut commands,
             &env_assets,
+            prop_assets.as_deref(),
             z_center,
             SEGMENT_LENGTH,
-            stats.distance,
+            (-z_center).max(0.0),
         );
 
         let last_chunk_ref = track_mgr.last_chunk.clone();
@@ -570,9 +574,10 @@ fn handle_zone_lighting_events(
 fn spawn_segment(
     commands: &mut Commands,
     env_assets: &crate::environment::EnvironmentAssets,
+    prop_assets: Option<&crate::environment_props::PropAssets>,
     z_center: f32,
     length: f32,
     distance: f32,
 ) {
-    crate::environment::spawn_modular_environment_slice(commands, env_assets, z_center, length, distance);
+    crate::environment::spawn_modular_environment_slice(commands, env_assets, prop_assets, z_center, length, distance);
 }

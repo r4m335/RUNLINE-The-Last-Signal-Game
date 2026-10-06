@@ -13,6 +13,9 @@ mod patterns;
 mod pooling;
 mod benchmark;
 mod environment;
+mod environment_props;
+mod environment_lighting;
+mod old_metro;
 
 use bevy::prelude::*;
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, EntityCountDiagnosticsPlugin};
@@ -28,6 +31,7 @@ use ui::UiPlugin;
 use pooling::PoolingPlugin;
 use benchmark::BenchmarkPlugin;
 use environment::EnvironmentPlugin;
+use environment_lighting::EnvironmentLightingPlugin;
 
 fn main() {
     App::new()
@@ -70,6 +74,7 @@ fn main() {
             PoolingPlugin,
             BenchmarkPlugin,
             EnvironmentPlugin,
+            EnvironmentLightingPlugin,
         ))
         .add_systems(Startup, setup_scene)
         .add_systems(
