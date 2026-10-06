@@ -154,7 +154,7 @@ pub fn spawn_old_metro_segment(
         ))
         .with_children(|seg| {
             // 1. Core Railway Track Infrastructure (consistent physical running surface)
-            spawn_track_bed_and_rails(seg, env, length);
+            spawn_track_bed_and_rails(seg, env, length, seg_idx);
 
             // 2. Layered Subway Wall Tiles with Deterministic Material Wear
             spawn_layered_subway_walls(seg, env, props, length, seg_idx, is_even, variant);
@@ -217,6 +217,7 @@ fn spawn_track_bed_and_rails(
     seg: &mut ChildBuilder,
     env: &EnvironmentAssets,
     length: f32,
+    seg_idx: i32,
 ) {
     // Concrete track bed slab
     seg.spawn(PbrBundle {
@@ -259,13 +260,22 @@ fn spawn_track_bed_and_rails(
         ..default()
     });
 
-    // Sleepers (cross-ties) every 2.0m with steel fastener plates
+    // Sleepers (cross-ties) every 2.0m with 4 distinct material/wear variants & steel fastener plates
     let num_sleepers = (length / 2.0) as i32;
     for i in -num_sleepers / 2..=num_sleepers / 2 {
         let sleeper_z = i as f32 * 2.0;
+
+        // Procedural sleeper variation: standard, oil-soaked, cracked mineral, and heavy steel tie
+        let (s_mesh, s_mat) = match (i.abs() + seg_idx * 3) % 4 {
+            0 => (&env.mesh_sleeper, &env.mat_sleeper),
+            1 => (&env.mesh_sleeper, &env.mat_sleeper_stained),
+            2 => (&env.mesh_sleeper, &env.mat_sleeper_cracked),
+            _ => (&env.mesh_sleeper_heavy, &env.mat_sleeper_steel),
+        };
+
         seg.spawn(PbrBundle {
-            mesh: env.mesh_sleeper.clone(),
-            material: env.mat_sleeper.clone(),
+            mesh: s_mesh.clone(),
+            material: s_mat.clone(),
             transform: Transform::from_xyz(0.0, 0.01, sleeper_z),
             ..default()
         });
@@ -285,8 +295,52 @@ fn spawn_track_bed_and_rails(
                 transform: Transform::from_xyz(cx + 0.48, 0.07, sleeper_z),
                 ..default()
             });
+
+            // Rail joint splice bars (fishplates with heavy bolts) every 16m
+            if i % 8 == 0 {
+                seg.spawn(PbrBundle {
+                    mesh: env.mesh_rail_joint.clone(),
+                    material: env.mat_rail_joint.clone(),
+                    transform: Transform::from_xyz(cx - 0.52, 0.08, sleeper_z),
+                    ..default()
+                });
+                seg.spawn(PbrBundle {
+                    mesh: env.mesh_rail_joint.clone(),
+                    material: env.mat_rail_joint.clone(),
+                    transform: Transform::from_xyz(cx + 0.52, 0.08, sleeper_z),
+                    ..default()
+                });
+            }
         }
     }
+
+    // High-readability running lane markings between tracks (X = -1.2m and X = +1.2m)
+    let num_stripes = (length / 3.5) as i32;
+    for i in -num_stripes / 2..=num_stripes / 2 {
+        let stripe_z = i as f32 * 3.5;
+        // Left-to-Center lane divider
+        seg.spawn(PbrBundle {
+            mesh: env.mesh_lane_stripe.clone(),
+            material: env.mat_lane_stripe.clone(),
+            transform: Transform::from_xyz(-1.20, 0.012, stripe_z),
+            ..default()
+        });
+        // Center-to-Right lane divider
+        seg.spawn(PbrBundle {
+            mesh: env.mesh_lane_stripe.clone(),
+            material: env.mat_lane_stripe.clone(),
+            transform: Transform::from_xyz(1.20, 0.012, stripe_z),
+            ..default()
+        });
+    }
+
+    // Subterranean cyan ECHO power conduits running alongside the rails
+    seg.spawn(PbrBundle {
+        mesh: env.mesh_echo_conduit.clone(),
+        material: env.mat_echo_conduit.clone(),
+        transform: Transform::from_xyz(-0.02, 0.015, 0.0),
+        ..default()
+    });
 
     // Polished metallic steel rails (base + specular crown) for all 3 lanes
     for lane_idx in -1..=1 {

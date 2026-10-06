@@ -86,21 +86,42 @@ pub fn spawn_player_entity(
     selected_character: CharacterType,
 ) {
     let jacket_mat = materials.add(StandardMaterial {
-        base_color: Color::srgb(0.12, 0.14, 0.18),
-        perceptual_roughness: 0.3,
-        metallic: 0.8,
+        base_color: Color::srgb(0.10, 0.12, 0.16),
+        perceptual_roughness: 0.40,
+        metallic: 0.55,
+        ..default()
+    });
+
+    let armor_trim_mat = materials.add(StandardMaterial {
+        base_color: Color::srgb(0.18, 0.20, 0.24),
+        metallic: 0.88,
+        perceptual_roughness: 0.25,
+        ..default()
+    });
+
+    let orange_accent_mat = materials.add(StandardMaterial {
+        base_color: Color::srgb(1.0, 0.42, 0.05),
+        emissive: LinearRgba::new(1.2, 0.4, 0.0, 1.0),
+        perceptual_roughness: 0.35,
         ..default()
     });
 
     let cyan_echo_core_mat = materials.add(StandardMaterial {
-        base_color: Color::srgb(0.0, 0.9, 1.0),
-        emissive: LinearRgba::new(0.0, 2.0, 2.5, 1.0),
+        base_color: Color::srgb(0.0, 0.85, 1.0),
+        emissive: LinearRgba::new(0.6, 3.8, 5.0, 1.0),
         ..default()
     });
 
     let visor_mat = materials.add(StandardMaterial {
-        base_color: Color::srgb(1.0, 0.3, 0.0),
-        emissive: LinearRgba::new(2.5, 0.8, 0.0, 1.0),
+        base_color: Color::srgb(1.0, 0.35, 0.0),
+        emissive: LinearRgba::new(4.5, 1.6, 0.1, 1.0),
+        ..default()
+    });
+
+    let boots_mat = materials.add(StandardMaterial {
+        base_color: Color::srgb(0.12, 0.13, 0.15),
+        metallic: 0.90,
+        perceptual_roughness: 0.28,
         ..default()
     });
 
@@ -118,10 +139,11 @@ pub fn spawn_player_entity(
         ..default()
     });
 
+    // Spawn Root Courier (athletic jacket torso)
     commands
         .spawn((
             PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.7, 1.1, 0.5)),
+                mesh: meshes.add(Cuboid::new(0.58, 0.52, 0.36)),
                 material: jacket_mat.clone(),
                 transform: Transform::from_xyz(0.0, 0.65, 0.0),
                 ..default()
@@ -140,56 +162,186 @@ pub fn spawn_player_entity(
             },
         ))
         .with_children(|parent| {
-            // ECHO Core on Kai's back
+            // 1. Tactical Chest Rig & Center Zipper Seam
             parent.spawn(PbrBundle {
-                mesh: meshes.add(Sphere::new(0.22)),
-                material: cyan_echo_core_mat.clone(),
-                transform: Transform::from_xyz(0.0, 0.2, 0.3),
+                mesh: meshes.add(Cuboid::new(0.26, 0.44, 0.08)),
+                material: armor_trim_mat.clone(),
+                transform: Transform::from_xyz(0.0, 0.02, -0.16),
+                ..default()
+            });
+            parent.spawn(PbrBundle {
+                mesh: meshes.add(Cuboid::new(0.05, 0.46, 0.04)),
+                material: orange_accent_mat.clone(),
+                transform: Transform::from_xyz(0.0, 0.02, -0.20),
                 ..default()
             });
 
-            // Head & Visor
+            // 2. Courier Belt & Utility Hip Pouches
             parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.45, 0.45, 0.45)),
-                material: jacket_mat.clone(),
-                transform: Transform::from_xyz(0.0, 0.8, 0.0),
+                mesh: meshes.add(Cuboid::new(0.52, 0.14, 0.34)),
+                material: armor_trim_mat.clone(),
+                transform: Transform::from_xyz(0.0, -0.24, 0.0),
                 ..default()
             });
             parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.38, 0.15, 0.12)),
+                mesh: meshes.add(Cuboid::new(0.12, 0.14, 0.22)),
+                material: jacket_mat.clone(),
+                transform: Transform::from_xyz(-0.28, -0.24, 0.0),
+                ..default()
+            });
+            parent.spawn(PbrBundle {
+                mesh: meshes.add(Cuboid::new(0.12, 0.14, 0.22)),
+                material: jacket_mat.clone(),
+                transform: Transform::from_xyz(0.28, -0.24, 0.0),
+                ..default()
+            });
+
+            // 3. Head, Faceted Courier Helmet & Cyber-Visor
+            parent.spawn(PbrBundle {
+                mesh: meshes.add(Cuboid::new(0.34, 0.34, 0.36)),
+                material: jacket_mat.clone(),
+                transform: Transform::from_xyz(0.0, 0.44, 0.0),
+                ..default()
+            });
+            parent.spawn(PbrBundle {
+                mesh: meshes.add(Cuboid::new(0.32, 0.13, 0.14)),
                 material: visor_mat.clone(),
-                transform: Transform::from_xyz(0.0, 0.82, -0.22),
+                transform: Transform::from_xyz(0.0, 0.46, -0.16),
+                ..default()
+            });
+            parent.spawn(PbrBundle {
+                mesh: meshes.add(Cuboid::new(0.04, 0.14, 0.08)),
+                material: armor_trim_mat.clone(),
+                transform: Transform::from_xyz(-0.18, 0.48, -0.04),
                 ..default()
             });
 
-            // Thruster Boots
+            // 4. Padded Shoulders & Athletic Arms
             parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.22, 0.35, 0.35)),
+                mesh: meshes.add(Cuboid::new(0.18, 0.16, 0.24)),
+                material: armor_trim_mat.clone(),
+                transform: Transform::from_xyz(-0.35, 0.18, 0.0),
+                ..default()
+            });
+            parent.spawn(PbrBundle {
+                mesh: meshes.add(Cuboid::new(0.18, 0.16, 0.24)),
+                material: armor_trim_mat.clone(),
+                transform: Transform::from_xyz(0.35, 0.18, 0.0),
+                ..default()
+            });
+            parent.spawn(PbrBundle {
+                mesh: meshes.add(Cuboid::new(0.12, 0.24, 0.14)),
                 material: jacket_mat.clone(),
-                transform: Transform::from_xyz(-0.25, -0.65, 0.0),
+                transform: Transform::from_xyz(-0.35, 0.0, 0.0),
                 ..default()
             });
             parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.22, 0.35, 0.35)),
+                mesh: meshes.add(Cuboid::new(0.12, 0.24, 0.14)),
+                material: jacket_mat.clone(),
+                transform: Transform::from_xyz(0.35, 0.0, 0.0),
+                ..default()
+            });
+            // Cybernetic forearms
+            parent.spawn(PbrBundle {
+                mesh: meshes.add(Cuboid::new(0.12, 0.24, 0.14)),
+                material: armor_trim_mat.clone(),
+                transform: Transform::from_xyz(-0.35, -0.18, -0.04),
+                ..default()
+            });
+            parent.spawn(PbrBundle {
+                mesh: meshes.add(Cuboid::new(0.12, 0.24, 0.14)),
+                material: armor_trim_mat.clone(),
+                transform: Transform::from_xyz(0.35, -0.18, -0.04),
+                ..default()
+            });
+            // Left gauntlet cyan holographic wrist display
+            parent.spawn(PbrBundle {
+                mesh: meshes.add(Cuboid::new(0.08, 0.04, 0.10)),
+                material: cyan_echo_core_mat.clone(),
+                transform: Transform::from_xyz(-0.35, -0.18, -0.11),
+                ..default()
+            });
+
+            // 5. Tactical Thighs & Articulated Kinetic Thruster Boots
+            parent.spawn(PbrBundle {
+                mesh: meshes.add(Cuboid::new(0.17, 0.30, 0.20)),
+                material: jacket_mat.clone(),
+                transform: Transform::from_xyz(-0.16, -0.36, 0.0),
+                ..default()
+            });
+            parent.spawn(PbrBundle {
+                mesh: meshes.add(Cuboid::new(0.17, 0.30, 0.20)),
+                material: jacket_mat.clone(),
+                transform: Transform::from_xyz(0.16, -0.36, 0.0),
+                ..default()
+            });
+            parent.spawn(PbrBundle {
+                mesh: meshes.add(Cuboid::new(0.20, 0.28, 0.34)),
+                material: boots_mat.clone(),
+                transform: Transform::from_xyz(-0.16, -0.56, 0.03),
+                ..default()
+            });
+            parent.spawn(PbrBundle {
+                mesh: meshes.add(Cuboid::new(0.20, 0.28, 0.34)),
+                material: boots_mat,
+                transform: Transform::from_xyz(0.16, -0.56, 0.03),
+                ..default()
+            });
+            // Titanium toe caps
+            parent.spawn(PbrBundle {
+                mesh: meshes.add(Cuboid::new(0.18, 0.10, 0.10)),
+                material: armor_trim_mat.clone(),
+                transform: Transform::from_xyz(-0.16, -0.65, -0.12),
+                ..default()
+            });
+            parent.spawn(PbrBundle {
+                mesh: meshes.add(Cuboid::new(0.18, 0.10, 0.10)),
+                material: armor_trim_mat.clone(),
+                transform: Transform::from_xyz(0.16, -0.65, -0.12),
+                ..default()
+            });
+            // Kinetic sole micro-thruster nozzles
+            parent.spawn(PbrBundle {
+                mesh: meshes.add(Cuboid::new(0.10, 0.05, 0.12)),
+                material: cyan_echo_core_mat.clone(),
+                transform: Transform::from_xyz(-0.16, -0.68, 0.0),
+                ..default()
+            });
+            parent.spawn(PbrBundle {
+                mesh: meshes.add(Cuboid::new(0.10, 0.05, 0.12)),
+                material: cyan_echo_core_mat.clone(),
+                transform: Transform::from_xyz(0.16, -0.68, 0.0),
+                ..default()
+            });
+
+            // 6. Courier Spine Rig & Pulsing Cyan ECHO Core
+            parent.spawn(PbrBundle {
+                mesh: meshes.add(Cuboid::new(0.16, 0.48, 0.10)),
+                material: armor_trim_mat,
+                transform: Transform::from_xyz(0.0, 0.04, 0.19),
+                ..default()
+            });
+            parent.spawn(PbrBundle {
+                mesh: meshes.add(Sphere::new(0.20)),
+                material: cyan_echo_core_mat.clone(),
+                transform: Transform::from_xyz(0.0, 0.12, 0.26),
+                ..default()
+            });
+            // Courier hard-drive data pod container
+            parent.spawn(PbrBundle {
+                mesh: meshes.add(Cuboid::new(0.24, 0.18, 0.12)),
                 material: jacket_mat,
-                transform: Transform::from_xyz(0.25, -0.65, 0.0),
-                ..default()
-            });
-
-            // Thruster Glow
-            parent.spawn(PbrBundle {
-                mesh: meshes.add(Sphere::new(0.09)),
-                material: cyan_echo_core_mat.clone(),
-                transform: Transform::from_xyz(-0.25, -0.85, 0.0),
+                transform: Transform::from_xyz(0.0, -0.14, 0.22),
                 ..default()
             });
             parent.spawn(PbrBundle {
-                mesh: meshes.add(Sphere::new(0.09)),
-                material: cyan_echo_core_mat.clone(),
-                transform: Transform::from_xyz(0.25, -0.85, 0.0),
+                mesh: meshes.add(Cuboid::new(0.25, 0.04, 0.04)),
+                material: orange_accent_mat,
+                transform: Transform::from_xyz(0.0, -0.14, 0.28),
                 ..default()
             });
 
+            // 7. Kinetic Powerup & Movement Visual Attachments
             // Shield Bubble
             parent.spawn((
                 PbrBundle {

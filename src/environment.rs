@@ -20,7 +20,11 @@ pub struct EnvironmentAssets {
     pub mesh_rail_base: Handle<Mesh>,
     pub mesh_rail_crown: Handle<Mesh>,
     pub mesh_sleeper: Handle<Mesh>,
+    pub mesh_sleeper_heavy: Handle<Mesh>,
     pub mesh_sleeper_plate: Handle<Mesh>,
+    pub mesh_rail_joint: Handle<Mesh>,
+    pub mesh_lane_stripe: Handle<Mesh>,
+    pub mesh_echo_conduit: Handle<Mesh>,
 
     // Architectural & Structural Meshes
     pub mesh_arch_top: Handle<Mesh>,
@@ -50,6 +54,12 @@ pub struct EnvironmentAssets {
     pub mat_rail_base: Handle<StandardMaterial>,
     pub mat_rail_crown: Handle<StandardMaterial>,
     pub mat_sleeper: Handle<StandardMaterial>,
+    pub mat_sleeper_stained: Handle<StandardMaterial>,
+    pub mat_sleeper_cracked: Handle<StandardMaterial>,
+    pub mat_sleeper_steel: Handle<StandardMaterial>,
+    pub mat_lane_stripe: Handle<StandardMaterial>,
+    pub mat_echo_conduit: Handle<StandardMaterial>,
+    pub mat_rail_joint: Handle<StandardMaterial>,
     pub mat_steel_truss: Handle<StandardMaterial>,
     pub mat_catenary_wire: Handle<StandardMaterial>,
     pub mat_lantern_cage: Handle<StandardMaterial>,
@@ -96,7 +106,11 @@ fn init_environment_assets(
         mesh_rail_base: meshes.add(Cuboid::new(0.12, 0.06, length)),
         mesh_rail_crown: meshes.add(Cuboid::new(0.09, 0.07, length)),
         mesh_sleeper: meshes.add(Cuboid::new(8.2, 0.12, 0.38)),
+        mesh_sleeper_heavy: meshes.add(Cuboid::new(8.2, 0.15, 0.44)),
         mesh_sleeper_plate: meshes.add(Cuboid::new(0.24, 0.03, 0.28)),
+        mesh_rail_joint: meshes.add(Cuboid::new(0.04, 0.08, 0.60)),
+        mesh_lane_stripe: meshes.add(Cuboid::new(0.08, 0.015, 1.4)),
+        mesh_echo_conduit: meshes.add(Cuboid::new(0.06, 0.02, length)),
 
         // Architectural & Structural Meshes
         mesh_arch_top: meshes.add(Cuboid::new(9.8, 0.55, 0.9)),
@@ -160,8 +174,8 @@ fn init_environment_assets(
             ..default()
         }),
         mat_rail_crown: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.75, 0.80, 0.85),
-            emissive: LinearRgba::new(0.0, 0.25, 0.35, 1.0),
+            base_color: Color::srgb(0.78, 0.82, 0.88),
+            emissive: LinearRgba::new(0.05, 0.35, 0.45, 1.0),
             perceptual_roughness: 0.10,
             metallic: 0.98,
             ..default()
@@ -170,6 +184,44 @@ fn init_environment_assets(
             base_color: Color::srgb(0.14, 0.13, 0.14),
             perceptual_roughness: 0.75,
             metallic: 0.25,
+            ..default()
+        }),
+        mat_sleeper_stained: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.07, 0.07, 0.08),
+            perceptual_roughness: 0.92,
+            metallic: 0.10,
+            ..default()
+        }),
+        mat_sleeper_cracked: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.20, 0.19, 0.18),
+            perceptual_roughness: 0.85,
+            metallic: 0.20,
+            ..default()
+        }),
+        mat_sleeper_steel: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.24, 0.24, 0.27),
+            perceptual_roughness: 0.35,
+            metallic: 0.90,
+            ..default()
+        }),
+        mat_lane_stripe: materials.add(StandardMaterial {
+            base_color: Color::srgba(0.85, 0.80, 0.65, 0.70),
+            emissive: LinearRgba::new(0.4, 0.35, 0.2, 1.0),
+            perceptual_roughness: 0.50,
+            metallic: 0.10,
+            ..default()
+        }),
+        mat_echo_conduit: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.0, 0.8, 1.0),
+            emissive: LinearRgba::new(0.2, 2.2, 3.2, 1.0),
+            perceptual_roughness: 0.15,
+            metallic: 0.50,
+            ..default()
+        }),
+        mat_rail_joint: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.22, 0.18, 0.16),
+            perceptual_roughness: 0.60,
+            metallic: 0.75,
             ..default()
         }),
         mat_steel_truss: materials.add(StandardMaterial {

@@ -48,20 +48,43 @@ pub struct EchoHunterBoss {
 }
 
 #[derive(Resource)]
+#[allow(dead_code)]
 pub struct EnemyAssets {
+    // Scout Drone Silhouette
     pub mesh_scout_body: Handle<Mesh>,
-    pub mesh_hunter_body: Handle<Mesh>,
-    pub mesh_heavy_body: Handle<Mesh>,
-    pub mesh_boss_core: Handle<Mesh>,
-    pub mesh_sensor_eye: Handle<Mesh>,
-    pub mesh_emp_barrier: Handle<Mesh>,
-
+    pub mesh_scout_wing: Handle<Mesh>,
+    pub mesh_scout_winglet: Handle<Mesh>,
+    pub mesh_scout_thruster: Handle<Mesh>,
+    pub mesh_scout_eye: Handle<Mesh>,
     pub mat_scout: Handle<StandardMaterial>,
     pub mat_scout_eye: Handle<StandardMaterial>,
+    pub mat_scout_thruster: Handle<StandardMaterial>,
+
+    // Hunter Interceptor Silhouette
+    pub mesh_hunter_body: Handle<Mesh>,
+    pub mesh_hunter_wing: Handle<Mesh>,
+    pub mesh_hunter_nacelle: Handle<Mesh>,
+    pub mesh_hunter_eye: Handle<Mesh>,
+    pub mesh_hunter_cannon: Handle<Mesh>,
     pub mat_hunter: Handle<StandardMaterial>,
     pub mat_hunter_beam: Handle<StandardMaterial>,
+    pub mat_hunter_eye: Handle<StandardMaterial>,
+
+    // Heavy Fortified Blocker Silhouette
+    pub mesh_heavy_body: Handle<Mesh>,
+    pub mesh_heavy_pylon: Handle<Mesh>,
+    pub mesh_heavy_quad_eye: Handle<Mesh>,
+    pub mesh_heavy_generator: Handle<Mesh>,
+    pub mesh_heavy_foot: Handle<Mesh>,
+    pub mesh_emp_barrier: Handle<Mesh>,
     pub mat_heavy_armor: Handle<StandardMaterial>,
     pub mat_heavy_emp: Handle<StandardMaterial>,
+    pub mat_heavy_hazard: Handle<StandardMaterial>,
+    pub mat_heavy_eye: Handle<StandardMaterial>,
+
+    // Boss Core & Common
+    pub mesh_boss_core: Handle<Mesh>,
+    pub mesh_sensor_eye: Handle<Mesh>,
     pub mat_boss_crystal: Handle<StandardMaterial>,
 }
 
@@ -113,46 +136,85 @@ fn init_enemy_assets(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     let assets = EnemyAssets {
-        mesh_scout_body: meshes.add(Cuboid::new(0.9, 0.4, 0.7)),
-        mesh_hunter_body: meshes.add(Cuboid::new(1.3, 0.45, 1.1)),
-        mesh_heavy_body: meshes.add(Cuboid::new(2.2, 2.0, 1.5)),
-        mesh_boss_core: meshes.add(Sphere::new(1.1)),
-        mesh_sensor_eye: meshes.add(Sphere::new(0.18)),
-        mesh_emp_barrier: meshes.add(Cuboid::new(2.4, 3.2, 0.2)),
-
+        // Scout Drone Silhouette
+        mesh_scout_body: meshes.add(Cuboid::new(0.48, 0.24, 0.70)),
+        mesh_scout_wing: meshes.add(Cuboid::new(0.32, 0.04, 0.35)),
+        mesh_scout_winglet: meshes.add(Cuboid::new(0.04, 0.12, 0.22)),
+        mesh_scout_thruster: meshes.add(Cuboid::new(0.14, 0.12, 0.16)),
+        mesh_scout_eye: meshes.add(Sphere::new(0.09)),
         mat_scout: materials.add(StandardMaterial {
             base_color: Color::srgb(0.12, 0.12, 0.15),
-            metallic: 0.9,
-            perceptual_roughness: 0.2,
+            metallic: 0.90,
+            perceptual_roughness: 0.20,
             ..default()
         }),
         mat_scout_eye: materials.add(StandardMaterial {
-            base_color: Color::srgb(1.0, 0.05, 0.1),
-            emissive: LinearRgba::new(4.5, 0.2, 0.4, 1.0),
+            base_color: Color::srgb(1.0, 0.05, 0.10),
+            emissive: LinearRgba::new(4.8, 0.2, 0.4, 1.0),
             ..default()
         }),
+        mat_scout_thruster: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.2, 0.4, 1.0),
+            emissive: LinearRgba::new(0.5, 1.2, 4.5, 1.0),
+            ..default()
+        }),
+
+        // Hunter Interceptor Silhouette
+        mesh_hunter_body: meshes.add(Cuboid::new(0.70, 0.28, 0.95)),
+        mesh_hunter_wing: meshes.add(Cuboid::new(0.45, 0.06, 0.40)),
+        mesh_hunter_nacelle: meshes.add(Cuboid::new(0.18, 0.16, 0.55)),
+        mesh_hunter_eye: meshes.add(Sphere::new(0.11)),
+        mesh_hunter_cannon: meshes.add(Cuboid::new(0.14, 0.14, 0.45)),
         mat_hunter: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.18, 0.14, 0.24),
-            metallic: 0.85,
+            base_color: Color::srgb(0.16, 0.12, 0.22),
+            metallic: 0.88,
             perceptual_roughness: 0.25,
             ..default()
         }),
         mat_hunter_beam: materials.add(StandardMaterial {
-            base_color: Color::srgb(1.0, 0.5, 0.0),
+            base_color: Color::srgb(1.0, 0.50, 0.0),
             emissive: LinearRgba::new(5.0, 2.0, 0.0, 1.0),
             ..default()
         }),
+        mat_hunter_eye: materials.add(StandardMaterial {
+            base_color: Color::srgb(1.0, 0.35, 0.0),
+            emissive: LinearRgba::new(5.2, 2.2, 0.0, 1.0),
+            ..default()
+        }),
+
+        // Heavy Fortified Blocker Silhouette
+        mesh_heavy_body: meshes.add(Cuboid::new(1.70, 1.40, 1.10)),
+        mesh_heavy_pylon: meshes.add(Cuboid::new(0.45, 1.60, 0.70)),
+        mesh_heavy_quad_eye: meshes.add(Sphere::new(0.08)),
+        mesh_heavy_generator: meshes.add(Cuboid::new(0.80, 0.40, 0.60)),
+        mesh_heavy_foot: meshes.add(Cuboid::new(0.25, 0.30, 0.45)),
+        mesh_emp_barrier: meshes.add(Cuboid::new(2.40, 3.00, 0.15)),
         mat_heavy_armor: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.25, 0.22, 0.2),
+            base_color: Color::srgb(0.22, 0.20, 0.24),
             metallic: 0.95,
-            perceptual_roughness: 0.4,
+            perceptual_roughness: 0.35,
             ..default()
         }),
         mat_heavy_emp: materials.add(StandardMaterial {
-            base_color: Color::srgba(0.1, 0.7, 1.0, 0.6),
+            base_color: Color::srgba(0.1, 0.7, 1.0, 0.55),
             emissive: LinearRgba::new(0.4, 2.8, 4.5, 1.0),
             ..default()
         }),
+        mat_heavy_hazard: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.90, 0.60, 0.05),
+            emissive: LinearRgba::new(1.0, 0.5, 0.0, 1.0),
+            perceptual_roughness: 0.30,
+            ..default()
+        }),
+        mat_heavy_eye: materials.add(StandardMaterial {
+            base_color: Color::srgb(1.0, 0.05, 0.05),
+            emissive: LinearRgba::new(4.5, 0.1, 0.1, 1.0),
+            ..default()
+        }),
+
+        // Boss Core & Common
+        mesh_boss_core: meshes.add(Sphere::new(1.1)),
+        mesh_sensor_eye: meshes.add(Sphere::new(0.18)),
         mat_boss_crystal: materials.add(StandardMaterial {
             base_color: Color::srgb(0.0, 0.9, 0.9),
             emissive: LinearRgba::new(3.0, 0.5, 4.0, 1.0),
@@ -218,11 +280,50 @@ fn spawn_scout_drone(
             },
         ))
         .with_children(|drone| {
-            // Scanner Eye
+            // Dual Red Sensor Tracking Eyes
             drone.spawn(PbrBundle {
-                mesh: assets.mesh_sensor_eye.clone(),
+                mesh: assets.mesh_scout_eye.clone(),
                 material: assets.mat_scout_eye.clone(),
-                transform: Transform::from_xyz(0.0, 0.0, -0.38),
+                transform: Transform::from_xyz(-0.12, 0.02, -0.36),
+                ..default()
+            });
+            drone.spawn(PbrBundle {
+                mesh: assets.mesh_scout_eye.clone(),
+                material: assets.mat_scout_eye.clone(),
+                transform: Transform::from_xyz(0.12, 0.02, -0.36),
+                ..default()
+            });
+            // Left & Right Swept Stabilization Wings
+            drone.spawn(PbrBundle {
+                mesh: assets.mesh_scout_wing.clone(),
+                material: assets.mat_scout.clone(),
+                transform: Transform::from_xyz(-0.38, 0.02, 0.08),
+                ..default()
+            });
+            drone.spawn(PbrBundle {
+                mesh: assets.mesh_scout_wing.clone(),
+                material: assets.mat_scout.clone(),
+                transform: Transform::from_xyz(0.38, 0.02, 0.08),
+                ..default()
+            });
+            // Winglet Fin Tips
+            drone.spawn(PbrBundle {
+                mesh: assets.mesh_scout_winglet.clone(),
+                material: assets.mat_scout.clone(),
+                transform: Transform::from_xyz(-0.52, 0.08, 0.12),
+                ..default()
+            });
+            drone.spawn(PbrBundle {
+                mesh: assets.mesh_scout_winglet.clone(),
+                material: assets.mat_scout.clone(),
+                transform: Transform::from_xyz(0.52, 0.08, 0.12),
+                ..default()
+            });
+            // Rear High-Energy Thruster Nozzle & Exhaust
+            drone.spawn(PbrBundle {
+                mesh: assets.mesh_scout_thruster.clone(),
+                material: assets.mat_scout_thruster.clone(),
+                transform: Transform::from_xyz(0.0, 0.0, 0.36),
                 ..default()
             });
         });
@@ -259,11 +360,57 @@ fn spawn_hunter_drone(
             },
         ))
         .with_children(|drone| {
-            // Targeting Laser Array
+            // Dual Piercing Amber/Orange Targeting Optics
+            drone.spawn(PbrBundle {
+                mesh: assets.mesh_hunter_eye.clone(),
+                material: assets.mat_hunter_eye.clone(),
+                transform: Transform::from_xyz(-0.16, 0.0, -0.48),
+                ..default()
+            });
+            drone.spawn(PbrBundle {
+                mesh: assets.mesh_hunter_eye.clone(),
+                material: assets.mat_hunter_eye.clone(),
+                transform: Transform::from_xyz(0.16, 0.0, -0.48),
+                ..default()
+            });
+            // Left & Right Forward-Swept Combat Foils
+            drone.spawn(PbrBundle {
+                mesh: assets.mesh_hunter_wing.clone(),
+                material: assets.mat_hunter.clone(),
+                transform: Transform::from_xyz(-0.58, 0.04, -0.10),
+                ..default()
+            });
+            drone.spawn(PbrBundle {
+                mesh: assets.mesh_hunter_wing.clone(),
+                material: assets.mat_hunter.clone(),
+                transform: Transform::from_xyz(0.58, 0.04, -0.10),
+                ..default()
+            });
+            // Flanking Repulsor Nacelles
+            drone.spawn(PbrBundle {
+                mesh: assets.mesh_hunter_nacelle.clone(),
+                material: assets.mat_hunter.clone(),
+                transform: Transform::from_xyz(-0.48, -0.10, 0.15),
+                ..default()
+            });
+            drone.spawn(PbrBundle {
+                mesh: assets.mesh_hunter_nacelle.clone(),
+                material: assets.mat_hunter.clone(),
+                transform: Transform::from_xyz(0.48, -0.10, 0.15),
+                ..default()
+            });
+            // Underslung Pulse Interceptor Cannon
+            drone.spawn(PbrBundle {
+                mesh: assets.mesh_hunter_cannon.clone(),
+                material: assets.mat_hunter.clone(),
+                transform: Transform::from_xyz(0.0, -0.18, -0.25),
+                ..default()
+            });
+            // Targeting Laser Array Emitter
             drone.spawn(PbrBundle {
                 mesh: assets.mesh_sensor_eye.clone(),
                 material: assets.mat_hunter_beam.clone(),
-                transform: Transform::from_xyz(0.0, -0.1, -0.55),
+                transform: Transform::from_xyz(0.0, -0.10, -0.55),
                 ..default()
             });
         });
@@ -300,11 +447,69 @@ fn spawn_heavy_blocker(
             Despawnable { z_center: spawn_z },
         ))
         .with_children(|heavy| {
-            // EMP Suppression Shield
+            // Massive Left & Right Flanking Armored Shoulder Pylons
+            heavy.spawn(PbrBundle {
+                mesh: assets.mesh_heavy_pylon.clone(),
+                material: assets.mat_heavy_armor.clone(),
+                transform: Transform::from_xyz(-0.98, 0.15, 0.0),
+                ..default()
+            });
+            heavy.spawn(PbrBundle {
+                mesh: assets.mesh_heavy_pylon.clone(),
+                material: assets.mat_heavy_armor.clone(),
+                transform: Transform::from_xyz(0.98, 0.15, 0.0),
+                ..default()
+            });
+            // Quad Surveillance Matrix Eye Optics across brow
+            heavy.spawn(PbrBundle {
+                mesh: assets.mesh_heavy_quad_eye.clone(),
+                material: assets.mat_heavy_eye.clone(),
+                transform: Transform::from_xyz(-0.45, 0.55, -0.56),
+                ..default()
+            });
+            heavy.spawn(PbrBundle {
+                mesh: assets.mesh_heavy_quad_eye.clone(),
+                material: assets.mat_heavy_eye.clone(),
+                transform: Transform::from_xyz(-0.18, 0.55, -0.56),
+                ..default()
+            });
+            heavy.spawn(PbrBundle {
+                mesh: assets.mesh_heavy_quad_eye.clone(),
+                material: assets.mat_heavy_eye.clone(),
+                transform: Transform::from_xyz(0.18, 0.55, -0.56),
+                ..default()
+            });
+            heavy.spawn(PbrBundle {
+                mesh: assets.mesh_heavy_quad_eye.clone(),
+                material: assets.mat_heavy_eye.clone(),
+                transform: Transform::from_xyz(0.45, 0.55, -0.56),
+                ..default()
+            });
+            // Underslung Heavy EMP Containment Generator
+            heavy.spawn(PbrBundle {
+                mesh: assets.mesh_heavy_generator.clone(),
+                material: assets.mat_heavy_armor.clone(),
+                transform: Transform::from_xyz(0.0, -0.55, 0.0),
+                ..default()
+            });
+            // Grounding Magnetic Stabilizers
+            heavy.spawn(PbrBundle {
+                mesh: assets.mesh_heavy_foot.clone(),
+                material: assets.mat_heavy_armor.clone(),
+                transform: Transform::from_xyz(-0.65, -0.75, 0.0),
+                ..default()
+            });
+            heavy.spawn(PbrBundle {
+                mesh: assets.mesh_heavy_foot.clone(),
+                material: assets.mat_heavy_armor.clone(),
+                transform: Transform::from_xyz(0.65, -0.75, 0.0),
+                ..default()
+            });
+            // Pulsing EMP Suppression Shield Barrier Grid
             heavy.spawn(PbrBundle {
                 mesh: assets.mesh_emp_barrier.clone(),
                 material: assets.mat_heavy_emp.clone(),
-                transform: Transform::from_xyz(0.0, 0.4, 0.8),
+                transform: Transform::from_xyz(0.0, 0.35, 0.85),
                 ..default()
             });
         });

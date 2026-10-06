@@ -293,28 +293,15 @@ fn lane_aware_collision_check(
             continue;
         }
 
-        // Vertical collision check based on obstacle type with fair clearance forgiveness
-        let o_half_y = obs.size.y * 0.5;
-        let o_bottom = o_pos.y - o_half_y;
-        let o_top = o_pos.y + o_half_y;
-
-        let collided = match obs.obstacle_type {
-            ObstacleType::LowBarrier => {
-                // Cleared if jumping (feet clear hurdle with 0.28m vertical forgiveness)
-                p_y < (o_top - 0.28)
-            }
-            ObstacleType::HighHangingWire => {
-                // Cleared if sliding (staying low with 0.22m ducking forgiveness)
-                !player.is_sliding || (p_y + 0.5) > (o_bottom + 0.22)
-            }
-            ObstacleType::TallPillar => {
-                true // Full lane block
-            }
-            ObstacleType::StaticTrain | ObstacleType::MovingTrain { .. } => {
-                // Cleared if on train roof with 0.25m forgiveness
-                p_y < (o_top - 0.25)
-            }
-        };
+        // Vertical collision check based on explicit player capsule bounding volume (feet bottom and head top)
+        let collided = check_obstacle_vertical_collision(
+            p_y,
+            p_trans.scale.y,
+            player.is_sliding,
+            obs.obstacle_type,
+            o_pos.y,
+            obs.size.y,
+        );
 
         if collided {
             // Shield absorbs hit
@@ -348,3 +335,117 @@ fn lane_aware_collision_check(
         }
     }
 }
+
+// -------------------------------------------------------------
+// EXPLICIT PLAYER CAPSULE BOUNDING VOLUME VERTICAL COLLISION
+// -------------------------------------------------------------
+/// Evaluates vertical collision between the player's physical volume and an obstacle.
+/// - Standing Kai: root at Y=0.65m, feet touch ground at Y=0.0m (bottom = p_y - 0.65m), head top at Y=1.60m (top = p_y + 0.95m).
+/// - Sliding Kai: low parkour slide (scale.y = 0.45, root at 0.35m -> bottom ≈ 0.06m, top ≈ 0.78m).
+pub fn check_obstacle_vertical_collision(
+    p_y: f32,
+    p_scale_y: f32,
+    is_sliding: bool,
+    obstacle_type: ObstacleType,
+    obs_y: f32,
+    obs_size_y: f32,
+) -> bool {
+    let p_bottom = p_y - (0.65 * p_scale_y);
+    let p_top = p_y + (0.95 * p_scale_y);
+
+    let o_half_y = obs_size_y * 0.5;
+    let o_bottom = obs_y - o_half_y;
+    let o_top = obs_y + o_half_y;
+
+    match obstacle_type {
+        ObstacleType::LowBarrier => {
+            // Cleared if jumping: feet must clear barrier top (with 0.10m fair foot clearance tolerance)
+            // If standing (p_bottom ~ 0.0) or sliding (p_bottom ~ 0.06), collides with hurdle top (~0.845m)
+            p_bottom < (o_top - 0.10)
+        }
+        ObstacleType::HighHangingWire => {
+            // Cleared if sliding/ducking: player's head must stay beneath wire bottom (with 0.12m ducking clearance tolerance)
+            // If standing (p_top ~ 1.60m) or jumping, collides with severed wire bottom (~1.45m)
+            !is_sliding || (p_top > (o_bottom + 0.12))
+        }
+        ObstacleType::TallPillar => {
+            // Full 4.0m vertical lane block: must lane-switch
+            true
+        }
+        ObstacleType::StaticTrain | ObstacleType::MovingTrain { .. } => {
+            // Cleared if jumping onto / clearing carriage roof
+            p_bottom < (o_top - 0.10)
+        }
+    }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use super::*;
+
+    #[test]
+    fn test_low_barrier_standing_hits() {
+        // Standing at normal ground Y=0.65, scale=1.0, not sliding
+        // LowBarrier center Y=0.42, height=0.85 -> top=0.845
+        let collided = check_obstacle_vertical_collision(
+            0.65, 1.0, false, ObstacleType::LowBarrier, 0.42, 0.85,
+        );
+        assert!(collided, "Standing player must collide with low barrier");
+    }
+
+    #[test]
+    fn test_low_barrier_jump_clears() {
+        // Jumping player at apex (Y=2.2m)
+        let collided = check_obstacle_vertical_collision(
+            2.2, 1.0, false, ObstacleType::LowBarrier, 0.42, 0.85,
+        );
+        assert!(!collided, "Jumping player at Y=2.2m must clear low barrier");
+    }
+
+    #[test]
+    fn test_low_barrier_sliding_hits() {
+        // Sliding into low barrier (scale.y=0.45, Y=0.35, is_sliding=true)
+        let collided = check_obstacle_vertical_collision(
+            0.35, 0.45, true, ObstacleType::LowBarrier, 0.42, 0.85,
+        );
+        assert!(collided, "Sliding player must NOT clear low barrier (must jump)");
+    }
+
+    #[test]
+    fn test_hanging_wire_standing_hits() {
+        // Standing at Y=0.65, scale=1.0 -> head top = 1.60m
+        // HighHangingWire center Y=1.7, height=0.5 -> bottom=1.45m
+        let collided = check_obstacle_vertical_collision(
+            0.65, 1.0, false, ObstacleType::HighHangingWire, 1.7, 0.5,
+        );
+        assert!(collided, "Standing player must hit high hanging wire");
+    }
+
+    #[test]
+    fn test_hanging_wire_sliding_clears() {
+        // Sliding at Y=0.35, scale=0.45, is_sliding=true -> head top ≈ 0.78m < 1.45m
+        let collided = check_obstacle_vertical_collision(
+            0.35, 0.45, true, ObstacleType::HighHangingWire, 1.7, 0.5,
+        );
+        assert!(!collided, "Sliding player must cleanly duck under hanging wire");
+    }
+
+    #[test]
+    fn test_hanging_wire_jumping_hits() {
+        // Jumping into hanging wire (Y=2.0m, scale=1.0, not sliding)
+        let collided = check_obstacle_vertical_collision(
+            2.0, 1.0, false, ObstacleType::HighHangingWire, 1.7, 0.5,
+        );
+        assert!(collided, "Jumping into hanging wire must collide");
+    }
+
+    #[test]
+    fn test_pillar_always_collides_vertically() {
+        // Pillar is full lane block
+        let collided = check_obstacle_vertical_collision(
+            0.65, 1.0, false, ObstacleType::TallPillar, 2.0, 4.0,
+        );
+        assert!(collided, "Pillar must always collide in vertical check");
+    }
+}
+

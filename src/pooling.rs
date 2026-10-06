@@ -2,8 +2,9 @@ use bevy::prelude::*;
 use crate::types::*;
 
 #[derive(Resource)]
+#[allow(dead_code)]
 pub struct PoolAssets {
-    // Meshes
+    // Meshes (Legacy / Base roots)
     pub mesh_barrier: Handle<Mesh>,
     pub mesh_wire: Handle<Mesh>,
     pub mesh_pillar: Handle<Mesh>,
@@ -14,7 +15,52 @@ pub struct PoolAssets {
     pub mesh_chip: Handle<Mesh>,
     pub mesh_powerup: Handle<Mesh>,
 
-    // Materials
+    // Low Barrier Modular Prefab Meshes & Materials
+    pub mesh_barrier_stanchion: Handle<Mesh>,
+    pub mesh_barrier_foot: Handle<Mesh>,
+    pub mesh_barrier_rail: Handle<Mesh>,
+    pub mesh_barrier_led_strip: Handle<Mesh>,
+    pub mesh_barrier_lock_box: Handle<Mesh>,
+    pub mesh_barrier_skirt: Handle<Mesh>,
+    pub mat_barrier_steel: Handle<StandardMaterial>,
+    pub mat_barrier_led: Handle<StandardMaterial>,
+
+    // High Hanging Wire Prefab Meshes & Materials
+    pub mesh_wire_anchor: Handle<Mesh>,
+    pub mesh_wire_catenary: Handle<Mesh>,
+    pub mesh_wire_bundle: Handle<Mesh>,
+    pub mesh_wire_dangle: Handle<Mesh>,
+    pub mesh_wire_spark: Handle<Mesh>,
+    pub mat_wire_copper: Handle<StandardMaterial>,
+    pub mat_wire_spark: Handle<StandardMaterial>,
+    pub mat_wire_insulation: Handle<StandardMaterial>,
+
+    // Tall Pillar Fortified Column Meshes & Materials
+    pub mesh_pillar_base: Handle<Mesh>,
+    pub mesh_pillar_body: Handle<Mesh>,
+    pub mesh_pillar_trunk: Handle<Mesh>,
+    pub mesh_pillar_placard: Handle<Mesh>,
+    pub mesh_pillar_beacon: Handle<Mesh>,
+    pub mesh_pillar_collar: Handle<Mesh>,
+    pub mat_pillar_beacon: Handle<StandardMaterial>,
+    pub mat_pillar_armor: Handle<StandardMaterial>,
+    pub mat_pillar_pedestal: Handle<StandardMaterial>,
+
+    // Metro Train Prefab Meshes & Materials
+    pub mesh_train_bumper: Handle<Mesh>,
+    pub mesh_train_windscreen: Handle<Mesh>,
+    pub mesh_train_headlamp: Handle<Mesh>,
+    pub mesh_train_marker_red: Handle<Mesh>,
+    pub mesh_train_bogie: Handle<Mesh>,
+    pub mesh_train_hvac: Handle<Mesh>,
+    pub mesh_train_windows_static: Handle<Mesh>,
+    pub mesh_train_windows_moving: Handle<Mesh>,
+    pub mat_train_windscreen: Handle<StandardMaterial>,
+    pub mat_train_marker_red: Handle<StandardMaterial>,
+    pub mat_train_windows: Handle<StandardMaterial>,
+    pub mat_train_chassis: Handle<StandardMaterial>,
+
+    // Materials (Base)
     pub mat_hazard: Handle<StandardMaterial>,
     pub mat_pillar: Handle<StandardMaterial>,
     pub mat_wire: Handle<StandardMaterial>,
@@ -102,6 +148,107 @@ fn init_pool_assets(
         mesh_fragment: meshes.add(Sphere::new(0.24)),
         mesh_chip: meshes.add(Cuboid::new(0.4, 0.6, 0.1)),
         mesh_powerup: meshes.add(Cuboid::new(0.6, 0.6, 0.6)),
+
+        // Low Barrier Modular Prefab Meshes & Materials
+        mesh_barrier_stanchion: meshes.add(Cuboid::new(0.14, 0.74, 0.26)),
+        mesh_barrier_foot: meshes.add(Cuboid::new(0.28, 0.05, 0.38)),
+        mesh_barrier_rail: meshes.add(Cuboid::new(2.10, 0.28, 0.20)),
+        mesh_barrier_led_strip: meshes.add(Cuboid::new(2.05, 0.06, 0.08)),
+        mesh_barrier_lock_box: meshes.add(Cuboid::new(0.28, 0.28, 0.16)),
+        mesh_barrier_skirt: meshes.add(Cuboid::new(1.76, 0.20, 0.06)),
+        mat_barrier_steel: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.14, 0.15, 0.18),
+            metallic: 0.85,
+            perceptual_roughness: 0.30,
+            ..default()
+        }),
+        mat_barrier_led: materials.add(StandardMaterial {
+            base_color: Color::srgb(1.0, 0.45, 0.05),
+            emissive: LinearRgba::new(4.5, 1.6, 0.1, 1.0),
+            ..default()
+        }),
+
+        // High Hanging Wire Prefab Meshes & Materials
+        mesh_wire_anchor: meshes.add(Cuboid::new(0.20, 0.25, 0.28)),
+        mesh_wire_catenary: meshes.add(Cuboid::new(2.20, 0.08, 0.08)),
+        mesh_wire_bundle: meshes.add(Cuboid::new(2.10, 0.16, 0.16)),
+        mesh_wire_dangle: meshes.add(Cuboid::new(0.04, 0.28, 0.04)),
+        mesh_wire_spark: meshes.add(Sphere::new(0.10)),
+        mat_wire_copper: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.85, 0.45, 0.20),
+            metallic: 0.95,
+            perceptual_roughness: 0.15,
+            ..default()
+        }),
+        mat_wire_spark: materials.add(StandardMaterial {
+            base_color: Color::srgb(1.0, 0.95, 0.4),
+            emissive: LinearRgba::new(5.5, 4.5, 1.2, 1.0),
+            ..default()
+        }),
+        mat_wire_insulation: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.08, 0.08, 0.09),
+            perceptual_roughness: 0.70,
+            metallic: 0.20,
+            ..default()
+        }),
+
+        // Tall Pillar Fortified Column Meshes & Materials
+        mesh_pillar_base: meshes.add(Cuboid::new(1.90, 0.50, 1.30)),
+        mesh_pillar_body: meshes.add(Cuboid::new(1.65, 3.00, 1.05)),
+        mesh_pillar_trunk: meshes.add(Cuboid::new(0.15, 3.00, 0.30)),
+        mesh_pillar_placard: meshes.add(Cuboid::new(1.20, 0.90, 0.06)),
+        mesh_pillar_beacon: meshes.add(Cuboid::new(0.06, 2.40, 0.04)),
+        mesh_pillar_collar: meshes.add(Cuboid::new(1.80, 0.30, 1.20)),
+        mat_pillar_beacon: materials.add(StandardMaterial {
+            base_color: Color::srgb(1.0, 0.05, 0.05),
+            emissive: LinearRgba::new(4.8, 0.1, 0.1, 1.0),
+            ..default()
+        }),
+        mat_pillar_armor: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.18, 0.20, 0.24),
+            metallic: 0.90,
+            perceptual_roughness: 0.25,
+            ..default()
+        }),
+        mat_pillar_pedestal: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.11, 0.11, 0.13),
+            perceptual_roughness: 0.85,
+            metallic: 0.15,
+            ..default()
+        }),
+
+        // Metro Train Prefab Meshes & Materials
+        mesh_train_bumper: meshes.add(Cuboid::new(2.20, 0.50, 0.60)),
+        mesh_train_windscreen: meshes.add(Cuboid::new(1.80, 0.85, 0.12)),
+        mesh_train_headlamp: meshes.add(Cuboid::new(0.35, 0.25, 0.15)),
+        mesh_train_marker_red: meshes.add(Cuboid::new(0.15, 0.15, 0.08)),
+        mesh_train_bogie: meshes.add(Cuboid::new(2.00, 0.35, 2.20)),
+        mesh_train_hvac: meshes.add(Cuboid::new(1.40, 0.30, 7.00)),
+        mesh_train_windows_static: meshes.add(Cuboid::new(0.05, 0.65, 9.00)),
+        mesh_train_windows_moving: meshes.add(Cuboid::new(0.05, 0.65, 11.00)),
+        mat_train_windscreen: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.05, 0.25, 0.30),
+            emissive: LinearRgba::new(0.1, 0.8, 1.0, 1.0),
+            perceptual_roughness: 0.10,
+            metallic: 0.85,
+            ..default()
+        }),
+        mat_train_marker_red: materials.add(StandardMaterial {
+            base_color: Color::srgb(1.0, 0.1, 0.1),
+            emissive: LinearRgba::new(4.2, 0.2, 0.2, 1.0),
+            ..default()
+        }),
+        mat_train_windows: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.2, 0.7, 0.8),
+            emissive: LinearRgba::new(0.8, 2.2, 2.8, 1.0),
+            ..default()
+        }),
+        mat_train_chassis: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.12, 0.14, 0.18),
+            metallic: 0.92,
+            perceptual_roughness: 0.35,
+            ..default()
+        }),
 
         mat_hazard: materials.add(StandardMaterial {
             base_color: Color::srgb(1.0, 0.45, 0.05),

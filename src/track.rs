@@ -217,7 +217,7 @@ pub fn spawn_pattern_chunk(
                 } else {
                     commands.spawn((
                         PbrBundle {
-                            mesh: pool_assets.mesh_barrier.clone(),
+                            mesh: pool_assets.mesh_barrier_rail.clone(),
                             material: pool_assets.mat_hazard.clone(),
                             transform: Transform::from_xyz(lane_x, 0.42, world_z),
                             ..default()
@@ -229,7 +229,55 @@ pub fn spawn_pattern_chunk(
                         },
                         Despawnable { z_center: world_z },
                         PooledItem { pool_type: PoolType::LowBarrier, is_active: true },
-                    ));
+                    )).with_children(|barrier| {
+                        // Left & right steel stanchions
+                        barrier.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_barrier_stanchion.clone(),
+                            material: pool_assets.mat_barrier_steel.clone(),
+                            transform: Transform::from_xyz(-0.95, -0.05, 0.0),
+                            ..default()
+                        });
+                        barrier.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_barrier_stanchion.clone(),
+                            material: pool_assets.mat_barrier_steel.clone(),
+                            transform: Transform::from_xyz(0.95, -0.05, 0.0),
+                            ..default()
+                        });
+                        // Ground mounting footplates
+                        barrier.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_barrier_foot.clone(),
+                            material: pool_assets.mat_barrier_steel.clone(),
+                            transform: Transform::from_xyz(-0.95, -0.40, 0.0),
+                            ..default()
+                        });
+                        barrier.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_barrier_foot.clone(),
+                            material: pool_assets.mat_barrier_steel.clone(),
+                            transform: Transform::from_xyz(0.95, -0.40, 0.0),
+                            ..default()
+                        });
+                        // High-visibility amber LED warning top strip
+                        barrier.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_barrier_led_strip.clone(),
+                            material: pool_assets.mat_barrier_led.clone(),
+                            transform: Transform::from_xyz(0.0, 0.25, 0.0),
+                            ..default()
+                        });
+                        // Center hydraulic lock housing
+                        barrier.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_barrier_lock_box.clone(),
+                            material: pool_assets.mat_barrier_steel.clone(),
+                            transform: Transform::from_xyz(0.0, 0.05, 0.12),
+                            ..default()
+                        });
+                        // Lower kick skirt
+                        barrier.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_barrier_skirt.clone(),
+                            material: pool_assets.mat_barrier_steel.clone(),
+                            transform: Transform::from_xyz(0.0, -0.22, 0.0),
+                            ..default()
+                        });
+                    });
                 }
             }
             ObstacleType::HighHangingWire => {
@@ -248,8 +296,8 @@ pub fn spawn_pattern_chunk(
                 } else {
                     commands.spawn((
                         PbrBundle {
-                            mesh: pool_assets.mesh_wire.clone(),
-                            material: pool_assets.mat_wire.clone(),
+                            mesh: pool_assets.mesh_wire_bundle.clone(),
+                            material: pool_assets.mat_wire_insulation.clone(),
                             transform: Transform::from_xyz(lane_x, 1.7, world_z),
                             ..default()
                         },
@@ -260,7 +308,48 @@ pub fn spawn_pattern_chunk(
                         },
                         Despawnable { z_center: world_z },
                         PooledItem { pool_type: PoolType::HighHangingWire, is_active: true },
-                    ));
+                    )).with_children(|wire| {
+                        // Upper catenary conduit
+                        wire.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_wire_catenary.clone(),
+                            material: pool_assets.mat_barrier_steel.clone(),
+                            transform: Transform::from_xyz(0.0, 0.18, 0.0),
+                            ..default()
+                        });
+                        // Left & right ceiling anchor mounts
+                        wire.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_wire_anchor.clone(),
+                            material: pool_assets.mat_barrier_steel.clone(),
+                            transform: Transform::from_xyz(-1.05, 0.20, 0.0),
+                            ..default()
+                        });
+                        wire.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_wire_anchor.clone(),
+                            material: pool_assets.mat_barrier_steel.clone(),
+                            transform: Transform::from_xyz(1.05, 0.20, 0.0),
+                            ..default()
+                        });
+                        // Dangling severed copper leads
+                        wire.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_wire_dangle.clone(),
+                            material: pool_assets.mat_wire_copper.clone(),
+                            transform: Transform::from_xyz(-0.45, -0.16, 0.0),
+                            ..default()
+                        });
+                        wire.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_wire_dangle.clone(),
+                            material: pool_assets.mat_wire_copper.clone(),
+                            transform: Transform::from_xyz(0.35, -0.18, 0.0),
+                            ..default()
+                        });
+                        // Live voltage spark core
+                        wire.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_wire_spark.clone(),
+                            material: pool_assets.mat_wire_spark.clone(),
+                            transform: Transform::from_xyz(0.0, -0.05, 0.0),
+                            ..default()
+                        });
+                    });
                 }
             }
             ObstacleType::TallPillar => {
@@ -279,8 +368,8 @@ pub fn spawn_pattern_chunk(
                 } else {
                     commands.spawn((
                         PbrBundle {
-                            mesh: pool_assets.mesh_pillar.clone(),
-                            material: pool_assets.mat_pillar.clone(),
+                            mesh: pool_assets.mesh_pillar_body.clone(),
+                            material: pool_assets.mat_pillar_armor.clone(),
                             transform: Transform::from_xyz(lane_x, 2.0, world_z),
                             ..default()
                         },
@@ -291,7 +380,55 @@ pub fn spawn_pattern_chunk(
                         },
                         Despawnable { z_center: world_z },
                         PooledItem { pool_type: PoolType::TallPillar, is_active: true },
-                    ));
+                    )).with_children(|pillar| {
+                        // Flared concrete pedestal base
+                        pillar.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_pillar_base.clone(),
+                            material: pool_assets.mat_pillar_pedestal.clone(),
+                            transform: Transform::from_xyz(0.0, -1.75, 0.0),
+                            ..default()
+                        });
+                        // Left & right armored conduit trunks
+                        pillar.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_pillar_trunk.clone(),
+                            material: pool_assets.mat_pillar_armor.clone(),
+                            transform: Transform::from_xyz(-0.82, 0.0, 0.0),
+                            ..default()
+                        });
+                        pillar.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_pillar_trunk.clone(),
+                            material: pool_assets.mat_pillar_armor.clone(),
+                            transform: Transform::from_xyz(0.82, 0.0, 0.0),
+                            ..default()
+                        });
+                        // Front warning placard plate
+                        pillar.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_pillar_placard.clone(),
+                            material: pool_assets.mat_hazard.clone(),
+                            transform: Transform::from_xyz(0.0, 0.20, 0.54),
+                            ..default()
+                        });
+                        // Left & right perimeter vertical red LED warning strips
+                        pillar.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_pillar_beacon.clone(),
+                            material: pool_assets.mat_pillar_beacon.clone(),
+                            transform: Transform::from_xyz(-0.84, 0.0, 0.54),
+                            ..default()
+                        });
+                        pillar.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_pillar_beacon.clone(),
+                            material: pool_assets.mat_pillar_beacon.clone(),
+                            transform: Transform::from_xyz(0.84, 0.0, 0.54),
+                            ..default()
+                        });
+                        // Top structural collar
+                        pillar.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_pillar_collar.clone(),
+                            material: pool_assets.mat_pillar_armor.clone(),
+                            transform: Transform::from_xyz(0.0, 1.85, 0.0),
+                            ..default()
+                        });
+                    });
                 }
             }
             ObstacleType::StaticTrain => {
@@ -323,16 +460,77 @@ pub fn spawn_pattern_chunk(
                         Despawnable { z_center: world_z },
                         PooledItem { pool_type: PoolType::StaticTrain, is_active: true },
                     )).with_children(|train| {
+                        // Front bumper cowcatcher
                         train.spawn(PbrBundle {
-                            mesh: pool_assets.mesh_train_light.clone(),
+                            mesh: pool_assets.mesh_train_bumper.clone(),
+                            material: pool_assets.mat_train_chassis.clone(),
+                            transform: Transform::from_xyz(0.0, -0.85, 6.15),
+                            ..default()
+                        });
+                        // Driver cab windscreen
+                        train.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_train_windscreen.clone(),
+                            material: pool_assets.mat_train_windscreen.clone(),
+                            transform: Transform::from_xyz(0.0, 0.45, 6.05),
+                            ..default()
+                        });
+                        // Twin headlights
+                        train.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_train_headlamp.clone(),
                             material: pool_assets.mat_train_light.clone(),
-                            transform: Transform::from_xyz(-0.7, 0.2, 6.05),
+                            transform: Transform::from_xyz(-0.72, 0.10, 6.10),
                             ..default()
                         });
                         train.spawn(PbrBundle {
-                            mesh: pool_assets.mesh_train_light.clone(),
+                            mesh: pool_assets.mesh_train_headlamp.clone(),
                             material: pool_assets.mat_train_light.clone(),
-                            transform: Transform::from_xyz(0.7, 0.2, 6.05),
+                            transform: Transform::from_xyz(0.72, 0.10, 6.10),
+                            ..default()
+                        });
+                        // Upper red marker lights
+                        train.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_train_marker_red.clone(),
+                            material: pool_assets.mat_train_marker_red.clone(),
+                            transform: Transform::from_xyz(-0.70, 1.05, 6.05),
+                            ..default()
+                        });
+                        train.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_train_marker_red.clone(),
+                            material: pool_assets.mat_train_marker_red.clone(),
+                            transform: Transform::from_xyz(0.70, 1.05, 6.05),
+                            ..default()
+                        });
+                        // Rooftop HVAC pod
+                        train.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_train_hvac.clone(),
+                            material: pool_assets.mat_train_chassis.clone(),
+                            transform: Transform::from_xyz(0.0, 1.30, 0.0),
+                            ..default()
+                        });
+                        // Bogies
+                        train.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_train_bogie.clone(),
+                            material: pool_assets.mat_train_chassis.clone(),
+                            transform: Transform::from_xyz(0.0, -1.10, 3.8),
+                            ..default()
+                        });
+                        train.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_train_bogie.clone(),
+                            material: pool_assets.mat_train_chassis.clone(),
+                            transform: Transform::from_xyz(0.0, -1.10, -3.8),
+                            ..default()
+                        });
+                        // Side illuminated passenger window bands
+                        train.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_train_windows_static.clone(),
+                            material: pool_assets.mat_train_windows.clone(),
+                            transform: Transform::from_xyz(-1.11, 0.35, 0.0),
+                            ..default()
+                        });
+                        train.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_train_windows_static.clone(),
+                            material: pool_assets.mat_train_windows.clone(),
+                            transform: Transform::from_xyz(1.11, 0.35, 0.0),
                             ..default()
                         });
                     });
@@ -369,16 +567,77 @@ pub fn spawn_pattern_chunk(
                         Despawnable { z_center: world_z },
                         PooledItem { pool_type: PoolType::MovingTrain, is_active: true },
                     )).with_children(|train| {
+                        // Front bumper cowcatcher
                         train.spawn(PbrBundle {
-                            mesh: pool_assets.mesh_train_light.clone(),
+                            mesh: pool_assets.mesh_train_bumper.clone(),
+                            material: pool_assets.mat_train_chassis.clone(),
+                            transform: Transform::from_xyz(0.0, -0.85, 7.15),
+                            ..default()
+                        });
+                        // Driver cab windscreen
+                        train.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_train_windscreen.clone(),
+                            material: pool_assets.mat_train_windscreen.clone(),
+                            transform: Transform::from_xyz(0.0, 0.45, 7.05),
+                            ..default()
+                        });
+                        // Twin headlights
+                        train.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_train_headlamp.clone(),
                             material: pool_assets.mat_train_light.clone(),
-                            transform: Transform::from_xyz(-0.7, 0.2, 7.05),
+                            transform: Transform::from_xyz(-0.72, 0.10, 7.10),
                             ..default()
                         });
                         train.spawn(PbrBundle {
-                            mesh: pool_assets.mesh_train_light.clone(),
+                            mesh: pool_assets.mesh_train_headlamp.clone(),
                             material: pool_assets.mat_train_light.clone(),
-                            transform: Transform::from_xyz(0.7, 0.2, 7.05),
+                            transform: Transform::from_xyz(0.72, 0.10, 7.10),
+                            ..default()
+                        });
+                        // Upper red marker lights
+                        train.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_train_marker_red.clone(),
+                            material: pool_assets.mat_train_marker_red.clone(),
+                            transform: Transform::from_xyz(-0.70, 1.05, 7.05),
+                            ..default()
+                        });
+                        train.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_train_marker_red.clone(),
+                            material: pool_assets.mat_train_marker_red.clone(),
+                            transform: Transform::from_xyz(0.70, 1.05, 7.05),
+                            ..default()
+                        });
+                        // Rooftop HVAC pod
+                        train.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_train_hvac.clone(),
+                            material: pool_assets.mat_train_chassis.clone(),
+                            transform: Transform::from_xyz(0.0, 1.30, 0.0),
+                            ..default()
+                        });
+                        // Bogies
+                        train.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_train_bogie.clone(),
+                            material: pool_assets.mat_train_chassis.clone(),
+                            transform: Transform::from_xyz(0.0, -1.10, 4.8),
+                            ..default()
+                        });
+                        train.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_train_bogie.clone(),
+                            material: pool_assets.mat_train_chassis.clone(),
+                            transform: Transform::from_xyz(0.0, -1.10, -4.8),
+                            ..default()
+                        });
+                        // Side illuminated passenger window bands
+                        train.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_train_windows_moving.clone(),
+                            material: pool_assets.mat_train_windows.clone(),
+                            transform: Transform::from_xyz(-1.11, 0.35, 0.0),
+                            ..default()
+                        });
+                        train.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_train_windows_moving.clone(),
+                            material: pool_assets.mat_train_windows.clone(),
+                            transform: Transform::from_xyz(1.11, 0.35, 0.0),
                             ..default()
                         });
                     });
