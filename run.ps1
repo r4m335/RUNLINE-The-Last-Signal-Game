@@ -2,7 +2,7 @@ $Host.UI.RawUI.WindowTitle = "RUNLINE: The Last Signal"
 $env:Path = "$env:USERPROFILE\.cargo\bin;" + $env:Path
 
 Write-Host "==========================================================" -ForegroundColor Cyan
-Write-Host "             RUNLINE — THE LAST SIGNAL                   " -ForegroundColor Cyan
+Write-Host "             RUNLINE - THE LAST SIGNAL                   " -ForegroundColor Cyan
 Write-Host "             Subterranean Rail Transit // Aurelia 2097    " -ForegroundColor DarkCyan
 Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host ""
@@ -13,18 +13,21 @@ Write-Host "  [S] / Down Arrow               : Slide / Dive" -ForegroundColor Wh
 Write-Host "  [Shift]                        : Special Courier Dash" -ForegroundColor White
 Write-Host "  [Escape] / [P]                 : Pause" -ForegroundColor White
 Write-Host ""
-Write-Host "Checking audio assets..." -ForegroundColor Gray
-python scripts/generate_audio.py | Out-Null
+
+if (Test-Path "scripts\generate_audio.py") {
+    if (Get-Command python -ErrorAction SilentlyContinue) {
+        Write-Host "Checking audio assets..." -ForegroundColor Gray
+        try {
+            python scripts\generate_audio.py | Out-Null
+        } catch {}
+    }
+}
 
 Write-Host "Launching RUNLINE engine..." -ForegroundColor Green
+Write-Host ""
 
-# Run cargo with auto-retry on Windows file-sharing locks
-$maxRetries = 15
-for ($attempt = 1; $attempt -le $maxRetries; $attempt++) {
-    & cargo run
-    if ($LASTEXITCODE -eq 0) {
-        break
-    }
-    Write-Host "Resuming build pipeline (attempt $attempt)..." -ForegroundColor DarkYellow
-    Start-Sleep -Seconds 1
+cargo run --release
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Retrying in debug mode..." -ForegroundColor Yellow
+    cargo run
 }
