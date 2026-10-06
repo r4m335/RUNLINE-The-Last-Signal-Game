@@ -527,11 +527,11 @@ fn update_scout_ai_fixed(
 fn update_hunter_ai_fixed(
     time: Res<Time>,
     player_q: Query<(&Player, &Transform), (Without<HunterDrone>, Without<ScoutDrone>)>,
-    heavy_q: Query<(&Transform, &HeavyBlocker)>,
+    heavy_q: Query<(&Transform, &HeavyBlocker), Without<HunterDrone>>,
     history: Res<PlayerMovementHistory>,
     stats: Res<GameRunStats>,
     mut threat_alerts: ResMut<ThreatAlertState>,
-    mut hunter_q: Query<(&mut Transform, &mut ActiveEnemy, &mut HunterDrone), With<HunterDrone>>,
+    mut hunter_q: Query<(&mut Transform, &mut ActiveEnemy, &mut HunterDrone), (With<HunterDrone>, Without<Player>, Without<HeavyBlocker>)>,
     mut sfx: EventWriter<SoundEffect>,
 ) {
     let (player, p_trans) = match player_q.get_single() {
@@ -956,5 +956,49 @@ fn animate_enemy_thrusters(
     let dt = time.delta_seconds();
     for mut trans in query.iter_mut() {
         trans.rotate_z((time.elapsed_seconds() * 4.0).sin() * 0.02 * dt);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_enemy_systems_parameter_initialization_no_conflicts() {
+        let mut app = App::new();
+        app.add_plugins(bevy::time::TimePlugin);
+        app.add_plugins(bevy::state::app::StatesPlugin);
+        app.init_state::<AppState>();
+        app.init_resource::<EnemySquadManager>();
+        app.init_resource::<PlayerMovementHistory>();
+        app.init_resource::<ThreatAlertState>();
+        app.init_resource::<GameRunStats>();
+        app.init_resource::<ActivePowerUps>();
+        app.init_resource::<BossBattleState>();
+        app.init_resource::<crate::director::RunDirector>();
+        app.add_event::<BossStartedEvent>();
+        app.add_event::<BossDefeatedEvent>();
+        app.add_event::<EnemySpawnedEvent>();
+        app.add_event::<PlayerStumbledEvent>();
+        app.add_event::<SoundEffect>();
+        app.add_event::<RunResetEvent>();
+
+        // Register all enemy AI and gameplay systems
+        app.add_systems(
+            Update,
+            (
+                update_scout_ai_fixed,
+                update_hunter_ai_fixed,
+                update_heavy_blockers_fixed,
+                update_echo_hunter_boss_fixed,
+                player_enemy_interaction_fixed,
+                update_enemy_visual_smoothing,
+                animate_enemy_thrusters,
+                handle_run_reset_enemies,
+            ),
+        );
+
+        // app.update() initializes every system parameter and validates Query disjointness
+        app.update();
     }
 }
