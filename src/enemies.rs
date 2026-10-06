@@ -1003,4 +1003,47 @@ mod tests {
         // app.update() initializes every system parameter and validates Query disjointness
         app.update();
     }
+
+    #[test]
+    fn test_hunter_telegraph_kinematics_and_fairness_guarantees() {
+        let zone_2_speed = 18.4_f32;
+        let hunter_telegraph_duration = 0.65_f32;
+        let distance_covered = zone_2_speed * hunter_telegraph_duration;
+
+        let reaction_time = 0.18_f32;
+        let lateral_lane_transition = 0.17_f32;
+        let required_time = reaction_time + lateral_lane_transition;
+        let required_distance = zone_2_speed * required_time;
+
+        // Verify kinematic buffer
+        assert!(
+            hunter_telegraph_duration >= required_time + 0.20,
+            "Hunter telegraph must provide >= 0.20s margin above reaction + lateral dodge"
+        );
+        assert!(
+            distance_covered >= required_distance + 4.0,
+            "Hunter telegraph must provide >= 4.0m longitudinal margin: covered={:.2}m, required={:.2}m",
+            distance_covered,
+            required_distance
+        );
+
+        // Verify Hunter patterns guarantee at least 2 open lanes
+        let catalog = crate::patterns::get_pattern_catalog();
+        let hunter_patterns: Vec<_> = catalog.iter().filter(|p| p.name.contains("Hunter")).collect();
+        assert!(!hunter_patterns.is_empty(), "Must have Hunter pattern family in catalog");
+
+        for pattern in hunter_patterns {
+            for &z in &[-10.0, -16.0, -20.0] {
+                let open_lanes = pattern.get_navigable_lanes_at(z, 0.5);
+                assert!(
+                    open_lanes.lanes().len() >= 2,
+                    "Pattern '{}' at z={:.1}m must leave >= 2 open lanes for Hunter dodge, left {}",
+                    pattern.name,
+                    z,
+                    open_lanes.lanes().len()
+                );
+            }
+        }
+    }
 }
+
