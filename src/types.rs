@@ -214,6 +214,7 @@ pub struct GameRunStats {
     pub fragments: u32,
     pub data_chips: u32,
     pub score: u32,
+    pub score_accum: f32,
     pub multiplier: f32,
     pub high_score: u32,
     pub best_distance: f32,
@@ -232,6 +233,7 @@ impl Default for GameRunStats {
             fragments: 0,
             data_chips: 0,
             score: 0,
+            score_accum: 0.0,
             multiplier: 1.0,
             high_score: 0,
             best_distance: 0.0,
@@ -422,6 +424,9 @@ pub struct StoryUnlockedEvent {
     pub log_index: usize,
     pub title: &'static str,
 }
+
+#[derive(Event, Debug, Clone, Default)]
+pub struct RunResetEvent;
 
 #[derive(Event, Debug, Clone)]
 #[allow(dead_code)]

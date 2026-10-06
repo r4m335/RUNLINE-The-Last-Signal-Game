@@ -101,7 +101,7 @@ impl Plugin for DirectorPlugin {
         app.init_resource::<RunDirector>()
             .add_event::<ZoneChangedEvent>()
             .add_event::<MilestoneReachedEvent>()
-            .add_systems(OnEnter(AppState::InGame), reset_director)
+            .add_systems(Update, handle_run_reset_director)
             .add_systems(
                 FixedUpdate,
                 update_run_director.run_if(in_state(AppState::InGame)),
@@ -109,8 +109,13 @@ impl Plugin for DirectorPlugin {
     }
 }
 
-fn reset_director(mut director: ResMut<RunDirector>) {
-    *director = RunDirector::default();
+fn handle_run_reset_director(
+    mut events: EventReader<RunResetEvent>,
+    mut director: ResMut<RunDirector>,
+) {
+    for _ in events.read() {
+        *director = RunDirector::default();
+    }
 }
 
 fn update_run_director(

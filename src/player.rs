@@ -15,7 +15,7 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(AppState::InGame), spawn_player)
+        app.add_systems(Update, handle_run_reset_player)
             .add_systems(
                 Update,
                 (
@@ -33,11 +33,54 @@ impl Plugin for PlayerPlugin {
     }
 }
 
+fn handle_run_reset_player(
+    mut events: EventReader<RunResetEvent>,
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut player_q: Query<(&mut Player, &mut Transform)>,
+    mut history: ResMut<PlayerMovementHistory>,
+    stats: Res<GameRunStats>,
+) {
+    for _ in events.read() {
+        *history = PlayerMovementHistory::default();
+
+        if let Ok((mut player, mut transform)) = player_q.get_single_mut() {
+            transform.translation = Vec3::new(0.0, 0.65, 0.0);
+            transform.rotation = Quat::IDENTITY;
+            transform.scale = Vec3::ONE;
+
+            player.lane = Lane::Center;
+            player.target_x = 0.0;
+            player.y_velocity = 0.0;
+            player.is_grounded = true;
+            player.is_sliding = false;
+            player.slide_timer = 0.0;
+            player.character = stats.selected_character;
+            player.has_double_jumped = false;
+            player.invulnerable_timer = 0.0;
+            player.dash_cooldown = 0.0;
+        } else {
+            spawn_player_entity(&mut commands, &mut meshes, &mut materials, stats.selected_character);
+        }
+    }
+}
+
+#[allow(dead_code)]
 pub fn spawn_player(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     stats: Res<GameRunStats>,
+) {
+    spawn_player_entity(&mut commands, &mut meshes, &mut materials, stats.selected_character);
+}
+
+pub fn spawn_player_entity(
+    commands: &mut Commands,
+    meshes: &mut Assets<Mesh>,
+    materials: &mut Assets<StandardMaterial>,
+    selected_character: CharacterType,
 ) {
     let jacket_mat = materials.add(StandardMaterial {
         base_color: Color::srgb(0.12, 0.14, 0.18),
@@ -87,7 +130,7 @@ pub fn spawn_player(
                 is_grounded: true,
                 is_sliding: false,
                 slide_timer: 0.0,
-                character: stats.selected_character,
+                character: selected_character,
                 has_double_jumped: false,
                 invulnerable_timer: 0.0,
                 dash_cooldown: 0.0,
@@ -230,12 +273,12 @@ fn player_input(
         }
     }
 
-    // Jump
+    // Jump (can cancel an active slide for fast fluid parkour transitions)
     if keyboard.just_pressed(KeyCode::KeyW)
         || keyboard.just_pressed(KeyCode::ArrowUp)
         || keyboard.just_pressed(KeyCode::Space)
     {
-        if player.is_grounded {
+        if player.is_grounded || player.is_sliding {
             player.y_velocity = 13.5;
             player.is_grounded = false;
             player.is_sliding = false;
@@ -248,13 +291,13 @@ fn player_input(
         }
     }
 
-    // Slide / Dive
+    // Slide / Dive (snappy 0.58s duration, dive downwards if airborne)
     if keyboard.just_pressed(KeyCode::KeyS) || keyboard.just_pressed(KeyCode::ArrowDown) {
         if !player.is_grounded {
-            player.y_velocity = -22.0; // Rapid aerial dive
+            player.y_velocity = -24.0; // Rapid aerial dive
         }
         player.is_sliding = true;
-        player.slide_timer = 0.75;
+        player.slide_timer = 0.58;
         sfx.send(SoundEffect::Slide);
     }
 
@@ -357,7 +400,8 @@ fn player_physics_fixed(
     let advance = current_speed * dt;
     transform.translation.z -= advance;
     stats.distance += advance;
-    stats.score += (advance * stats.multiplier * 2.0) as u32;
+    stats.score_accum += advance * stats.multiplier * 2.0;
+    stats.score = stats.score_accum as u32;
 
     if stats.score > stats.high_score {
         stats.high_score = stats.score;
@@ -383,14 +427,14 @@ fn player_visual_smoothing(
 
     // Smooth horizontal lane transition
     let dx = player.target_x - transform.translation.x;
-    history.current_lateral_velocity = dx * 18.0;
-    transform.translation.x += dx * (18.0 * dt).min(1.0);
+    history.current_lateral_velocity = dx * 20.0;
+    transform.translation.x += dx * (20.0 * dt).min(1.0);
 
     // Dynamic banking roll angle during lane change
-    let target_tilt = (-dx * 0.15).clamp(-0.25, 0.25);
+    let target_tilt = (-dx * 0.20).clamp(-0.28, 0.28);
     let cur_rot = transform.rotation;
     let target_rot = Quat::from_rotation_z(target_tilt);
-    transform.rotation = cur_rot.slerp(target_rot, 15.0 * dt);
+    transform.rotation = cur_rot.slerp(target_rot, (24.0 * dt).min(1.0));
 }
 
 fn player_powerup_visuals(

@@ -83,7 +83,7 @@ impl Plugin for EnemyPlugin {
             .add_event::<EnemySpawnedEvent>()
             .add_event::<PlayerStumbledEvent>()
             .add_systems(Startup, init_enemy_assets)
-            .add_systems(OnEnter(AppState::InGame), reset_enemy_squad)
+            .add_systems(Update, handle_run_reset_enemies)
             .add_systems(
                 FixedUpdate,
                 (
@@ -165,21 +165,28 @@ fn init_enemy_assets(
     commands.insert_resource(assets);
 }
 
-fn reset_enemy_squad(
+fn handle_run_reset_enemies(
+    mut events: EventReader<RunResetEvent>,
     mut commands: Commands,
     mut squad_mgr: ResMut<EnemySquadManager>,
+    mut threat_alerts: ResMut<ThreatAlertState>,
+    mut boss_state: ResMut<BossBattleState>,
     enemy_assets: Res<EnemyAssets>,
     enemies_q: Query<Entity, With<ActiveEnemy>>,
 ) {
-    // Clear old enemies
-    for e in enemies_q.iter() {
-        commands.entity(e).despawn_recursive();
+    for _ in events.read() {
+        // Clear old enemies
+        for e in enemies_q.iter() {
+            commands.entity(e).despawn_recursive();
+        }
+
+        *squad_mgr = EnemySquadManager::default();
+        *threat_alerts = ThreatAlertState::default();
+        *boss_state = BossBattleState::default();
+
+        // Spawn starting Scout Drone (Level 1)
+        spawn_scout_drone(&mut commands, &enemy_assets, Lane::Center, 6.5);
     }
-
-    *squad_mgr = EnemySquadManager::default();
-
-    // Spawn starting Scout Drone (Level 1)
-    spawn_scout_drone(&mut commands, &enemy_assets, Lane::Center, 6.5);
 }
 
 fn spawn_scout_drone(
@@ -208,7 +215,7 @@ fn spawn_scout_drone(
             ScoutDrone {
                 trailing_distance: initial_distance_behind,
                 target_lane: lane,
-                grapple_grace_timer: 1.2,
+                grapple_grace_timer: 1.5,
             },
             ChaserDrone {
                 distance_behind: initial_distance_behind,
@@ -450,8 +457,8 @@ fn update_enemy_spawning_and_pacing(
         }
     }
 
-    // 4. Milestone Boss Encounters: Zone 4 (3,000m) & Zone 7 (8,500m)
-    if stats.distance >= 3000.0 && !squad_mgr.boss_spawned_milestone_4 && !squad_mgr.active_boss {
+    // 4. Milestone Boss Encounters: Zone 4 & Zone 7
+    if stats.distance >= crate::zones::BOSS_MILESTONE_4_DISTANCE && !squad_mgr.boss_spawned_milestone_4 && !squad_mgr.active_boss {
         squad_mgr.boss_spawned_milestone_4 = true;
         squad_mgr.active_boss = true;
         let spawn_z = p_trans.translation.z - 30.0;
@@ -463,7 +470,7 @@ fn update_enemy_spawning_and_pacing(
             &mut boss_start_events,
             &mut boss_state,
         );
-    } else if stats.distance >= 8500.0 && !squad_mgr.boss_spawned_milestone_7 && !squad_mgr.active_boss {
+    } else if stats.distance >= crate::zones::BOSS_MILESTONE_7_DISTANCE && !squad_mgr.boss_spawned_milestone_7 && !squad_mgr.active_boss {
         squad_mgr.boss_spawned_milestone_7 = true;
         squad_mgr.active_boss = true;
         let spawn_z = p_trans.translation.z - 32.0;
@@ -793,14 +800,14 @@ fn player_enemy_interaction_fixed(
                             }
                         }
                     } else {
-                        scout.grapple_grace_timer = 1.2;
+                        scout.grapple_grace_timer = 1.5;
                         threat_alerts.scout_grappling = false;
                     }
                 }
             }
             EnemyType::Hunter => {
                 // If Hunter is actively sweeping into player's lane:
-                if enemy.is_attacking && (p_pos.x - e_pos.x).abs() < 1.4 && z_dist < 1.6 {
+                if enemy.is_attacking && (p_pos.x - e_pos.x).abs() < 1.3 && z_dist < 1.4 {
                     // Rule 1: Dash / Overdrive destroys Hunter!
                     if powerups.overdrive_timer > 0.0 || (player.character == CharacterType::Mira && player.invulnerable_timer > 0.8) {
                         stats.fragments += 15;
@@ -841,8 +848,8 @@ fn player_enemy_interaction_fixed(
                 }
             }
             EnemyType::Heavy => {
-                // If player enters Heavy lane:
-                if enemy.target_lane == p_lane && z_dist < 1.8 && p_pos.y < 2.5 {
+                // If player enters Heavy lane with fair collision margins:
+                if enemy.target_lane == p_lane && (p_pos.x - e_pos.x).abs() < 1.1 && z_dist < 1.4 && p_pos.y < 2.2 {
                     // Rule 1: Dash / Overdrive smashes Heavy blocker!
                     if powerups.overdrive_timer > 0.0 || (player.character == CharacterType::Mira && player.invulnerable_timer > 0.8) {
                         stats.fragments += 25;

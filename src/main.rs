@@ -53,6 +53,7 @@ fn main() {
         .init_resource::<PlayerMovementHistory>()
         .init_resource::<ThreatAlertState>()
         .init_resource::<QualitySettings>()
+        .add_event::<RunResetEvent>()
         .insert_resource(ClearColor(Color::srgb(0.06, 0.08, 0.12)))
         // Architectural Plugins
         .add_plugins((
@@ -124,25 +125,27 @@ fn camera_follow_player(
     let dt = time.delta_seconds();
     let t = time.elapsed_seconds();
 
-    // Camera smoothly follows player horizontally with damping
+    // Dynamic camera framing: smoothly pull back slightly as velocity increases for heightened speed sensation
+    let speed_factor = ((stats.speed - 16.0) / 16.0).clamp(0.0, 1.0);
     let target_x = p_trans.translation.x * 0.45;
-    let target_z = p_trans.translation.z + 6.8;
+    let target_y = 3.8 + speed_factor * 0.35;
+    let target_z = p_trans.translation.z + 6.8 + speed_factor * 0.9;
 
     // Stumble & Boss encounter tension screen-shake
     let boss_shake = if boss_state.is_active { (t * 24.0).sin() * 0.06 } else { 0.0 };
     let shake_x = if stats.stumble_intensity > 0.0 {
-        (t * 35.0).sin() * stats.stumble_intensity * 0.35 + boss_shake
+        (t * 35.0).sin() * stats.stumble_intensity * 0.30 + boss_shake
     } else {
         boss_shake
     };
     let shake_y = if stats.stumble_intensity > 0.0 {
-        (t * 40.0).cos() * stats.stumble_intensity * 0.25
+        (t * 40.0).cos() * stats.stumble_intensity * 0.20
     } else {
         0.0
     };
 
-    c_trans.translation.x += (target_x + shake_x - c_trans.translation.x) * 14.0 * dt;
-    c_trans.translation.y = 3.8 + shake_y;
+    c_trans.translation.x += (target_x + shake_x - c_trans.translation.x) * (16.0 * dt).min(1.0);
+    c_trans.translation.y = target_y + shake_y;
     c_trans.translation.z = target_z;
 
     let look_target = Vec3::new(
@@ -151,4 +154,10 @@ fn camera_follow_player(
         p_trans.translation.z - 7.0,
     );
     c_trans.look_at(look_target, Vec3::Y);
+
+    // Subtle rotational roll disorientation during stumble
+    if stats.stumble_intensity > 0.0 {
+        let shake_roll = (t * 28.0).sin() * stats.stumble_intensity * 0.025;
+        c_trans.rotation *= Quat::from_rotation_z(shake_roll);
+    }
 }

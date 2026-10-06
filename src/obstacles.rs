@@ -276,42 +276,43 @@ fn lane_aware_collision_check(
     for (obs_entity, obs, obs_trans) in obs_q.iter() {
         // Fast Lane rejection: only obstacles on player's lane or transitional boundary
         if obs.lane != p_lane {
-            // Also reject if player's actual X position is far from obstacle
+            // Generous lateral forgiveness (0.85m margin vs 1.2m half-lane spacing)
             let x_dist = (p_pos.x - obs_trans.translation.x).abs();
-            if x_dist > 1.2 {
+            if x_dist > 0.85 {
                 continue;
             }
         }
 
         let o_pos = obs_trans.translation;
         let z_dist = (p_z - o_pos.z).abs();
-        let z_threshold = 0.5 + (obs.size.z * 0.5);
+        // 15% longitudinal forgiveness margin prevents frustrating near-miss phantom collisions
+        let z_threshold = 0.35 + (obs.size.z * 0.42);
 
         // Fast Z rejection
         if z_dist > z_threshold {
             continue;
         }
 
-        // Vertical collision check based on obstacle type
+        // Vertical collision check based on obstacle type with fair clearance forgiveness
         let o_half_y = obs.size.y * 0.5;
         let o_bottom = o_pos.y - o_half_y;
         let o_top = o_pos.y + o_half_y;
 
         let collided = match obs.obstacle_type {
             ObstacleType::LowBarrier => {
-                // Cleared if jumping (player feet above barrier top)
-                p_y < (o_top - 0.15)
+                // Cleared if jumping (feet clear hurdle with 0.28m vertical forgiveness)
+                p_y < (o_top - 0.28)
             }
             ObstacleType::HighHangingWire => {
-                // Cleared if sliding (staying low)
-                !player.is_sliding || (p_y + 0.5) > (o_bottom + 0.15)
+                // Cleared if sliding (staying low with 0.22m ducking forgiveness)
+                !player.is_sliding || (p_y + 0.5) > (o_bottom + 0.22)
             }
             ObstacleType::TallPillar => {
                 true // Full lane block
             }
             ObstacleType::StaticTrain | ObstacleType::MovingTrain { .. } => {
-                // Cleared if on train roof
-                p_y < (o_top - 0.2)
+                // Cleared if on train roof with 0.25m forgiveness
+                p_y < (o_top - 0.25)
             }
         };
 

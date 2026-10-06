@@ -29,7 +29,7 @@ pub struct TrackPlugin;
 impl Plugin for TrackPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<TrackManager>()
-            .add_systems(OnEnter(AppState::InGame), setup_initial_track)
+            .add_systems(Update, handle_run_reset_track)
             .add_systems(
                 Update,
                 (
@@ -42,7 +42,8 @@ impl Plugin for TrackPlugin {
     }
 }
 
-fn setup_initial_track(
+fn handle_run_reset_track(
+    mut events: EventReader<RunResetEvent>,
     mut commands: Commands,
     mut track_mgr: ResMut<TrackManager>,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -51,40 +52,70 @@ fn setup_initial_track(
     mut pool: ResMut<EntityPool>,
     director: Res<RunDirector>,
     stats: Res<GameRunStats>,
+    segments_q: Query<Entity, With<TrackSegmentMarker>>,
+    mut pooled_q: Query<(
+        Entity,
+        &PooledItem,
+        Option<&mut Transform>,
+        Option<&mut Visibility>,
+    )>,
 ) {
-    track_mgr.next_spawn_z = 20.0;
-    track_mgr.last_chunk = None;
-
-    // Spawn 5 rolling segments ahead
-    for _ in 0..5 {
-        let z_center = track_mgr.next_spawn_z - SEGMENT_LENGTH * 0.5;
-        let z_start = track_mgr.next_spawn_z;
-
-        spawn_segment(
-            &mut commands,
-            &mut meshes,
-            &mut materials,
-            z_center,
-            SEGMENT_LENGTH,
-            stats.distance,
-        );
-
-        if track_mgr.next_spawn_z < -40.0 {
-            let last_chunk_ref = track_mgr.last_chunk.clone();
-            let chunk = spawn_pattern_chunk(
-                &mut commands,
-                &pool_assets,
-                &mut pool,
-                z_start,
-                director.profile.pattern_complexity,
-                last_chunk_ref.as_ref(),
-                stats.speed,
-                stats.distance,
-            );
-            track_mgr.last_chunk = Some(chunk);
+    for _ in events.read() {
+        // 1. Recycle all active pooled obstacles & items cleanly back to pool
+        for (entity, pooled, mut trans_opt, mut vis_opt) in pooled_q.iter_mut() {
+            if let Some(ref mut vis) = vis_opt {
+                **vis = Visibility::Hidden;
+            }
+            if let Some(ref mut t) = trans_opt {
+                t.translation = Vec3::new(0.0, -9999.0, 0.0);
+            }
+            commands.entity(entity)
+                .remove::<Despawnable>()
+                .remove::<ActiveObstacle>()
+                .remove::<CollectibleItem>()
+                .remove::<MovingObstacle>();
+            pool.push(pooled.pool_type, entity);
         }
 
-        track_mgr.next_spawn_z -= SEGMENT_LENGTH;
+        // 2. Despawn existing road segments
+        for seg in segments_q.iter() {
+            commands.entity(seg).despawn_recursive();
+        }
+
+        // 3. Reset manager state & spawn 5 clean rolling segments ahead
+        track_mgr.next_spawn_z = 20.0;
+        track_mgr.last_chunk = None;
+
+        for _ in 0..5 {
+            let z_center = track_mgr.next_spawn_z - SEGMENT_LENGTH * 0.5;
+            let z_start = track_mgr.next_spawn_z;
+
+            spawn_segment(
+                &mut commands,
+                &mut meshes,
+                &mut materials,
+                z_center,
+                SEGMENT_LENGTH,
+                0.0,
+            );
+
+            if track_mgr.next_spawn_z < -40.0 {
+                let last_chunk_ref = track_mgr.last_chunk.clone();
+                let chunk = spawn_pattern_chunk(
+                    &mut commands,
+                    &pool_assets,
+                    &mut pool,
+                    z_start,
+                    director.profile.pattern_complexity,
+                    last_chunk_ref.as_ref(),
+                    stats.speed,
+                    0.0,
+                );
+                track_mgr.last_chunk = Some(chunk);
+            }
+
+            track_mgr.next_spawn_z -= SEGMENT_LENGTH;
+        }
     }
 }
 

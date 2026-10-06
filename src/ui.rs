@@ -111,6 +111,10 @@ impl Plugin for UiPlugin {
             )
             .add_systems(
                 Update,
+                handle_pause_shortcuts.run_if(in_state(AppState::Paused)),
+            )
+            .add_systems(
+                Update,
                 (
                     button_interaction_system,
                     menu_actions_system,
@@ -652,7 +656,11 @@ fn update_hud_display(
     }
     if let Ok(mut t) = zone_q.get_single_mut() {
         let zone = get_zone_for_distance(stats.distance);
-        t.sections[0].value = zone.name.to_string();
+        if zone.end_distance.is_finite() {
+            t.sections[0].value = format!("{} // {:.0}m - {:.0}m", zone.name, zone.start_distance, zone.end_distance);
+        } else {
+            t.sections[0].value = format!("{} // {:.0}m+", zone.name, zone.start_distance);
+        }
     }
     if let Ok(mut t) = pow_q.get_single_mut() {
         let mut active = Vec::new();
@@ -861,6 +869,15 @@ fn handle_global_shortcuts(
     // F3: Toggle Performance Overlay
     if keyboard.just_pressed(KeyCode::F3) {
         quality.show_perf_overlay = !quality.show_perf_overlay;
+    }
+}
+
+fn handle_pause_shortcuts(
+    keyboard: Res<ButtonInput<KeyCode>>,
+    mut next_state: ResMut<NextState<AppState>>,
+) {
+    if keyboard.just_pressed(KeyCode::Escape) || keyboard.just_pressed(KeyCode::KeyP) {
+        next_state.set(AppState::InGame);
     }
 }
 
@@ -1223,6 +1240,7 @@ fn menu_actions_system(
     cur_state: Res<State<AppState>>,
     mut stats: ResMut<GameRunStats>,
     mut powerups: ResMut<ActivePowerUps>,
+    mut run_reset_events: EventWriter<RunResetEvent>,
     start_q: Query<&Interaction, (Changed<Interaction>, With<StartRunButton>)>,
     restart_q: Query<&Interaction, (Changed<Interaction>, With<RestartButton>)>,
     resume_q: Query<&Interaction, (Changed<Interaction>, With<ResumeButton>)>,
@@ -1281,14 +1299,14 @@ fn menu_actions_system(
     }
 
     if do_start || do_restart {
-        for e in all_game_entities.iter() {
-            commands.entity(e).despawn_recursive();
-        }
+        // Broadcast unified run reset to all subsystems
+        run_reset_events.send(RunResetEvent);
 
         stats.distance = 0.0;
         stats.fragments = 0;
         stats.data_chips = 0;
         stats.score = 0;
+        stats.score_accum = 0.0;
         stats.current_zone = 1;
         stats.stumble_intensity = 0.0;
         stats.story_dialogue = None;
