@@ -443,17 +443,9 @@ pub fn get_pattern_catalog() -> Vec<PatternChunk> {
             .with_fragment_line(Lane::Right, -6.0, 6, 3.5, 0.85),
 
         // -------------------------------------------------------------
-        // COMPLEXITY 2: NEON DISTRICT (800 - 1,800m)
+        // COMPLEXITY 2: NEON DISTRICT (800 - 1,800m) — REACT
         // -------------------------------------------------------------
-        // Pattern 5: Train Rooftop Highway (Jump onto static train roof or vault left!)
-        PatternChunk::new("Rooftop Express", 2, 40.0)
-            .with_obstacle(Lane::Center, -18.0, ObstacleType::StaticTrain, Vec3::new(2.2, 2.5, 12.0))
-            .with_obstacle(Lane::Left, -18.0, ObstacleType::LowBarrier, Vec3::new(2.1, 0.85, 0.4))
-            .with_obstacle(Lane::Right, -18.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2))
-            .with_fragment_arc(Lane::Center, -10.0, 4, 2.5, 2.8)
-            .with_fragment_line(Lane::Center, -18.0, 5, 2.2, 2.8),
-
-        // Pattern 6: The Zigzag Slalom (Left -> Center -> Right)
+        // Family 1: SLALOM (Rapid sequential lane shifts)
         PatternChunk::new("Neon Slalom", 2, 40.0)
             .with_obstacle(Lane::Left, -8.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2))
             .with_obstacle(Lane::Center, -18.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2))
@@ -462,11 +454,68 @@ pub fn get_pattern_catalog() -> Vec<PatternChunk> {
             .with_fragment_line(Lane::Left, -16.0, 3, 3.0, 0.85)
             .with_fragment_line(Lane::Center, -26.0, 3, 3.0, 0.85),
 
-        // Pattern 7: Oncoming Train Encounter
-        PatternChunk::new("Incoming Metro Headlights", 2, 40.0)
-            .with_obstacle(Lane::Center, -25.0, ObstacleType::MovingTrain { speed: 10.0 }, Vec3::new(2.2, 2.5, 14.0))
-            .with_obstacle(Lane::Left, -15.0, ObstacleType::LowBarrier, Vec3::new(2.1, 0.85, 0.4))
-            .with_fragment_line(Lane::Right, -10.0, 6, 3.5, 0.85),
+        PatternChunk::new("Rapid Slalom", 2, 40.0)
+            .with_obstacle(Lane::Right, -10.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2))
+            .with_obstacle(Lane::Center, -20.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2))
+            .with_obstacle(Lane::Left, -30.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2))
+            .with_fragment_line(Lane::Left, -8.0, 3, 3.0, 0.85)
+            .with_fragment_line(Lane::Right, -18.0, 3, 3.0, 0.85)
+            .with_fragment_line(Lane::Center, -28.0, 3, 3.0, 0.85),
+
+        // Family 2: PULSE (Rhythmic double hurdles / wires with clean gaps)
+        PatternChunk::new("Neon Pulse", 2, 40.0)
+            .with_obstacle(Lane::Center, -12.0, ObstacleType::LowBarrier, Vec3::new(2.1, 0.85, 0.4))
+            .with_obstacle(Lane::Center, -24.0, ObstacleType::LowBarrier, Vec3::new(2.1, 0.85, 0.4))
+            .with_fragment_arc(Lane::Center, -8.0, 4, 2.5, 2.2)
+            .with_fragment_arc(Lane::Center, -20.0, 4, 2.5, 2.2),
+
+        PatternChunk::new("Wire Pulse", 2, 40.0)
+            .with_obstacle(Lane::Center, -12.0, ObstacleType::HighHangingWire, Vec3::new(2.2, 0.5, 0.3))
+            .with_obstacle(Lane::Center, -24.0, ObstacleType::HighHangingWire, Vec3::new(2.2, 0.5, 0.3))
+            .with_fragment_line(Lane::Center, -8.0, 4, 2.5, 0.45)
+            .with_fragment_line(Lane::Center, -20.0, 4, 2.5, 0.45),
+
+        // Family 3: HUNTER SWEEP (Tactical telegraph evasion with 2 open lanes)
+        PatternChunk::new("Hunter Flank Corridor", 2, 40.0)
+            .with_obstacle(Lane::Left, -16.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2))
+            .with_fragment_line(Lane::Center, -8.0, 5, 3.2, 0.85)
+            .with_fragment_line(Lane::Right, -8.0, 5, 3.2, 0.85),
+
+        PatternChunk::new("Hunter Gauntlet", 2, 40.0)
+            .with_obstacle(Lane::Center, -16.0, ObstacleType::LowBarrier, Vec3::new(2.1, 0.85, 0.4))
+            .with_fragment_arc(Lane::Center, -10.0, 5, 2.5, 2.2)
+            .with_fragment_line(Lane::Left, -10.0, 4, 3.2, 0.85)
+            .with_fragment_line(Lane::Right, -10.0, 4, 3.2, 0.85),
+
+        // Family 4: SPLIT (Safe / low-score vs dangerous / high-ECHO)
+        PatternChunk::new("Neon Choice Split", 2, 40.0)
+            .with_obstacle(Lane::Center, -16.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2))
+            .with_obstacle(Lane::Left, -16.0, ObstacleType::LowBarrier, Vec3::new(2.1, 0.85, 0.4))
+            .with_fragment_arc(Lane::Left, -10.0, 5, 2.5, 2.4)
+            .with_fragment_line(Lane::Right, -10.0, 5, 3.2, 0.85),
+
+        PatternChunk::new("Rooftop Fork", 2, 40.0)
+            .with_obstacle(Lane::Center, -18.0, ObstacleType::StaticTrain, Vec3::new(2.2, 2.5, 12.0))
+            .with_obstacle(Lane::Left, -18.0, ObstacleType::LowBarrier, Vec3::new(2.1, 0.85, 0.4))
+            .with_fragment_arc(Lane::Center, -10.0, 4, 2.5, 2.8)
+            .with_fragment_line(Lane::Center, -18.0, 5, 2.2, 2.8)
+            .with_fragment_line(Lane::Right, -10.0, 6, 3.2, 0.85),
+
+        // Family 5: COMBO (Remixing learned verbs: Jump -> Lane Switch -> Slide)
+        PatternChunk::new("Vault-and-Weave", 2, 40.0)
+            .with_obstacle(Lane::Center, -10.0, ObstacleType::LowBarrier, Vec3::new(2.1, 0.85, 0.4))
+            .with_obstacle(Lane::Center, -22.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2))
+            .with_fragment_arc(Lane::Center, -6.0, 4, 2.2, 2.2)
+            .with_fragment_line(Lane::Left, -18.0, 4, 3.0, 0.85)
+            .with_fragment_line(Lane::Right, -18.0, 4, 3.0, 0.85),
+
+        PatternChunk::new("Neon Flow Combo", 2, 40.0)
+            .with_obstacle(Lane::Left, -10.0, ObstacleType::LowBarrier, Vec3::new(2.1, 0.85, 0.4))
+            .with_obstacle(Lane::Center, -18.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2))
+            .with_obstacle(Lane::Right, -26.0, ObstacleType::HighHangingWire, Vec3::new(2.2, 0.5, 0.3))
+            .with_fragment_arc(Lane::Left, -6.0, 4, 2.2, 2.2)
+            .with_fragment_line(Lane::Right, -14.0, 4, 2.5, 0.85)
+            .with_fragment_line(Lane::Right, -22.0, 3, 2.2, 0.45),
 
         // -------------------------------------------------------------
         // COMPLEXITY 3: INDUSTRIAL FOUNDRY & FLOODED METRO (1,800 - 4,800m)
@@ -560,6 +609,30 @@ pub fn select_validated_pattern(
             catalog.iter().filter(|p| p.name.contains("Gate")).cloned().collect()
         } else {
             catalog.iter().filter(|p| p.min_complexity == 1).cloned().collect()
+        };
+
+        if matching.is_empty() {
+            catalog.into_iter().filter(|p| p.min_complexity <= complexity).collect()
+        } else {
+            matching
+        }
+    } else if complexity <= 2 && distance < 1800.0 {
+        // Zone 2 (Neon District: 800 - 1,800m) REACT Progressive Pacing:
+        // 800–950m: Speed adaptation (Slalom & Pulse rhythm, no Hunter)
+        // 950–1,100m: Hunter introduction (Hunter Flank & Hunter Gauntlet with 2 open lanes)
+        // 1,100–1,300m: Hunter + obstacles (Pulse & Rooftop Fork)
+        // 1,300–1,500m: Hunter + choice splits (Neon Choice Split & Rooftop Fork)
+        // 1,500–1,800m: Hunter + combinations (Vault-and-Weave & Neon Flow Combo)
+        let matching: Vec<PatternChunk> = if distance < 950.0 {
+            catalog.iter().filter(|p| p.min_complexity == 2 && (p.name.contains("Slalom") || p.name.contains("Pulse"))).cloned().collect()
+        } else if distance < 1100.0 {
+            catalog.iter().filter(|p| p.min_complexity == 2 && p.name.contains("Hunter")).cloned().collect()
+        } else if distance < 1300.0 {
+            catalog.iter().filter(|p| p.min_complexity == 2 && (p.name.contains("Pulse") || p.name.contains("Rooftop"))).cloned().collect()
+        } else if distance < 1500.0 {
+            catalog.iter().filter(|p| p.min_complexity == 2 && (p.name.contains("Split") || p.name.contains("Fork"))).cloned().collect()
+        } else {
+            catalog.iter().filter(|p| p.min_complexity == 2).cloned().collect()
         };
 
         if matching.is_empty() {
@@ -963,6 +1036,66 @@ mod tests {
             let pattern = select_validated_pattern(1, None, 16.0, d);
             assert_eq!(pattern.min_complexity, 1, "Tier 5 at {}m must remain complexity 1", d);
             assert!(verify_intra_chunk_solvability(&pattern).is_ok(), "Tier 5 at {}m must be solvable", d);
+        }
+    }
+
+    #[test]
+    fn test_zone_2_neon_district_pedagogical_rhythm() {
+        // Zone 2 (Neon District: 800 - 1,800m) REACT Progressive Pacing:
+        // Phase 1: 800–950m (Speed transition adaptation: 18.4 m/s, Slalom & Pulse rhythm, no Hunter)
+        for d in [800.0, 850.0, 900.0, 949.0] {
+            let pattern = select_validated_pattern(2, None, 18.4, d);
+            assert_eq!(pattern.min_complexity, 2, "Phase 1 at {}m must be complexity 2", d);
+            assert!(
+                pattern.name.contains("Slalom") || pattern.name.contains("Pulse"),
+                "Phase 1 (800-950m) at {}m must feature Slalom or Pulse rhythm: {}",
+                d,
+                pattern.name
+            );
+            assert!(verify_intra_chunk_solvability(&pattern).is_ok(), "Phase 1 at {}m must be solvable", d);
+        }
+
+        // Phase 2: 950–1,100m (Hunter introduction: Flank corridor & Gauntlet with 2 open lanes)
+        for d in [950.0, 1000.0, 1050.0, 1099.0] {
+            let pattern = select_validated_pattern(2, None, 18.4, d);
+            assert!(
+                pattern.name.contains("Hunter"),
+                "Phase 2 (950-1100m) at {}m must feature Hunter sweep patterns: {}",
+                d,
+                pattern.name
+            );
+            assert!(verify_intra_chunk_solvability(&pattern).is_ok(), "Phase 2 at {}m must be solvable", d);
+        }
+
+        // Phase 3: 1,100–1,300m (Hunter + normal obstacles: Pulse & Rooftop)
+        for d in [1100.0, 1150.0, 1200.0, 1299.0] {
+            let pattern = select_validated_pattern(2, None, 18.4, d);
+            assert!(
+                pattern.name.contains("Pulse") || pattern.name.contains("Rooftop"),
+                "Phase 3 (1100-1300m) at {}m must feature Pulse or Rooftop patterns: {}",
+                d,
+                pattern.name
+            );
+            assert!(verify_intra_chunk_solvability(&pattern).is_ok(), "Phase 3 at {}m must be solvable", d);
+        }
+
+        // Phase 4: 1,300–1,500m (Hunter + tactical choice split gates)
+        for d in [1300.0, 1350.0, 1400.0, 1499.0] {
+            let pattern = select_validated_pattern(2, None, 18.4, d);
+            assert!(
+                pattern.name.contains("Split") || pattern.name.contains("Fork"),
+                "Phase 4 (1300-1500m) at {}m must feature Split or Fork choice gates: {}",
+                d,
+                pattern.name
+            );
+            assert!(verify_intra_chunk_solvability(&pattern).is_ok(), "Phase 4 at {}m must be solvable", d);
+        }
+
+        // Phase 5: 1,500–1,800m (Hunter + multi-verb combinations)
+        for d in [1500.0, 1600.0, 1700.0, 1799.0] {
+            let pattern = select_validated_pattern(2, None, 18.4, d);
+            assert_eq!(pattern.min_complexity, 2, "Phase 5 at {}m must be complexity 2", d);
+            assert!(verify_intra_chunk_solvability(&pattern).is_ok(), "Phase 5 at {}m must be solvable", d);
         }
     }
 }

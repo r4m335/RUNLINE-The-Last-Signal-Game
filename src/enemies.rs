@@ -394,7 +394,9 @@ fn update_enemy_spawning_and_pacing(
     }
 
     // 2. Level 2 Hunter introduction in Zone 2+ (Neon District onwards)
-    if director.active_zone_id >= 2 && !has_hunter && squad_mgr.spawn_cooldown <= 0.0 {
+    // Pedagogical progression: 800-950m is speed adaptation buffer (NO Hunter).
+    // Hunter is introduced at 950m+ with audio telegraph + predictive sweep.
+    if (stats.distance >= 950.0 || director.active_zone_id >= 3) && !has_hunter && squad_mgr.spawn_cooldown <= 0.0 {
         spawn_hunter_drone(&mut commands, &assets, Lane::Left, 8.5);
         squad_mgr.spawn_cooldown = 15.0;
         enemy_spawn_events.send(EnemySpawnedEvent {
