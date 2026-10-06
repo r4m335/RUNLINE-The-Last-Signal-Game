@@ -81,6 +81,7 @@ fn init_environment_assets(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    mut images: ResMut<Assets<Image>>,
 ) {
     let length = 40.0;
 
@@ -234,6 +235,7 @@ fn init_environment_assets(
 
     commands.insert_resource(env_assets);
     crate::environment_props::init_prop_assets(&mut commands, &mut meshes, &mut materials);
+    crate::environment_signage::init_signage_assets(&mut commands, &mut images, &mut materials);
 }
 
 fn animate_environment_fans(
@@ -250,17 +252,19 @@ pub fn spawn_modular_environment_slice(
     commands: &mut Commands,
     env: &EnvironmentAssets,
     props: Option<&crate::environment_props::PropAssets>,
+    signage: Option<&crate::environment_signage::SignageAssets>,
     z_center: f32,
     length: f32,
     distance: f32,
 ) -> Entity {
     let segment_dist = (-z_center).max(0.0);
     if segment_dist < 800.0 {
-        if let Some(props_ref) = props {
+        if let (Some(props_ref), Some(signage_ref)) = (props, signage) {
             return crate::old_metro::spawn_old_metro_segment(
                 commands,
                 env,
                 props_ref,
+                signage_ref,
                 z_center,
                 length,
                 segment_dist,

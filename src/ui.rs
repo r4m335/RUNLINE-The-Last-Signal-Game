@@ -684,7 +684,9 @@ fn update_hud_display(
 fn update_perf_overlay(
     diagnostics: Res<DiagnosticsStore>,
     quality: Res<QualitySettings>,
+    stats: Res<GameRunStats>,
     obs_q: Query<&ActiveObstacle>,
+    light_q: Query<&PointLight>,
     pool: Res<crate::pooling::EntityPool>,
     mut text_q: Query<(&mut Text, &mut Visibility), With<PerfOverlayText>>,
 ) {
@@ -716,11 +718,20 @@ fn update_perf_overlay(
 
     let active_obstacles = obs_q.iter().count();
     let pooled_count = pool.total_dormant();
+    let light_count = light_q.iter().count();
 
-    text.sections[0].value = format!(
-        "{:.1} FPS | {:.2}ms | Ent: {} | Obs: {} | Pool: {} | [{}]",
-        fps, frame_time, entity_count, active_obstacles, pooled_count, quality.tier.label()
-    );
+    if stats.distance < 800.0 {
+        let variant = crate::old_metro::get_old_metro_variant(stats.distance);
+        text.sections[0].value = format!(
+            "{:.1} FPS | {:.2}ms | Ent: {} | Lights: {} | Pool: {} | Metro: {:?} | [{}]",
+            fps, frame_time, entity_count, light_count, pooled_count, variant, quality.tier.label()
+        );
+    } else {
+        text.sections[0].value = format!(
+            "{:.1} FPS | {:.2}ms | Ent: {} | Obs: {} | Lights: {} | Pool: {} | [{}]",
+            fps, frame_time, entity_count, active_obstacles, light_count, pooled_count, quality.tier.label()
+        );
+    }
 }
 
 fn update_transmission_toast(

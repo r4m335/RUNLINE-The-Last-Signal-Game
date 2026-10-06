@@ -47,6 +47,7 @@ fn handle_run_reset_track(
     mut track_mgr: ResMut<TrackManager>,
     env_assets: Res<crate::environment::EnvironmentAssets>,
     prop_assets: Option<Res<crate::environment_props::PropAssets>>,
+    signage_assets: Option<Res<crate::environment_signage::SignageAssets>>,
     pool_assets: Res<PoolAssets>,
     mut pool: ResMut<EntityPool>,
     director: Res<RunDirector>,
@@ -99,6 +100,7 @@ fn handle_run_reset_track(
                 &mut commands,
                 &env_assets,
                 prop_assets.as_deref(),
+                signage_assets.as_deref(),
                 z_center,
                 SEGMENT_LENGTH,
                 (-z_center).max(0.0),
@@ -132,6 +134,7 @@ fn maintain_rolling_track(
     mut track_mgr: ResMut<TrackManager>,
     env_assets: Res<crate::environment::EnvironmentAssets>,
     prop_assets: Option<Res<crate::environment_props::PropAssets>>,
+    signage_assets: Option<Res<crate::environment_signage::SignageAssets>>,
     pool_assets: Res<PoolAssets>,
     mut pool: ResMut<EntityPool>,
     player_q: Query<&Transform, With<Player>>,
@@ -152,6 +155,7 @@ fn maintain_rolling_track(
             &mut commands,
             &env_assets,
             prop_assets.as_deref(),
+            signage_assets.as_deref(),
             z_center,
             SEGMENT_LENGTH,
             (-z_center).max(0.0),
@@ -575,9 +579,18 @@ fn spawn_segment(
     commands: &mut Commands,
     env_assets: &crate::environment::EnvironmentAssets,
     prop_assets: Option<&crate::environment_props::PropAssets>,
+    signage_assets: Option<&crate::environment_signage::SignageAssets>,
     z_center: f32,
     length: f32,
     distance: f32,
 ) {
-    crate::environment::spawn_modular_environment_slice(commands, env_assets, prop_assets, z_center, length, distance);
+    crate::environment::spawn_modular_environment_slice(
+        commands,
+        env_assets,
+        prop_assets,
+        signage_assets,
+        z_center,
+        length,
+        distance,
+    );
 }

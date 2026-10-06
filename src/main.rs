@@ -15,7 +15,9 @@ mod benchmark;
 mod environment;
 mod environment_props;
 mod environment_lighting;
+mod environment_signage;
 mod old_metro;
+mod old_metro_landmarks;
 
 use bevy::prelude::*;
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, EntityCountDiagnosticsPlugin};
