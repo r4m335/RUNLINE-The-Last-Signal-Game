@@ -14,6 +14,21 @@ pub struct OverdriveVisual;
 #[derive(Component)]
 pub struct SlideSparksVisual;
 
+#[derive(Component)]
+pub struct PlayerLeftArm;
+
+#[derive(Component)]
+pub struct PlayerRightArm;
+
+#[derive(Component)]
+pub struct PlayerLeftLeg;
+
+#[derive(Component)]
+pub struct PlayerRightLeg;
+
+#[derive(Component)]
+pub struct PlayerBackpackStrap;
+
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
@@ -24,6 +39,7 @@ impl Plugin for PlayerPlugin {
                 (
                     player_input,
                     player_visual_smoothing,
+                    player_locomotion_animation,
                     player_powerup_visuals,
                     stumble_recovery,
                 )
@@ -86,42 +102,63 @@ pub fn spawn_player_entity(
     selected_character: CharacterType,
 ) {
     let jacket_mat = materials.add(StandardMaterial {
-        base_color: Color::srgb(0.10, 0.12, 0.16),
-        perceptual_roughness: 0.40,
-        metallic: 0.55,
+        base_color: Color::srgb(0.08, 0.08, 0.09),
+        perceptual_roughness: 0.70,
+        metallic: 0.15,
         ..default()
     });
 
     let armor_trim_mat = materials.add(StandardMaterial {
-        base_color: Color::srgb(0.18, 0.20, 0.24),
+        base_color: Color::srgb(0.28, 0.30, 0.34),
         metallic: 0.88,
         perceptual_roughness: 0.25,
         ..default()
     });
 
     let orange_accent_mat = materials.add(StandardMaterial {
-        base_color: Color::srgb(1.0, 0.42, 0.05),
-        emissive: LinearRgba::new(1.2, 0.4, 0.0, 1.0),
-        perceptual_roughness: 0.35,
+        base_color: Color::srgb(1.0, 0.45, 0.05),
+        emissive: LinearRgba::new(5.0, 2.0, 0.1, 1.0),
+        perceptual_roughness: 0.25,
         ..default()
     });
 
     let cyan_echo_core_mat = materials.add(StandardMaterial {
-        base_color: Color::srgb(0.0, 0.85, 1.0),
-        emissive: LinearRgba::new(0.6, 3.8, 5.0, 1.0),
+        base_color: Color::srgb(0.0, 0.90, 1.0),
+        emissive: LinearRgba::new(0.6, 4.5, 6.0, 1.0),
         ..default()
     });
 
     let visor_mat = materials.add(StandardMaterial {
-        base_color: Color::srgb(1.0, 0.35, 0.0),
-        emissive: LinearRgba::new(4.5, 1.6, 0.1, 1.0),
+        base_color: Color::srgb(0.0, 0.95, 1.0),
+        emissive: LinearRgba::new(0.4, 4.8, 6.5, 1.0),
+        ..default()
+    });
+
+    let hair_mat = materials.add(StandardMaterial {
+        base_color: Color::srgb(0.05, 0.05, 0.07),
+        perceptual_roughness: 0.90,
+        metallic: 0.10,
+        ..default()
+    });
+
+    let shirt_mat = materials.add(StandardMaterial {
+        base_color: Color::srgb(0.85, 0.85, 0.88),
+        perceptual_roughness: 0.80,
+        metallic: 0.05,
+        ..default()
+    });
+
+    let skin_mat = materials.add(StandardMaterial {
+        base_color: Color::srgb(0.82, 0.68, 0.58),
+        perceptual_roughness: 0.65,
+        metallic: 0.0,
         ..default()
     });
 
     let boots_mat = materials.add(StandardMaterial {
-        base_color: Color::srgb(0.12, 0.13, 0.15),
-        metallic: 0.90,
-        perceptual_roughness: 0.28,
+        base_color: Color::srgb(0.10, 0.11, 0.13),
+        metallic: 0.85,
+        perceptual_roughness: 0.30,
         ..default()
     });
 
@@ -139,11 +176,11 @@ pub fn spawn_player_entity(
         ..default()
     });
 
-    // Spawn Root Courier (athletic jacket torso)
+    // Spawn Root Courier (athletic V-shaped jacket torso)
     commands
         .spawn((
             PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.58, 0.52, 0.36)),
+                mesh: meshes.add(Cuboid::new(0.56, 0.48, 0.36)),
                 material: jacket_mat.clone(),
                 transform: Transform::from_xyz(0.0, 0.65, 0.0),
                 ..default()
@@ -162,186 +199,373 @@ pub fn spawn_player_entity(
             },
         ))
         .with_children(|parent| {
-            // 1. Tactical Chest Rig & Center Zipper Seam
+            // 1. Undershirt Hem (peeking below jacket waistband)
             parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.26, 0.44, 0.08)),
+                mesh: meshes.add(Cuboid::new(0.48, 0.10, 0.32)),
+                material: shirt_mat.clone(),
+                transform: Transform::from_xyz(0.0, -0.26, 0.0),
+                ..default()
+            });
+
+            // 2. High Jacket Collar with Signal Orange Trim
+            parent.spawn(PbrBundle {
+                mesh: meshes.add(Cuboid::new(0.34, 0.12, 0.30)),
+                material: jacket_mat.clone(),
+                transform: Transform::from_xyz(0.0, 0.26, 0.0),
+                ..default()
+            });
+            parent.spawn(PbrBundle {
+                mesh: meshes.add(Cuboid::new(0.32, 0.04, 0.04)),
+                material: orange_accent_mat.clone(),
+                transform: Transform::from_xyz(0.0, 0.30, -0.14),
+                ..default()
+            });
+
+            // 3. Tactical Chest Rig & Center Zipper Seam
+            parent.spawn(PbrBundle {
+                mesh: meshes.add(Cuboid::new(0.24, 0.40, 0.08)),
                 material: armor_trim_mat.clone(),
                 transform: Transform::from_xyz(0.0, 0.02, -0.16),
                 ..default()
             });
             parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.05, 0.46, 0.04)),
+                mesh: meshes.add(Cuboid::new(0.05, 0.42, 0.04)),
                 material: orange_accent_mat.clone(),
-                transform: Transform::from_xyz(0.0, 0.02, -0.20),
+                transform: Transform::from_xyz(0.0, 0.02, -0.19),
                 ..default()
             });
 
-            // 2. Courier Belt & Utility Hip Pouches
+            // 4. Head, Spiked Cyberpunk Hair & Wraparound Cyan Visor
             parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.52, 0.14, 0.34)),
-                material: armor_trim_mat.clone(),
-                transform: Transform::from_xyz(0.0, -0.24, 0.0),
-                ..default()
-            });
-            parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.12, 0.14, 0.22)),
-                material: jacket_mat.clone(),
-                transform: Transform::from_xyz(-0.28, -0.24, 0.0),
-                ..default()
-            });
-            parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.12, 0.14, 0.22)),
-                material: jacket_mat.clone(),
-                transform: Transform::from_xyz(0.28, -0.24, 0.0),
-                ..default()
-            });
-
-            // 3. Head, Faceted Courier Helmet & Cyber-Visor
-            parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.34, 0.34, 0.36)),
-                material: jacket_mat.clone(),
+                mesh: meshes.add(Cuboid::new(0.28, 0.28, 0.28)),
+                material: skin_mat.clone(),
                 transform: Transform::from_xyz(0.0, 0.44, 0.0),
                 ..default()
             });
+            // Hair crown & back spikes
             parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.32, 0.13, 0.14)),
+                mesh: meshes.add(Cuboid::new(0.34, 0.18, 0.36)),
+                material: hair_mat.clone(),
+                transform: Transform::from_xyz(0.0, 0.52, 0.02),
+                ..default()
+            });
+            parent.spawn(PbrBundle {
+                mesh: meshes.add(Cuboid::new(0.32, 0.22, 0.16)),
+                material: hair_mat.clone(),
+                transform: Transform::from_xyz(0.0, 0.46, 0.14),
+                ..default()
+            });
+            parent.spawn(PbrBundle {
+                mesh: meshes.add(Cuboid::new(0.30, 0.12, 0.10)),
+                material: hair_mat.clone(),
+                transform: Transform::from_xyz(0.0, 0.50, -0.13),
+                ..default()
+            });
+            // Neon Cyan Wraparound Visor (Visible from front, side, and 3/4 rear!)
+            parent.spawn(PbrBundle {
+                mesh: meshes.add(Cuboid::new(0.30, 0.08, 0.06)),
                 material: visor_mat.clone(),
-                transform: Transform::from_xyz(0.0, 0.46, -0.16),
+                transform: Transform::from_xyz(0.0, 0.44, -0.16),
                 ..default()
             });
             parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.04, 0.14, 0.08)),
-                material: armor_trim_mat.clone(),
-                transform: Transform::from_xyz(-0.18, 0.48, -0.04),
+                mesh: meshes.add(Cuboid::new(0.04, 0.07, 0.18)),
+                material: visor_mat.clone(),
+                transform: Transform::from_xyz(-0.15, 0.44, -0.07),
+                ..default()
+            });
+            parent.spawn(PbrBundle {
+                mesh: meshes.add(Cuboid::new(0.04, 0.07, 0.18)),
+                material: visor_mat.clone(),
+                transform: Transform::from_xyz(0.15, 0.44, -0.07),
                 ..default()
             });
 
-            // 4. Padded Shoulders & Athletic Arms
+            // 5. Backpack Module (CRITICAL 3RD-PERSON CAMERA FOCUS)
             parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.18, 0.16, 0.24)),
-                material: armor_trim_mat.clone(),
-                transform: Transform::from_xyz(-0.35, 0.18, 0.0),
-                ..default()
-            });
-            parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.18, 0.16, 0.24)),
-                material: armor_trim_mat.clone(),
-                transform: Transform::from_xyz(0.35, 0.18, 0.0),
-                ..default()
-            });
-            parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.12, 0.24, 0.14)),
+                mesh: meshes.add(Cuboid::new(0.36, 0.44, 0.16)),
                 material: jacket_mat.clone(),
-                transform: Transform::from_xyz(-0.35, 0.0, 0.0),
+                transform: Transform::from_xyz(0.0, 0.06, 0.22),
                 ..default()
             });
+            // Top roll-bar handle
             parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.12, 0.24, 0.14)),
-                material: jacket_mat.clone(),
-                transform: Transform::from_xyz(0.35, 0.0, 0.0),
-                ..default()
-            });
-            // Cybernetic forearms
-            parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.12, 0.24, 0.14)),
+                mesh: meshes.add(Cuboid::new(0.24, 0.06, 0.06)),
                 material: armor_trim_mat.clone(),
-                transform: Transform::from_xyz(-0.35, -0.18, -0.04),
+                transform: Transform::from_xyz(0.0, 0.29, 0.22),
+                ..default()
+            });
+            // Inverted Signal Orange Triangle Core (`▽`) facing camera
+            parent.spawn(PbrBundle {
+                mesh: meshes.add(Cuboid::new(0.18, 0.05, 0.03)),
+                material: orange_accent_mat.clone(),
+                transform: Transform::from_xyz(0.0, 0.14, 0.305),
                 ..default()
             });
             parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.12, 0.24, 0.14)),
-                material: armor_trim_mat.clone(),
-                transform: Transform::from_xyz(0.35, -0.18, -0.04),
+                mesh: meshes.add(Cuboid::new(0.12, 0.05, 0.03)),
+                material: orange_accent_mat.clone(),
+                transform: Transform::from_xyz(0.0, 0.09, 0.305),
                 ..default()
             });
-            // Left gauntlet cyan holographic wrist display
             parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.08, 0.04, 0.10)),
+                mesh: meshes.add(Cuboid::new(0.06, 0.05, 0.03)),
+                material: orange_accent_mat.clone(),
+                transform: Transform::from_xyz(0.0, 0.04, 0.305),
+                ..default()
+            });
+            // Dual Vertical Neon Cyan Battery Bars
+            parent.spawn(PbrBundle {
+                mesh: meshes.add(Cuboid::new(0.04, 0.28, 0.04)),
                 material: cyan_echo_core_mat.clone(),
-                transform: Transform::from_xyz(-0.35, -0.18, -0.11),
+                transform: Transform::from_xyz(-0.17, 0.06, 0.28),
                 ..default()
+            });
+            parent.spawn(PbrBundle {
+                mesh: meshes.add(Cuboid::new(0.04, 0.28, 0.04)),
+                material: cyan_echo_core_mat.clone(),
+                transform: Transform::from_xyz(0.17, 0.06, 0.28),
+                ..default()
+            });
+            // Trailing Kinetic Straps / Ribbons
+            parent.spawn((
+                PbrBundle {
+                    mesh: meshes.add(Cuboid::new(0.03, 0.24, 0.02)),
+                    material: armor_trim_mat.clone(),
+                    transform: Transform::from_xyz(-0.10, -0.18, 0.26),
+                    ..default()
+                },
+                PlayerBackpackStrap,
+            ));
+            parent.spawn((
+                PbrBundle {
+                    mesh: meshes.add(Cuboid::new(0.03, 0.24, 0.02)),
+                    material: armor_trim_mat.clone(),
+                    transform: Transform::from_xyz(0.10, -0.18, 0.26),
+                    ..default()
+                },
+                PlayerBackpackStrap,
+            ));
+
+            // 6. Articulated Left Arm (Shoulder Pivot with Air Gap)
+            parent.spawn((
+                SpatialBundle {
+                    transform: Transform::from_xyz(-0.36, 0.18, 0.0),
+                    ..default()
+                },
+                PlayerLeftArm,
+            )).with_children(|arm| {
+                // Shoulder pauldron
+                arm.spawn(PbrBundle {
+                    mesh: meshes.add(Cuboid::new(0.16, 0.14, 0.20)),
+                    material: armor_trim_mat.clone(),
+                    transform: Transform::from_xyz(0.0, 0.0, 0.0),
+                    ..default()
+                });
+                // Upper arm (rolled-up sleeve)
+                arm.spawn(PbrBundle {
+                    mesh: meshes.add(Cuboid::new(0.13, 0.20, 0.14)),
+                    material: jacket_mat.clone(),
+                    transform: Transform::from_xyz(0.0, -0.13, 0.0),
+                    ..default()
+                });
+                // Forearm (bare skin)
+                arm.spawn(PbrBundle {
+                    mesh: meshes.add(Cuboid::new(0.10, 0.18, 0.11)),
+                    material: skin_mat.clone(),
+                    transform: Transform::from_xyz(0.0, -0.28, 0.0),
+                    ..default()
+                });
+                // Combat glove with cyan knuckle energy pad
+                arm.spawn(PbrBundle {
+                    mesh: meshes.add(Cuboid::new(0.11, 0.14, 0.12)),
+                    material: jacket_mat.clone(),
+                    transform: Transform::from_xyz(0.0, -0.40, 0.0),
+                    ..default()
+                });
+                arm.spawn(PbrBundle {
+                    mesh: meshes.add(Cuboid::new(0.08, 0.04, 0.06)),
+                    material: cyan_echo_core_mat.clone(),
+                    transform: Transform::from_xyz(0.0, -0.42, -0.05),
+                    ..default()
+                });
             });
 
-            // 5. Tactical Thighs & Articulated Kinetic Thruster Boots
-            parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.17, 0.30, 0.20)),
-                material: jacket_mat.clone(),
-                transform: Transform::from_xyz(-0.16, -0.36, 0.0),
-                ..default()
-            });
-            parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.17, 0.30, 0.20)),
-                material: jacket_mat.clone(),
-                transform: Transform::from_xyz(0.16, -0.36, 0.0),
-                ..default()
-            });
-            parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.20, 0.28, 0.34)),
-                material: boots_mat.clone(),
-                transform: Transform::from_xyz(-0.16, -0.56, 0.03),
-                ..default()
-            });
-            parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.20, 0.28, 0.34)),
-                material: boots_mat,
-                transform: Transform::from_xyz(0.16, -0.56, 0.03),
-                ..default()
-            });
-            // Titanium toe caps
-            parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.18, 0.10, 0.10)),
-                material: armor_trim_mat.clone(),
-                transform: Transform::from_xyz(-0.16, -0.65, -0.12),
-                ..default()
-            });
-            parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.18, 0.10, 0.10)),
-                material: armor_trim_mat.clone(),
-                transform: Transform::from_xyz(0.16, -0.65, -0.12),
-                ..default()
-            });
-            // Kinetic sole micro-thruster nozzles
-            parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.10, 0.05, 0.12)),
-                material: cyan_echo_core_mat.clone(),
-                transform: Transform::from_xyz(-0.16, -0.68, 0.0),
-                ..default()
-            });
-            parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.10, 0.05, 0.12)),
-                material: cyan_echo_core_mat.clone(),
-                transform: Transform::from_xyz(0.16, -0.68, 0.0),
-                ..default()
+            // 7. Articulated Right Arm (Shoulder Pivot with Air Gap)
+            parent.spawn((
+                SpatialBundle {
+                    transform: Transform::from_xyz(0.36, 0.18, 0.0),
+                    ..default()
+                },
+                PlayerRightArm,
+            )).with_children(|arm| {
+                // Shoulder pauldron
+                arm.spawn(PbrBundle {
+                    mesh: meshes.add(Cuboid::new(0.16, 0.14, 0.20)),
+                    material: armor_trim_mat.clone(),
+                    transform: Transform::from_xyz(0.0, 0.0, 0.0),
+                    ..default()
+                });
+                // Upper arm (rolled-up sleeve)
+                arm.spawn(PbrBundle {
+                    mesh: meshes.add(Cuboid::new(0.13, 0.20, 0.14)),
+                    material: jacket_mat.clone(),
+                    transform: Transform::from_xyz(0.0, -0.13, 0.0),
+                    ..default()
+                });
+                // Forearm (bare skin)
+                arm.spawn(PbrBundle {
+                    mesh: meshes.add(Cuboid::new(0.10, 0.18, 0.11)),
+                    material: skin_mat.clone(),
+                    transform: Transform::from_xyz(0.0, -0.28, 0.0),
+                    ..default()
+                });
+                // Combat glove with cyan knuckle energy pad
+                arm.spawn(PbrBundle {
+                    mesh: meshes.add(Cuboid::new(0.11, 0.14, 0.12)),
+                    material: jacket_mat.clone(),
+                    transform: Transform::from_xyz(0.0, -0.40, 0.0),
+                    ..default()
+                });
+                arm.spawn(PbrBundle {
+                    mesh: meshes.add(Cuboid::new(0.08, 0.04, 0.06)),
+                    material: cyan_echo_core_mat.clone(),
+                    transform: Transform::from_xyz(0.0, -0.42, -0.05),
+                    ..default()
+                });
             });
 
-            // 6. Courier Spine Rig & Pulsing Cyan ECHO Core
-            parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.16, 0.48, 0.10)),
-                material: armor_trim_mat,
-                transform: Transform::from_xyz(0.0, 0.04, 0.19),
-                ..default()
-            });
-            parent.spawn(PbrBundle {
-                mesh: meshes.add(Sphere::new(0.20)),
-                material: cyan_echo_core_mat.clone(),
-                transform: Transform::from_xyz(0.0, 0.12, 0.26),
-                ..default()
-            });
-            // Courier hard-drive data pod container
-            parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.24, 0.18, 0.12)),
-                material: jacket_mat,
-                transform: Transform::from_xyz(0.0, -0.14, 0.22),
-                ..default()
-            });
-            parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.25, 0.04, 0.04)),
-                material: orange_accent_mat,
-                transform: Transform::from_xyz(0.0, -0.14, 0.28),
-                ..default()
+            // 8. Articulated Left Leg (Hip Pivot with Negative Space)
+            parent.spawn((
+                SpatialBundle {
+                    transform: Transform::from_xyz(-0.18, -0.26, 0.0),
+                    ..default()
+                },
+                PlayerLeftLeg,
+            )).with_children(|leg| {
+                // Thigh cargo pants
+                leg.spawn(PbrBundle {
+                    mesh: meshes.add(Cuboid::new(0.16, 0.26, 0.18)),
+                    material: jacket_mat.clone(),
+                    transform: Transform::from_xyz(0.0, -0.12, 0.0),
+                    ..default()
+                });
+                // Orange strap buckle
+                leg.spawn(PbrBundle {
+                    mesh: meshes.add(Cuboid::new(0.17, 0.04, 0.19)),
+                    material: orange_accent_mat.clone(),
+                    transform: Transform::from_xyz(0.0, -0.08, 0.0),
+                    ..default()
+                });
+                // Cyber knee armor plate
+                leg.spawn(PbrBundle {
+                    mesh: meshes.add(Cuboid::new(0.15, 0.12, 0.08)),
+                    material: armor_trim_mat.clone(),
+                    transform: Transform::from_xyz(0.0, -0.22, -0.08),
+                    ..default()
+                });
+                leg.spawn(PbrBundle {
+                    mesh: meshes.add(Cuboid::new(0.06, 0.04, 0.03)),
+                    material: cyan_echo_core_mat.clone(),
+                    transform: Transform::from_xyz(0.0, -0.22, -0.12),
+                    ..default()
+                });
+                // High-top courier boot
+                leg.spawn(PbrBundle {
+                    mesh: meshes.add(Cuboid::new(0.18, 0.24, 0.32)),
+                    material: boots_mat.clone(),
+                    transform: Transform::from_xyz(0.0, -0.46, 0.03),
+                    ..default()
+                });
+                // Titanium toe cap
+                leg.spawn(PbrBundle {
+                    mesh: meshes.add(Cuboid::new(0.16, 0.08, 0.08)),
+                    material: armor_trim_mat.clone(),
+                    transform: Transform::from_xyz(0.0, -0.54, -0.12),
+                    ..default()
+                });
+                // Neon Cyan Sole (faces camera during sprint stride!)
+                leg.spawn(PbrBundle {
+                    mesh: meshes.add(Cuboid::new(0.16, 0.05, 0.30)),
+                    material: cyan_echo_core_mat.clone(),
+                    transform: Transform::from_xyz(0.0, -0.58, 0.03),
+                    ..default()
+                });
+                // Neon Cyan Heel Thruster Bar
+                leg.spawn(PbrBundle {
+                    mesh: meshes.add(Cuboid::new(0.14, 0.08, 0.05)),
+                    material: cyan_echo_core_mat.clone(),
+                    transform: Transform::from_xyz(0.0, -0.48, 0.18),
+                    ..default()
+                });
             });
 
-            // 7. Kinetic Powerup & Movement Visual Attachments
+            // 9. Articulated Right Leg (Hip Pivot with Negative Space)
+            parent.spawn((
+                SpatialBundle {
+                    transform: Transform::from_xyz(0.18, -0.26, 0.0),
+                    ..default()
+                },
+                PlayerRightLeg,
+            )).with_children(|leg| {
+                // Thigh cargo pants
+                leg.spawn(PbrBundle {
+                    mesh: meshes.add(Cuboid::new(0.16, 0.26, 0.18)),
+                    material: jacket_mat.clone(),
+                    transform: Transform::from_xyz(0.0, -0.12, 0.0),
+                    ..default()
+                });
+                // Orange strap buckle
+                leg.spawn(PbrBundle {
+                    mesh: meshes.add(Cuboid::new(0.17, 0.04, 0.19)),
+                    material: orange_accent_mat.clone(),
+                    transform: Transform::from_xyz(0.0, -0.08, 0.0),
+                    ..default()
+                });
+                // Cyber knee armor plate
+                leg.spawn(PbrBundle {
+                    mesh: meshes.add(Cuboid::new(0.15, 0.12, 0.08)),
+                    material: armor_trim_mat.clone(),
+                    transform: Transform::from_xyz(0.0, -0.22, -0.08),
+                    ..default()
+                });
+                leg.spawn(PbrBundle {
+                    mesh: meshes.add(Cuboid::new(0.06, 0.04, 0.03)),
+                    material: cyan_echo_core_mat.clone(),
+                    transform: Transform::from_xyz(0.0, -0.22, -0.12),
+                    ..default()
+                });
+                // High-top courier boot
+                leg.spawn(PbrBundle {
+                    mesh: meshes.add(Cuboid::new(0.18, 0.24, 0.32)),
+                    material: boots_mat.clone(),
+                    transform: Transform::from_xyz(0.0, -0.46, 0.03),
+                    ..default()
+                });
+                // Titanium toe cap
+                leg.spawn(PbrBundle {
+                    mesh: meshes.add(Cuboid::new(0.16, 0.08, 0.08)),
+                    material: armor_trim_mat.clone(),
+                    transform: Transform::from_xyz(0.0, -0.54, -0.12),
+                    ..default()
+                });
+                // Neon Cyan Sole (faces camera during sprint stride!)
+                leg.spawn(PbrBundle {
+                    mesh: meshes.add(Cuboid::new(0.16, 0.05, 0.30)),
+                    material: cyan_echo_core_mat.clone(),
+                    transform: Transform::from_xyz(0.0, -0.58, 0.03),
+                    ..default()
+                });
+                // Neon Cyan Heel Thruster Bar
+                leg.spawn(PbrBundle {
+                    mesh: meshes.add(Cuboid::new(0.14, 0.08, 0.05)),
+                    material: cyan_echo_core_mat.clone(),
+                    transform: Transform::from_xyz(0.0, -0.48, 0.18),
+                    ..default()
+                });
+            });
+
+            // 10. Kinetic Powerup & Movement Visual Attachments
             // Shield Bubble
             parent.spawn((
                 PbrBundle {
@@ -375,7 +599,7 @@ pub fn spawn_player_entity(
                 OverdriveVisual,
             ));
 
-            // Rail Slide Sparks (Kinetic amber sparks during slide)
+            // Rail Slide Sparks
             let sparks_mat = materials.add(StandardMaterial {
                 base_color: Color::srgb(1.0, 0.65, 0.1),
                 emissive: LinearRgba::new(4.5, 2.0, 0.2, 1.0),
@@ -601,11 +825,101 @@ fn player_visual_smoothing(
     history.current_lateral_velocity = dx * 20.0;
     transform.translation.x += dx * (20.0 * dt).min(1.0);
 
-    // Dynamic banking roll angle during lane change
+    // Dynamic banking roll angle during lane change + sprint forward lean pitch
     let target_tilt = (-dx * 0.20).clamp(-0.28, 0.28);
+    let target_pitch = if player.is_grounded && !player.is_sliding { 0.12 } else { 0.0 };
     let cur_rot = transform.rotation;
-    let target_rot = Quat::from_rotation_z(target_tilt);
+    let target_rot = Quat::from_rotation_z(target_tilt) * Quat::from_rotation_x(target_pitch);
     transform.rotation = cur_rot.slerp(target_rot, (24.0 * dt).min(1.0));
+}
+
+fn player_locomotion_animation(
+    time: Res<Time>,
+    player_q: Query<(&Player, &Transform)>,
+    mut left_arm_q: Query<&mut Transform, (With<PlayerLeftArm>, Without<PlayerRightArm>, Without<PlayerLeftLeg>, Without<PlayerRightLeg>, Without<PlayerBackpackStrap>, Without<Player>)>,
+    mut right_arm_q: Query<&mut Transform, (With<PlayerRightArm>, Without<PlayerLeftArm>, Without<PlayerLeftLeg>, Without<PlayerRightLeg>, Without<PlayerBackpackStrap>, Without<Player>)>,
+    mut left_leg_q: Query<&mut Transform, (With<PlayerLeftLeg>, Without<PlayerLeftArm>, Without<PlayerRightArm>, Without<PlayerRightLeg>, Without<PlayerBackpackStrap>, Without<Player>)>,
+    mut right_leg_q: Query<&mut Transform, (With<PlayerRightLeg>, Without<PlayerLeftArm>, Without<PlayerRightArm>, Without<PlayerLeftLeg>, Without<PlayerBackpackStrap>, Without<Player>)>,
+    mut strap_q: Query<&mut Transform, (With<PlayerBackpackStrap>, Without<PlayerLeftArm>, Without<PlayerRightArm>, Without<PlayerLeftLeg>, Without<PlayerRightLeg>, Without<Player>)>,
+) {
+    let (player, _p_trans) = match player_q.get_single() {
+        Ok(p) => p,
+        Err(_) => return,
+    };
+
+    let dt = time.delta_seconds();
+    let t = time.elapsed_seconds();
+
+    if player.is_sliding {
+        // Slide pose: low streamlined lean, right leg extended forward, left knee tucked, arms balancing
+        if let Ok(mut arm) = left_arm_q.get_single_mut() {
+            let target_rot = Quat::from_rotation_x(0.65) * Quat::from_rotation_z(0.35);
+            arm.rotation = arm.rotation.slerp(target_rot, 20.0 * dt);
+        }
+        if let Ok(mut arm) = right_arm_q.get_single_mut() {
+            let target_rot = Quat::from_rotation_x(-0.85) * Quat::from_rotation_z(-0.25);
+            arm.rotation = arm.rotation.slerp(target_rot, 20.0 * dt);
+        }
+        if let Ok(mut leg) = left_leg_q.get_single_mut() {
+            let target_rot = Quat::from_rotation_x(0.85);
+            leg.rotation = leg.rotation.slerp(target_rot, 20.0 * dt);
+        }
+        if let Ok(mut leg) = right_leg_q.get_single_mut() {
+            let target_rot = Quat::from_rotation_x(-1.10);
+            leg.rotation = leg.rotation.slerp(target_rot, 20.0 * dt);
+        }
+    } else if !player.is_grounded {
+        // Jump pose: athletic tuck, knees bent, arms back/out for balance
+        let jump_pitch = (player.y_velocity * 0.05).clamp(-0.4, 0.4);
+        if let Ok(mut arm) = left_arm_q.get_single_mut() {
+            let target_rot = Quat::from_rotation_x(0.55 + jump_pitch) * Quat::from_rotation_z(-0.25);
+            arm.rotation = arm.rotation.slerp(target_rot, 15.0 * dt);
+        }
+        if let Ok(mut arm) = right_arm_q.get_single_mut() {
+            let target_rot = Quat::from_rotation_x(0.55 + jump_pitch) * Quat::from_rotation_z(0.25);
+            arm.rotation = arm.rotation.slerp(target_rot, 15.0 * dt);
+        }
+        if let Ok(mut leg) = left_leg_q.get_single_mut() {
+            let target_rot = Quat::from_rotation_x(-0.65);
+            leg.rotation = leg.rotation.slerp(target_rot, 15.0 * dt);
+        }
+        if let Ok(mut leg) = right_leg_q.get_single_mut() {
+            let target_rot = Quat::from_rotation_x(-0.45);
+            leg.rotation = leg.rotation.slerp(target_rot, 15.0 * dt);
+        }
+    } else {
+        // High-speed run stride cycle (running cadence ~15 rad/s)
+        let stride_speed = 15.0;
+        let stride_sin = (t * stride_speed).sin();
+
+        // Arm swing (opposing leg stride)
+        let arm_amp = 0.55;
+        if let Ok(mut arm) = left_arm_q.get_single_mut() {
+            let target_rot = Quat::from_rotation_x(-stride_sin * arm_amp) * Quat::from_rotation_z(-0.08);
+            arm.rotation = arm.rotation.slerp(target_rot, 25.0 * dt);
+        }
+        if let Ok(mut arm) = right_arm_q.get_single_mut() {
+            let target_rot = Quat::from_rotation_x(stride_sin * arm_amp) * Quat::from_rotation_z(0.08);
+            arm.rotation = arm.rotation.slerp(target_rot, 25.0 * dt);
+        }
+
+        // Leg stride (kicking back reveals cyan glowing thruster soles to camera)
+        let leg_amp = 0.65;
+        if let Ok(mut leg) = left_leg_q.get_single_mut() {
+            let target_rot = Quat::from_rotation_x(stride_sin * leg_amp);
+            leg.rotation = leg.rotation.slerp(target_rot, 25.0 * dt);
+        }
+        if let Ok(mut leg) = right_leg_q.get_single_mut() {
+            let target_rot = Quat::from_rotation_x(-stride_sin * leg_amp);
+            leg.rotation = leg.rotation.slerp(target_rot, 25.0 * dt);
+        }
+
+        // Trailing backpack straps flutter
+        for mut strap in strap_q.iter_mut() {
+            let flutter = (t * 22.0).sin() * 0.18 + 0.22;
+            strap.rotation = Quat::from_rotation_x(flutter);
+        }
+    }
 }
 
 fn player_powerup_visuals(

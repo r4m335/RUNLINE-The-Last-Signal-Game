@@ -136,11 +136,11 @@ fn init_enemy_assets(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     let assets = EnemyAssets {
-        // Scout Drone Silhouette
-        mesh_scout_body: meshes.add(Cuboid::new(0.48, 0.24, 0.70)),
-        mesh_scout_wing: meshes.add(Cuboid::new(0.32, 0.04, 0.35)),
-        mesh_scout_winglet: meshes.add(Cuboid::new(0.04, 0.12, 0.22)),
-        mesh_scout_thruster: meshes.add(Cuboid::new(0.14, 0.12, 0.16)),
+        // Scout Drone Silhouette (Needle dart with wide swept wings)
+        mesh_scout_body: meshes.add(Cuboid::new(0.32, 0.18, 0.82)),
+        mesh_scout_wing: meshes.add(Cuboid::new(0.52, 0.03, 0.45)),
+        mesh_scout_winglet: meshes.add(Cuboid::new(0.04, 0.18, 0.26)),
+        mesh_scout_thruster: meshes.add(Cuboid::new(0.16, 0.14, 0.20)),
         mesh_scout_eye: meshes.add(Sphere::new(0.09)),
         mat_scout: materials.add(StandardMaterial {
             base_color: Color::srgb(0.12, 0.12, 0.15),
@@ -150,21 +150,21 @@ fn init_enemy_assets(
         }),
         mat_scout_eye: materials.add(StandardMaterial {
             base_color: Color::srgb(1.0, 0.05, 0.10),
-            emissive: LinearRgba::new(4.8, 0.2, 0.4, 1.0),
+            emissive: LinearRgba::new(5.8, 0.15, 0.15, 1.0),
             ..default()
         }),
         mat_scout_thruster: materials.add(StandardMaterial {
             base_color: Color::srgb(0.2, 0.4, 1.0),
-            emissive: LinearRgba::new(0.5, 1.2, 4.5, 1.0),
+            emissive: LinearRgba::new(0.6, 2.0, 6.0, 1.0),
             ..default()
         }),
 
-        // Hunter Interceptor Silhouette
-        mesh_hunter_body: meshes.add(Cuboid::new(0.70, 0.28, 0.95)),
-        mesh_hunter_wing: meshes.add(Cuboid::new(0.45, 0.06, 0.40)),
+        // Hunter Interceptor Silhouette (Aggressive predatory wedge canopy)
+        mesh_hunter_body: meshes.add(Cuboid::new(0.76, 0.30, 1.10)),
+        mesh_hunter_wing: meshes.add(Cuboid::new(0.55, 0.05, 0.45)),
         mesh_hunter_nacelle: meshes.add(Cuboid::new(0.18, 0.16, 0.55)),
         mesh_hunter_eye: meshes.add(Sphere::new(0.11)),
-        mesh_hunter_cannon: meshes.add(Cuboid::new(0.14, 0.14, 0.45)),
+        mesh_hunter_cannon: meshes.add(Cuboid::new(0.14, 0.14, 0.50)),
         mat_hunter: materials.add(StandardMaterial {
             base_color: Color::srgb(0.16, 0.12, 0.22),
             metallic: 0.88,
@@ -173,42 +173,42 @@ fn init_enemy_assets(
         }),
         mat_hunter_beam: materials.add(StandardMaterial {
             base_color: Color::srgb(1.0, 0.50, 0.0),
-            emissive: LinearRgba::new(5.0, 2.0, 0.0, 1.0),
+            emissive: LinearRgba::new(5.8, 2.2, 0.0, 1.0),
             ..default()
         }),
         mat_hunter_eye: materials.add(StandardMaterial {
             base_color: Color::srgb(1.0, 0.35, 0.0),
-            emissive: LinearRgba::new(5.2, 2.2, 0.0, 1.0),
+            emissive: LinearRgba::new(5.8, 2.5, 0.0, 1.0),
             ..default()
         }),
 
-        // Heavy Fortified Blocker Silhouette
-        mesh_heavy_body: meshes.add(Cuboid::new(1.70, 1.40, 1.10)),
-        mesh_heavy_pylon: meshes.add(Cuboid::new(0.45, 1.60, 0.70)),
-        mesh_heavy_quad_eye: meshes.add(Sphere::new(0.08)),
-        mesh_heavy_generator: meshes.add(Cuboid::new(0.80, 0.40, 0.60)),
-        mesh_heavy_foot: meshes.add(Cuboid::new(0.25, 0.30, 0.45)),
+        // Heavy Fortified Blocker Silhouette (Massive 2m wide armored bastion)
+        mesh_heavy_body: meshes.add(Cuboid::new(1.85, 1.45, 1.15)),
+        mesh_heavy_pylon: meshes.add(Cuboid::new(0.50, 1.75, 0.75)),
+        mesh_heavy_quad_eye: meshes.add(Sphere::new(0.09)),
+        mesh_heavy_generator: meshes.add(Cuboid::new(0.85, 0.45, 0.65)),
+        mesh_heavy_foot: meshes.add(Cuboid::new(0.28, 0.32, 0.48)),
         mesh_emp_barrier: meshes.add(Cuboid::new(2.40, 3.00, 0.15)),
         mat_heavy_armor: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.22, 0.20, 0.24),
+            base_color: Color::srgb(0.20, 0.18, 0.22),
             metallic: 0.95,
             perceptual_roughness: 0.35,
             ..default()
         }),
         mat_heavy_emp: materials.add(StandardMaterial {
             base_color: Color::srgba(0.1, 0.7, 1.0, 0.55),
-            emissive: LinearRgba::new(0.4, 2.8, 4.5, 1.0),
+            emissive: LinearRgba::new(0.5, 3.2, 5.5, 1.0),
             ..default()
         }),
         mat_heavy_hazard: materials.add(StandardMaterial {
             base_color: Color::srgb(0.90, 0.60, 0.05),
-            emissive: LinearRgba::new(1.0, 0.5, 0.0, 1.0),
+            emissive: LinearRgba::new(1.2, 0.6, 0.0, 1.0),
             perceptual_roughness: 0.30,
             ..default()
         }),
         mat_heavy_eye: materials.add(StandardMaterial {
             base_color: Color::srgb(1.0, 0.05, 0.05),
-            emissive: LinearRgba::new(4.5, 0.1, 0.1, 1.0),
+            emissive: LinearRgba::new(5.5, 0.08, 0.08, 1.0),
             ..default()
         }),
 
@@ -297,26 +297,26 @@ fn spawn_scout_drone(
             drone.spawn(PbrBundle {
                 mesh: assets.mesh_scout_wing.clone(),
                 material: assets.mat_scout.clone(),
-                transform: Transform::from_xyz(-0.38, 0.02, 0.08),
+                transform: Transform::from_xyz(-0.44, 0.02, 0.06),
                 ..default()
             });
             drone.spawn(PbrBundle {
                 mesh: assets.mesh_scout_wing.clone(),
                 material: assets.mat_scout.clone(),
-                transform: Transform::from_xyz(0.38, 0.02, 0.08),
+                transform: Transform::from_xyz(0.44, 0.02, 0.06),
                 ..default()
             });
             // Winglet Fin Tips
             drone.spawn(PbrBundle {
                 mesh: assets.mesh_scout_winglet.clone(),
                 material: assets.mat_scout.clone(),
-                transform: Transform::from_xyz(-0.52, 0.08, 0.12),
+                transform: Transform::from_xyz(-0.68, 0.10, 0.10),
                 ..default()
             });
             drone.spawn(PbrBundle {
                 mesh: assets.mesh_scout_winglet.clone(),
                 material: assets.mat_scout.clone(),
-                transform: Transform::from_xyz(0.52, 0.08, 0.12),
+                transform: Transform::from_xyz(0.68, 0.10, 0.10),
                 ..default()
             });
             // Rear High-Energy Thruster Nozzle & Exhaust

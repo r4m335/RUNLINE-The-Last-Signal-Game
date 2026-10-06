@@ -205,17 +205,17 @@ fn init_environment_assets(
             ..default()
         }),
         mat_lane_stripe: materials.add(StandardMaterial {
-            base_color: Color::srgba(0.85, 0.80, 0.65, 0.70),
-            emissive: LinearRgba::new(0.4, 0.35, 0.2, 1.0),
-            perceptual_roughness: 0.50,
-            metallic: 0.10,
+            base_color: Color::srgba(0.55, 0.52, 0.48, 0.55),
+            emissive: LinearRgba::BLACK,
+            perceptual_roughness: 0.85,
+            metallic: 0.05,
             ..default()
         }),
         mat_echo_conduit: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.0, 0.8, 1.0),
-            emissive: LinearRgba::new(0.2, 2.2, 3.2, 1.0),
-            perceptual_roughness: 0.15,
-            metallic: 0.50,
+            base_color: Color::srgb(0.06, 0.16, 0.20),
+            emissive: LinearRgba::new(0.02, 0.12, 0.18, 1.0),
+            perceptual_roughness: 0.65,
+            metallic: 0.40,
             ..default()
         }),
         mat_rail_joint: materials.add(StandardMaterial {
@@ -231,10 +231,10 @@ fn init_environment_assets(
             ..default()
         }),
         mat_catenary_wire: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.35, 0.35, 0.40),
-            emissive: LinearRgba::new(0.1, 0.1, 0.2, 1.0),
-            perceptual_roughness: 0.20,
-            metallic: 0.90,
+            base_color: Color::srgb(0.22, 0.22, 0.24),
+            emissive: LinearRgba::BLACK,
+            perceptual_roughness: 0.70,
+            metallic: 0.60,
             ..default()
         }),
         mat_lantern_cage: materials.add(StandardMaterial {

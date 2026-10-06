@@ -263,6 +263,19 @@ pub fn spawn_pattern_chunk(
                             transform: Transform::from_xyz(0.0, 0.25, 0.0),
                             ..default()
                         });
+                        // Stanchion warning strobe caps (Jump cues)
+                        barrier.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_barrier_strobe.clone(),
+                            material: pool_assets.mat_barrier_led.clone(),
+                            transform: Transform::from_xyz(-0.95, 0.35, 0.0),
+                            ..default()
+                        });
+                        barrier.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_barrier_strobe.clone(),
+                            material: pool_assets.mat_barrier_led.clone(),
+                            transform: Transform::from_xyz(0.95, 0.35, 0.0),
+                            ..default()
+                        });
                         // Center hydraulic lock housing
                         barrier.spawn(PbrBundle {
                             mesh: pool_assets.mesh_barrier_lock_box.clone(),
@@ -309,11 +322,18 @@ pub fn spawn_pattern_chunk(
                         Despawnable { z_center: world_z },
                         PooledItem { pool_type: PoolType::HighHangingWire, is_active: true },
                     )).with_children(|wire| {
-                        // Upper catenary conduit
+                        // Upper catenary structural conduit
                         wire.spawn(PbrBundle {
                             mesh: pool_assets.mesh_wire_catenary.clone(),
                             material: pool_assets.mat_barrier_steel.clone(),
-                            transform: Transform::from_xyz(0.0, 0.18, 0.0),
+                            transform: Transform::from_xyz(0.0, 0.22, 0.0),
+                            ..default()
+                        });
+                        // Center overhead red danger beacon
+                        wire.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_barrier_strobe.clone(),
+                            material: pool_assets.mat_wire_beacon.clone(),
+                            transform: Transform::from_xyz(0.0, 0.32, 0.0),
                             ..default()
                         });
                         // Left & right ceiling anchor mounts
@@ -329,24 +349,43 @@ pub fn spawn_pattern_chunk(
                             transform: Transform::from_xyz(1.05, 0.20, 0.0),
                             ..default()
                         });
-                        // Dangling severed copper leads
+                        // Dangling severed copper leads (live sparking)
                         wire.spawn(PbrBundle {
                             mesh: pool_assets.mesh_wire_dangle.clone(),
                             material: pool_assets.mat_wire_copper.clone(),
-                            transform: Transform::from_xyz(-0.45, -0.16, 0.0),
+                            transform: Transform::from_xyz(-0.55, -0.16, 0.0),
                             ..default()
                         });
                         wire.spawn(PbrBundle {
                             mesh: pool_assets.mesh_wire_dangle.clone(),
                             material: pool_assets.mat_wire_copper.clone(),
-                            transform: Transform::from_xyz(0.35, -0.18, 0.0),
+                            transform: Transform::from_xyz(0.45, -0.18, 0.0),
                             ..default()
                         });
-                        // Live voltage spark core
+                        wire.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_wire_dangle.clone(),
+                            material: pool_assets.mat_wire_copper.clone(),
+                            transform: Transform::from_xyz(-0.15, -0.22, 0.0),
+                            ..default()
+                        });
+                        // Live high-voltage spark cores (piercing electric arc yellow-white)
                         wire.spawn(PbrBundle {
                             mesh: pool_assets.mesh_wire_spark.clone(),
                             material: pool_assets.mat_wire_spark.clone(),
-                            transform: Transform::from_xyz(0.0, -0.05, 0.0),
+                            transform: Transform::from_xyz(-0.55, -0.26, 0.0),
+                            ..default()
+                        });
+                        wire.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_wire_spark.clone(),
+                            material: pool_assets.mat_wire_spark.clone(),
+                            transform: Transform::from_xyz(0.45, -0.28, 0.0),
+                            ..default()
+                        });
+                        // Downward clearance guide indicator - highlights the open void underneath for sliding!
+                        wire.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_wire_chevron.clone(),
+                            material: pool_assets.mat_wire_chevron.clone(),
+                            transform: Transform::from_xyz(0.0, -0.34, 0.0),
                             ..default()
                         });
                     });
@@ -727,11 +766,12 @@ pub fn spawn_pattern_chunk(
     if rng.gen_bool(0.18) {
         let p_lane = Lane::from_index(rng.gen_range(-1..=1));
         let world_z = z_start - 34.0;
-        let roll = rng.gen_range(0..3);
-        let (p_type, p_mat) = match roll {
-            0 => (CollectibleType::EchoShield, pool_assets.mat_powerup_shield.clone()),
-            1 => (CollectibleType::Magnet, pool_assets.mat_powerup_magnet.clone()),
-            _ => (CollectibleType::Overdrive, pool_assets.mat_powerup_overdrive.clone()),
+        let roll = rng.gen_range(0..4);
+        let p_type = match roll {
+            0 => CollectibleType::EchoShield,
+            1 => CollectibleType::Magnet,
+            2 => CollectibleType::Overdrive,
+            _ => CollectibleType::DoubleJump,
         };
 
         if let Some(entity) = pool.pop(PoolType::PowerUp) {
@@ -749,9 +789,7 @@ pub fn spawn_pattern_chunk(
             ));
         } else {
             commands.spawn((
-                PbrBundle {
-                    mesh: pool_assets.mesh_powerup.clone(),
-                    material: p_mat,
+                SpatialBundle {
                     transform: Transform::from_xyz(p_lane.x_pos(), 1.2, world_z),
                     ..default()
                 },
@@ -763,7 +801,127 @@ pub fn spawn_pattern_chunk(
                 },
                 Despawnable { z_center: world_z },
                 PooledItem { pool_type: PoolType::PowerUp, is_active: true },
-            ));
+            )).with_children(|parent| {
+                match p_type {
+                    CollectibleType::EchoShield => {
+                        // Hexagonal core
+                        parent.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_shield_hex.clone(),
+                            material: pool_assets.mat_powerup_shield.clone(),
+                            ..default()
+                        });
+                        // 3 orbiting deflector plates
+                        parent.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_shield_plate.clone(),
+                            material: pool_assets.mat_powerup_shield.clone(),
+                            transform: Transform::from_xyz(0.0, 0.0, 0.38),
+                            ..default()
+                        });
+                        parent.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_shield_plate.clone(),
+                            material: pool_assets.mat_powerup_shield.clone(),
+                            transform: Transform::from_xyz(-0.33, 0.0, -0.19).with_rotation(Quat::from_rotation_y(2.094)),
+                            ..default()
+                        });
+                        parent.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_shield_plate.clone(),
+                            material: pool_assets.mat_powerup_shield.clone(),
+                            transform: Transform::from_xyz(0.33, 0.0, -0.19).with_rotation(Quat::from_rotation_y(-2.094)),
+                            ..default()
+                        });
+                        // Translucent energy ring
+                        parent.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_shield_ring.clone(),
+                            material: pool_assets.mat_powerup_shield.clone(),
+                            ..default()
+                        });
+                    }
+                    CollectibleType::Magnet => {
+                        // Horseshoe top arch
+                        parent.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_magnet_arch.clone(),
+                            material: pool_assets.mat_powerup_magnet.clone(),
+                            transform: Transform::from_xyz(0.0, 0.22, 0.0),
+                            ..default()
+                        });
+                        // Left & right downward prongs
+                        parent.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_magnet_prong.clone(),
+                            material: pool_assets.mat_powerup_magnet.clone(),
+                            transform: Transform::from_xyz(-0.20, -0.06, 0.0),
+                            ..default()
+                        });
+                        parent.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_magnet_prong.clone(),
+                            material: pool_assets.mat_powerup_magnet.clone(),
+                            transform: Transform::from_xyz(0.20, -0.06, 0.0),
+                            ..default()
+                        });
+                        // Silver/chrome contact poles
+                        parent.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_magnet_pole.clone(),
+                            material: pool_assets.mat_magnet_pole.clone(),
+                            transform: Transform::from_xyz(-0.20, -0.32, 0.0),
+                            ..default()
+                        });
+                        parent.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_magnet_pole.clone(),
+                            material: pool_assets.mat_magnet_pole.clone(),
+                            transform: Transform::from_xyz(0.20, -0.32, 0.0),
+                            ..default()
+                        });
+                        // Orbiting flux ring
+                        parent.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_magnet_ring.clone(),
+                            material: pool_assets.mat_powerup_magnet.clone(),
+                            transform: Transform::from_xyz(0.0, -0.08, 0.0),
+                            ..default()
+                        });
+                    }
+                    CollectibleType::Overdrive => {
+                        // Elongated diamond turbine spike
+                        parent.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_overdrive_diamond.clone(),
+                            material: pool_assets.mat_powerup_overdrive.clone(),
+                            ..default()
+                        });
+                        // Dual tilted gyro rings
+                        parent.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_overdrive_ring.clone(),
+                            material: pool_assets.mat_powerup_overdrive.clone(),
+                            transform: Transform::from_rotation(Quat::from_rotation_x(0.785)),
+                            ..default()
+                        });
+                        parent.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_overdrive_ring.clone(),
+                            material: pool_assets.mat_powerup_overdrive.clone(),
+                            transform: Transform::from_rotation(Quat::from_rotation_z(0.785)),
+                            ..default()
+                        });
+                    }
+                    _ => {
+                        // Double Jump: dual upward winged chevrons & double thrust rings
+                        parent.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_jump_chevron.clone(),
+                            material: pool_assets.mat_powerup_jump.clone(),
+                            transform: Transform::from_xyz(0.0, -0.08, 0.0),
+                            ..default()
+                        });
+                        parent.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_jump_chevron.clone(),
+                            material: pool_assets.mat_powerup_jump.clone(),
+                            transform: Transform::from_xyz(0.0, 0.12, 0.0),
+                            ..default()
+                        });
+                        parent.spawn(PbrBundle {
+                            mesh: pool_assets.mesh_jump_ring.clone(),
+                            material: pool_assets.mat_powerup_jump.clone(),
+                            transform: Transform::from_xyz(0.0, -0.26, 0.0),
+                            ..default()
+                        });
+                    }
+                }
+            });
         }
     }
 

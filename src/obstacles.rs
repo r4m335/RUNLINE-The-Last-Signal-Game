@@ -33,16 +33,16 @@ pub fn spawn_segment_obstacles(
     let density = density_override.unwrap_or(zone.obstacle_density);
 
     let hazard_mat = materials.add(StandardMaterial {
-        base_color: Color::srgb(0.9, 0.4, 0.1),
-        emissive: LinearRgba::new(1.2, 0.4, 0.0, 1.0),
-        perceptual_roughness: 0.4,
+        base_color: Color::srgb(1.0, 0.50, 0.05),
+        emissive: LinearRgba::new(3.5, 1.2, 0.0, 1.0),
+        perceptual_roughness: 0.25,
         ..default()
     });
 
     let pillar_mat = materials.add(StandardMaterial {
-        base_color: Color::srgb(0.2, 0.22, 0.26),
-        metallic: 0.8,
-        perceptual_roughness: 0.2,
+        base_color: Color::srgb(0.18, 0.20, 0.24),
+        metallic: 0.90,
+        perceptual_roughness: 0.25,
         ..default()
     });
 
@@ -55,13 +55,14 @@ pub fn spawn_segment_obstacles(
 
     let train_light_mat = materials.add(StandardMaterial {
         base_color: Color::srgb(1.0, 0.95, 0.8),
-        emissive: LinearRgba::new(4.0, 3.8, 2.5, 1.0),
+        emissive: LinearRgba::new(4.5, 4.0, 2.5, 1.0),
         ..default()
     });
 
     let wire_mat = materials.add(StandardMaterial {
-        base_color: Color::srgb(1.0, 0.8, 0.1),
-        emissive: LinearRgba::new(1.5, 1.2, 0.0, 1.0),
+        base_color: Color::srgb(1.0, 0.88, 0.10),
+        emissive: LinearRgba::new(4.5, 3.8, 0.2, 1.0),
+        perceptual_roughness: 0.25,
         ..default()
     });
 

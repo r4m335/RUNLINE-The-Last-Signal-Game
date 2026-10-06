@@ -50,20 +50,34 @@ pub fn spawn_segment_collectibles(
     });
 
     let powerup_shield_mat = materials.add(StandardMaterial {
-        base_color: Color::srgb(0.1, 0.6, 1.0),
-        emissive: LinearRgba::new(0.5, 1.8, 3.5, 1.0),
+        base_color: Color::srgba(0.05, 0.85, 1.0, 0.90),
+        emissive: LinearRgba::new(0.6, 3.6, 5.5, 1.0),
+        alpha_mode: AlphaMode::Blend,
         ..default()
     });
 
     let powerup_magnet_mat = materials.add(StandardMaterial {
-        base_color: Color::srgb(0.9, 0.1, 0.9),
-        emissive: LinearRgba::new(2.8, 0.2, 2.8, 1.0),
+        base_color: Color::srgb(1.0, 0.1, 0.9),
+        emissive: LinearRgba::new(4.8, 0.3, 4.8, 1.0),
+        ..default()
+    });
+
+    let powerup_pole_mat = materials.add(StandardMaterial {
+        base_color: Color::srgb(0.92, 0.92, 0.96),
+        metallic: 0.95,
+        perceptual_roughness: 0.10,
         ..default()
     });
 
     let powerup_overdrive_mat = materials.add(StandardMaterial {
         base_color: Color::srgb(1.0, 0.5, 0.0),
-        emissive: LinearRgba::new(3.5, 1.2, 0.0, 1.0),
+        emissive: LinearRgba::new(5.5, 2.2, 0.0, 1.0),
+        ..default()
+    });
+
+    let powerup_jump_mat = materials.add(StandardMaterial {
+        base_color: Color::srgb(0.1, 0.9, 1.0),
+        emissive: LinearRgba::new(0.6, 4.2, 5.5, 1.0),
         ..default()
     });
 
@@ -123,17 +137,15 @@ pub fn spawn_segment_collectibles(
         let z = z_start - 34.0;
 
         let roll = rng.gen_range(0..4);
-        let (p_type, p_mat) = match roll {
-            0 => (CollectibleType::EchoShield, powerup_shield_mat),
-            1 => (CollectibleType::Magnet, powerup_magnet_mat),
-            2 => (CollectibleType::Overdrive, powerup_overdrive_mat),
-            _ => (CollectibleType::DoubleJump, powerup_shield_mat),
+        let p_type = match roll {
+            0 => CollectibleType::EchoShield,
+            1 => CollectibleType::Magnet,
+            2 => CollectibleType::Overdrive,
+            _ => CollectibleType::DoubleJump,
         };
 
-        commands.spawn((
-            PbrBundle {
-                mesh: meshes.add(Torus::new(0.25, 0.45)),
-                material: p_mat,
+        let mut p_cmd = commands.spawn((
+            SpatialBundle {
                 transform: Transform::from_xyz(p_x, 1.2, z),
                 ..default()
             },
@@ -145,6 +157,129 @@ pub fn spawn_segment_collectibles(
             },
             Despawnable { z_center: z },
         ));
+
+        p_cmd.with_children(|parent| {
+            match p_type {
+                CollectibleType::EchoShield => {
+                    let hex = meshes.add(Cylinder::new(0.32, 0.14));
+                    let plate = meshes.add(Cuboid::new(0.10, 0.36, 0.05));
+                    let ring = meshes.add(Torus::new(0.04, 0.45));
+                    parent.spawn(PbrBundle {
+                        mesh: hex,
+                        material: powerup_shield_mat.clone(),
+                        ..default()
+                    });
+                    parent.spawn(PbrBundle {
+                        mesh: plate.clone(),
+                        material: powerup_shield_mat.clone(),
+                        transform: Transform::from_xyz(0.0, 0.0, 0.38),
+                        ..default()
+                    });
+                    parent.spawn(PbrBundle {
+                        mesh: plate.clone(),
+                        material: powerup_shield_mat.clone(),
+                        transform: Transform::from_xyz(-0.33, 0.0, -0.19).with_rotation(Quat::from_rotation_y(2.094)),
+                        ..default()
+                    });
+                    parent.spawn(PbrBundle {
+                        mesh: plate,
+                        material: powerup_shield_mat.clone(),
+                        transform: Transform::from_xyz(0.33, 0.0, -0.19).with_rotation(Quat::from_rotation_y(-2.094)),
+                        ..default()
+                    });
+                    parent.spawn(PbrBundle {
+                        mesh: ring,
+                        material: powerup_shield_mat.clone(),
+                        ..default()
+                    });
+                }
+                CollectibleType::Magnet => {
+                    let arch = meshes.add(Cuboid::new(0.50, 0.14, 0.14));
+                    let prong = meshes.add(Cuboid::new(0.14, 0.42, 0.14));
+                    let pole = meshes.add(Cuboid::new(0.15, 0.10, 0.15));
+                    let ring = meshes.add(Torus::new(0.03, 0.35));
+                    parent.spawn(PbrBundle {
+                        mesh: arch,
+                        material: powerup_magnet_mat.clone(),
+                        transform: Transform::from_xyz(0.0, 0.22, 0.0),
+                        ..default()
+                    });
+                    parent.spawn(PbrBundle {
+                        mesh: prong.clone(),
+                        material: powerup_magnet_mat.clone(),
+                        transform: Transform::from_xyz(-0.20, -0.06, 0.0),
+                        ..default()
+                    });
+                    parent.spawn(PbrBundle {
+                        mesh: prong,
+                        material: powerup_magnet_mat.clone(),
+                        transform: Transform::from_xyz(0.20, -0.06, 0.0),
+                        ..default()
+                    });
+                    parent.spawn(PbrBundle {
+                        mesh: pole.clone(),
+                        material: powerup_pole_mat.clone(),
+                        transform: Transform::from_xyz(-0.20, -0.32, 0.0),
+                        ..default()
+                    });
+                    parent.spawn(PbrBundle {
+                        mesh: pole,
+                        material: powerup_pole_mat.clone(),
+                        transform: Transform::from_xyz(0.20, -0.32, 0.0),
+                        ..default()
+                    });
+                    parent.spawn(PbrBundle {
+                        mesh: ring,
+                        material: powerup_magnet_mat.clone(),
+                        transform: Transform::from_xyz(0.0, -0.08, 0.0),
+                        ..default()
+                    });
+                }
+                CollectibleType::Overdrive => {
+                    let diamond = meshes.add(Cuboid::new(0.32, 0.65, 0.32));
+                    let ring = meshes.add(Torus::new(0.04, 0.42));
+                    parent.spawn(PbrBundle {
+                        mesh: diamond,
+                        material: powerup_overdrive_mat.clone(),
+                        ..default()
+                    });
+                    parent.spawn(PbrBundle {
+                        mesh: ring.clone(),
+                        material: powerup_overdrive_mat.clone(),
+                        transform: Transform::from_rotation(Quat::from_rotation_x(0.785)),
+                        ..default()
+                    });
+                    parent.spawn(PbrBundle {
+                        mesh: ring,
+                        material: powerup_overdrive_mat.clone(),
+                        transform: Transform::from_rotation(Quat::from_rotation_z(0.785)),
+                        ..default()
+                    });
+                }
+                _ => {
+                    let chevron = meshes.add(Cuboid::new(0.40, 0.12, 0.10));
+                    let ring = meshes.add(Torus::new(0.03, 0.36));
+                    parent.spawn(PbrBundle {
+                        mesh: chevron.clone(),
+                        material: powerup_jump_mat.clone(),
+                        transform: Transform::from_xyz(0.0, -0.08, 0.0),
+                        ..default()
+                    });
+                    parent.spawn(PbrBundle {
+                        mesh: chevron,
+                        material: powerup_jump_mat.clone(),
+                        transform: Transform::from_xyz(0.0, 0.12, 0.0),
+                        ..default()
+                    });
+                    parent.spawn(PbrBundle {
+                        mesh: ring,
+                        material: powerup_jump_mat.clone(),
+                        transform: Transform::from_xyz(0.0, -0.26, 0.0),
+                        ..default()
+                    });
+                }
+            }
+        });
     }
 }
 

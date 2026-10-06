@@ -71,6 +71,28 @@ pub struct PoolAssets {
     pub mat_powerup_shield: Handle<StandardMaterial>,
     pub mat_powerup_magnet: Handle<StandardMaterial>,
     pub mat_powerup_overdrive: Handle<StandardMaterial>,
+
+    // Powerups Custom 3D Iconography Meshes & Materials
+    pub mesh_shield_hex: Handle<Mesh>,
+    pub mesh_shield_plate: Handle<Mesh>,
+    pub mesh_shield_ring: Handle<Mesh>,
+    pub mesh_magnet_arch: Handle<Mesh>,
+    pub mesh_magnet_prong: Handle<Mesh>,
+    pub mesh_magnet_pole: Handle<Mesh>,
+    pub mesh_magnet_ring: Handle<Mesh>,
+    pub mat_magnet_pole: Handle<StandardMaterial>,
+    pub mesh_overdrive_diamond: Handle<Mesh>,
+    pub mesh_overdrive_ring: Handle<Mesh>,
+    pub mesh_jump_chevron: Handle<Mesh>,
+    pub mesh_jump_ring: Handle<Mesh>,
+    pub mat_powerup_jump: Handle<StandardMaterial>,
+
+    // High Visibility Obstacle Cues
+    pub mesh_barrier_strobe: Handle<Mesh>,
+    pub mat_wire_beacon: Handle<StandardMaterial>,
+    pub mat_wire_live: Handle<StandardMaterial>,
+    pub mesh_wire_chevron: Handle<Mesh>,
+    pub mat_wire_chevron: Handle<StandardMaterial>,
 }
 
 #[derive(Resource, Default)]
@@ -156,6 +178,7 @@ fn init_pool_assets(
         mesh_barrier_led_strip: meshes.add(Cuboid::new(2.05, 0.06, 0.08)),
         mesh_barrier_lock_box: meshes.add(Cuboid::new(0.28, 0.28, 0.16)),
         mesh_barrier_skirt: meshes.add(Cuboid::new(1.76, 0.20, 0.06)),
+        mesh_barrier_strobe: meshes.add(Sphere::new(0.08)),
         mat_barrier_steel: materials.add(StandardMaterial {
             base_color: Color::srgb(0.14, 0.15, 0.18),
             metallic: 0.85,
@@ -163,8 +186,8 @@ fn init_pool_assets(
             ..default()
         }),
         mat_barrier_led: materials.add(StandardMaterial {
-            base_color: Color::srgb(1.0, 0.45, 0.05),
-            emissive: LinearRgba::new(4.5, 1.6, 0.1, 1.0),
+            base_color: Color::srgb(1.0, 0.50, 0.05),
+            emissive: LinearRgba::new(5.8, 2.4, 0.1, 1.0),
             ..default()
         }),
 
@@ -173,22 +196,41 @@ fn init_pool_assets(
         mesh_wire_catenary: meshes.add(Cuboid::new(2.20, 0.08, 0.08)),
         mesh_wire_bundle: meshes.add(Cuboid::new(2.10, 0.16, 0.16)),
         mesh_wire_dangle: meshes.add(Cuboid::new(0.04, 0.28, 0.04)),
-        mesh_wire_spark: meshes.add(Sphere::new(0.10)),
+        mesh_wire_spark: meshes.add(Sphere::new(0.12)),
+        mesh_wire_chevron: meshes.add(Cuboid::new(0.40, 0.06, 0.04)),
         mat_wire_copper: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.85, 0.45, 0.20),
+            base_color: Color::srgb(1.0, 0.70, 0.15),
+            emissive: LinearRgba::new(4.8, 2.6, 0.3, 1.0),
             metallic: 0.95,
             perceptual_roughness: 0.15,
             ..default()
         }),
         mat_wire_spark: materials.add(StandardMaterial {
-            base_color: Color::srgb(1.0, 0.95, 0.4),
-            emissive: LinearRgba::new(5.5, 4.5, 1.2, 1.0),
+            base_color: Color::srgb(1.0, 1.0, 0.90),
+            emissive: LinearRgba::new(6.5, 6.0, 2.5, 1.0),
             ..default()
         }),
         mat_wire_insulation: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.08, 0.08, 0.09),
-            perceptual_roughness: 0.70,
-            metallic: 0.20,
+            base_color: Color::srgb(1.0, 0.88, 0.10),
+            emissive: LinearRgba::new(4.2, 3.6, 0.2, 1.0),
+            perceptual_roughness: 0.25,
+            metallic: 0.30,
+            ..default()
+        }),
+        mat_wire_live: materials.add(StandardMaterial {
+            base_color: Color::srgb(1.0, 0.95, 0.40),
+            emissive: LinearRgba::new(5.5, 5.0, 1.2, 1.0),
+            ..default()
+        }),
+        mat_wire_beacon: materials.add(StandardMaterial {
+            base_color: Color::srgb(1.0, 0.10, 0.05),
+            emissive: LinearRgba::new(5.2, 0.2, 0.1, 1.0),
+            ..default()
+        }),
+        mat_wire_chevron: materials.add(StandardMaterial {
+            base_color: Color::srgba(1.0, 0.90, 0.15, 0.85),
+            emissive: LinearRgba::new(3.8, 3.2, 0.2, 1.0),
+            alpha_mode: AlphaMode::Blend,
             ..default()
         }),
 
@@ -201,7 +243,7 @@ fn init_pool_assets(
         mesh_pillar_collar: meshes.add(Cuboid::new(1.80, 0.30, 1.20)),
         mat_pillar_beacon: materials.add(StandardMaterial {
             base_color: Color::srgb(1.0, 0.05, 0.05),
-            emissive: LinearRgba::new(4.8, 0.1, 0.1, 1.0),
+            emissive: LinearRgba::new(5.8, 0.1, 0.1, 1.0),
             ..default()
         }),
         mat_pillar_armor: materials.add(StandardMaterial {
@@ -251,8 +293,8 @@ fn init_pool_assets(
         }),
 
         mat_hazard: materials.add(StandardMaterial {
-            base_color: Color::srgb(1.0, 0.45, 0.05),
-            emissive: LinearRgba::new(2.4, 0.8, 0.0, 1.0),
+            base_color: Color::srgb(1.0, 0.50, 0.05),
+            emissive: LinearRgba::new(3.5, 1.2, 0.0, 1.0),
             perceptual_roughness: 0.25,
             ..default()
         }),
@@ -263,8 +305,8 @@ fn init_pool_assets(
             ..default()
         }),
         mat_wire: materials.add(StandardMaterial {
-            base_color: Color::srgb(1.0, 0.85, 0.0),
-            emissive: LinearRgba::new(2.8, 2.0, 0.1, 1.0),
+            base_color: Color::srgb(1.0, 0.88, 0.10),
+            emissive: LinearRgba::new(4.2, 3.6, 0.2, 1.0),
             ..default()
         }),
         mat_train_body: materials.add(StandardMaterial {
@@ -293,18 +335,43 @@ fn init_pool_assets(
             ..default()
         }),
         mat_powerup_shield: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.1, 0.6, 1.0),
-            emissive: LinearRgba::new(0.5, 1.8, 3.5, 1.0),
+            base_color: Color::srgba(0.05, 0.85, 1.0, 0.90),
+            emissive: LinearRgba::new(0.6, 3.6, 5.5, 1.0),
+            alpha_mode: AlphaMode::Blend,
             ..default()
         }),
         mat_powerup_magnet: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.9, 0.1, 0.9),
-            emissive: LinearRgba::new(2.8, 0.2, 2.8, 1.0),
+            base_color: Color::srgb(1.0, 0.1, 0.9),
+            emissive: LinearRgba::new(4.8, 0.3, 4.8, 1.0),
             ..default()
         }),
         mat_powerup_overdrive: materials.add(StandardMaterial {
             base_color: Color::srgb(1.0, 0.5, 0.0),
-            emissive: LinearRgba::new(3.5, 1.2, 0.0, 1.0),
+            emissive: LinearRgba::new(5.5, 2.2, 0.0, 1.0),
+            ..default()
+        }),
+
+        // Powerup 3D Iconography Meshes & Materials
+        mesh_shield_hex: meshes.add(Cylinder::new(0.32, 0.14)),
+        mesh_shield_plate: meshes.add(Cuboid::new(0.10, 0.36, 0.05)),
+        mesh_shield_ring: meshes.add(Torus::new(0.04, 0.45)),
+        mesh_magnet_arch: meshes.add(Cuboid::new(0.50, 0.14, 0.14)),
+        mesh_magnet_prong: meshes.add(Cuboid::new(0.14, 0.42, 0.14)),
+        mesh_magnet_pole: meshes.add(Cuboid::new(0.15, 0.10, 0.15)),
+        mesh_magnet_ring: meshes.add(Torus::new(0.03, 0.35)),
+        mat_magnet_pole: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.92, 0.92, 0.96),
+            metallic: 0.95,
+            perceptual_roughness: 0.10,
+            ..default()
+        }),
+        mesh_overdrive_diamond: meshes.add(Cuboid::new(0.32, 0.65, 0.32)),
+        mesh_overdrive_ring: meshes.add(Torus::new(0.04, 0.42)),
+        mesh_jump_chevron: meshes.add(Cuboid::new(0.40, 0.12, 0.10)),
+        mesh_jump_ring: meshes.add(Torus::new(0.03, 0.36)),
+        mat_powerup_jump: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.1, 0.9, 1.0),
+            emissive: LinearRgba::new(0.6, 4.2, 5.5, 1.0),
             ..default()
         }),
     };

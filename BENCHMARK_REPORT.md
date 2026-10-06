@@ -6,55 +6,55 @@
 
 | Scenario / Landmark | Entities | Obstacles | Lights | Avg FPS | Avg Frame Time | 99th% Latency | Min FPS | Budget Status |
 | :------------------ | -------: | --------: | -----: | ------: | -------------: | ------------: | ------: | :------------ |
-| Metro: Entrance (20m) |       24 |         0 |      0 |    60.0 |        16.67 ms |       46.20 ms |    21.6 | OVER BUDGET   |
-| Metro: Service/Train (200m) |       24 |         0 |      0 |    60.0 |        16.67 ms |       19.14 ms |    52.2 | BORDERLINE    |
-| Metro: Platform (280m) |       24 |         0 |      0 |    60.0 |        16.67 ms |       18.10 ms |    55.3 | BORDERLINE    |
-| Metro: Maint Cart (450m) |       24 |         0 |      0 |    60.0 |        16.67 ms |       17.67 ms |    56.6 | BORDERLINE    |
-| Metro: Substation (535m) |       24 |         0 |      0 |    60.0 |        16.67 ms |       18.71 ms |    53.5 | BORDERLINE    |
-| Metro: Collapse (660m) |       24 |         0 |      0 |    60.0 |        16.67 ms |       17.67 ms |    56.6 | BORDERLINE    |
-| Metro: Checkpoint (760m) |       24 |         0 |      0 |    60.0 |        16.66 ms |       17.46 ms |    57.3 | BORDERLINE    |
-| Zone 2: Neon District |       24 |         0 |      0 |    60.0 |        16.67 ms |       17.59 ms |    56.9 | BORDERLINE    |
-| Zone 3: Sky Rail Transit |       24 |         0 |      0 |    60.0 |        16.67 ms |       17.28 ms |    57.9 | BORDERLINE    |
-| Zone 4: Industrial Foundry |       24 |         0 |      0 |    60.0 |        16.66 ms |       17.98 ms |    55.6 | BORDERLINE    |
-| Zone 5: Flooded Conduits |       24 |         0 |      0 |    60.0 |        16.66 ms |       18.44 ms |    54.2 | BORDERLINE    |
-| Zone 6: Veyron Data Vault |       24 |         0 |      0 |    60.0 |        16.66 ms |       17.82 ms |    56.1 | BORDERLINE    |
-| Zone 7: The Echo Core |       24 |         0 |      0 |    60.0 |        16.67 ms |       18.06 ms |    55.4 | BORDERLINE    |
+| Metro: Entrance (20m) |       24 |         0 |      0 |    60.0 |        16.67 ms |       32.37 ms |    30.9 | OVER BUDGET   |
+| Metro: Service/Train (200m) |       24 |         0 |      0 |    60.0 |        16.68 ms |       18.46 ms |    54.2 | OVER BUDGET   |
+| Metro: Platform (280m) |       24 |         0 |      0 |    60.0 |        16.67 ms |       18.68 ms |    53.5 | OVER BUDGET   |
+| Metro: Maint Cart (450m) |       24 |         0 |      0 |    60.0 |        16.67 ms |       19.06 ms |    52.5 | OVER BUDGET   |
+| Metro: Substation (535m) |       24 |         0 |      0 |    60.0 |        16.67 ms |       17.95 ms |    55.7 | BORDERLINE    |
+| Metro: Collapse (660m) |       24 |         0 |      0 |    60.0 |        16.66 ms |       18.65 ms |    53.6 | BORDERLINE    |
+| Metro: Checkpoint (760m) |       24 |         0 |      0 |    59.9 |        16.69 ms |       18.07 ms |    55.3 | OVER BUDGET   |
+| Zone 2: Neon District |       24 |         0 |      0 |    60.0 |        16.66 ms |       18.28 ms |    54.7 | BORDERLINE    |
+| Zone 3: Sky Rail Transit |       24 |         0 |      0 |    60.0 |        16.67 ms |       18.84 ms |    53.1 | BORDERLINE    |
+| Zone 4: Industrial Foundry |       24 |         0 |      0 |    60.0 |        16.67 ms |       18.62 ms |    53.7 | BORDERLINE    |
+| Zone 5: Flooded Conduits |       24 |         0 |      0 |    60.0 |        16.66 ms |       17.90 ms |    55.9 | BORDERLINE    |
+| Zone 6: Veyron Data Vault |       24 |         0 |      0 |    60.0 |        16.65 ms |       27.63 ms |    36.2 | BORDERLINE    |
+| Zone 7: The Echo Core |       24 |         0 |      0 |    60.0 |        16.68 ms |       18.22 ms |    54.9 | OVER BUDGET   |
 
 ### MEDIUM TIER (Standard Post-Processing)
 
 | Scenario / Landmark | Entities | Obstacles | Lights | Avg FPS | Avg Frame Time | 99th% Latency | Min FPS | Budget Status |
 | :------------------ | -------: | --------: | -----: | ------: | -------------: | ------------: | ------: | :------------ |
-| Metro: Entrance (20m) |       24 |         0 |      0 |    60.0 |        16.66 ms |       23.54 ms |    42.5 | BORDERLINE    |
-| Metro: Service/Train (200m) |       24 |         0 |      0 |    60.0 |        16.67 ms |       17.63 ms |    56.7 | BORDERLINE    |
-| Metro: Platform (280m) |       24 |         0 |      0 |    60.0 |        16.67 ms |       22.25 ms |    45.0 | BORDERLINE    |
-| Metro: Maint Cart (450m) |       24 |         0 |      0 |    60.0 |        16.66 ms |       18.57 ms |    53.8 | BORDERLINE    |
-| Metro: Substation (535m) |       24 |         0 |      0 |    60.0 |        16.66 ms |       17.85 ms |    56.0 | BORDERLINE    |
-| Metro: Collapse (660m) |       24 |         0 |      0 |    60.0 |        16.67 ms |       17.64 ms |    56.7 | BORDERLINE    |
-| Metro: Checkpoint (760m) |       24 |         0 |      0 |    60.0 |        16.66 ms |       17.74 ms |    56.4 | BORDERLINE    |
-| Zone 2: Neon District |       24 |         0 |      0 |    60.1 |        16.65 ms |       17.87 ms |    56.0 | BORDERLINE    |
-| Zone 3: Sky Rail Transit |       24 |         0 |      0 |    60.0 |        16.68 ms |       18.27 ms |    54.7 | OVER BUDGET   |
-| Zone 4: Industrial Foundry |       24 |         0 |      0 |    60.0 |        16.67 ms |       26.01 ms |    38.5 | BORDERLINE    |
-| Zone 5: Flooded Conduits |       24 |         0 |      0 |    60.0 |        16.67 ms |       18.24 ms |    54.8 | BORDERLINE    |
-| Zone 6: Veyron Data Vault |       24 |         0 |      0 |    60.0 |        16.66 ms |       18.46 ms |    54.2 | BORDERLINE    |
-| Zone 7: The Echo Core |       24 |         0 |      0 |    60.0 |        16.67 ms |       17.59 ms |    56.9 | BORDERLINE    |
+| Metro: Entrance (20m) |       24 |         0 |      0 |    60.0 |        16.67 ms |       19.12 ms |    52.3 | BORDERLINE    |
+| Metro: Service/Train (200m) |       24 |         0 |      0 |    60.0 |        16.66 ms |       20.39 ms |    49.0 | BORDERLINE    |
+| Metro: Platform (280m) |       24 |         0 |      0 |    59.9 |        16.68 ms |       18.74 ms |    53.4 | OVER BUDGET   |
+| Metro: Maint Cart (450m) |       24 |         0 |      0 |    60.0 |        16.66 ms |       18.71 ms |    53.4 | BORDERLINE    |
+| Metro: Substation (535m) |       24 |         0 |      0 |    60.0 |        16.67 ms |       19.90 ms |    50.2 | OVER BUDGET   |
+| Metro: Collapse (660m) |       24 |         0 |      0 |    60.1 |        16.65 ms |       20.38 ms |    49.1 | BORDERLINE    |
+| Metro: Checkpoint (760m) |       24 |         0 |      0 |    60.0 |        16.67 ms |       18.84 ms |    53.1 | OVER BUDGET   |
+| Zone 2: Neon District |       24 |         0 |      0 |    60.0 |        16.66 ms |       30.52 ms |    32.8 | BORDERLINE    |
+| Zone 3: Sky Rail Transit |       24 |         0 |      0 |    60.0 |        16.67 ms |       23.37 ms |    42.8 | OVER BUDGET   |
+| Zone 4: Industrial Foundry |       24 |         0 |      0 |    60.0 |        16.68 ms |       18.26 ms |    54.8 | OVER BUDGET   |
+| Zone 5: Flooded Conduits |       24 |         0 |      0 |    60.1 |        16.64 ms |       34.27 ms |    29.2 | BORDERLINE    |
+| Zone 6: Veyron Data Vault |       24 |         0 |      0 |    60.0 |        16.68 ms |       18.25 ms |    54.8 | OVER BUDGET   |
+| Zone 7: The Echo Core |       24 |         0 |      0 |    60.1 |        16.64 ms |       18.97 ms |    52.7 | BORDERLINE    |
 
 ### LOW TIER (Maximum Performance & Minimal Passes)
 
 | Scenario / Landmark | Entities | Obstacles | Lights | Avg FPS | Avg Frame Time | 99th% Latency | Min FPS | Budget Status |
 | :------------------ | -------: | --------: | -----: | ------: | -------------: | ------------: | ------: | :------------ |
-| Metro: Entrance (20m) |       24 |         0 |      0 |    60.0 |        16.67 ms |       17.63 ms |    56.7 | BORDERLINE    |
-| Metro: Service/Train (200m) |       24 |         0 |      0 |    60.0 |        16.66 ms |       17.65 ms |    56.7 | BORDERLINE    |
-| Metro: Platform (280m) |       24 |         0 |      0 |    60.0 |        16.66 ms |       17.78 ms |    56.2 | BORDERLINE    |
-| Metro: Maint Cart (450m) |       24 |         0 |      0 |    60.0 |        16.66 ms |       25.44 ms |    39.3 | BORDERLINE    |
-| Metro: Substation (535m) |       24 |         0 |      0 |    60.0 |        16.66 ms |       17.62 ms |    56.8 | BORDERLINE    |
-| Metro: Collapse (660m) |       24 |         0 |      0 |    59.9 |        16.68 ms |       18.23 ms |    54.8 | OVER BUDGET   |
-| Metro: Checkpoint (760m) |       24 |         0 |      0 |    60.0 |        16.66 ms |       17.43 ms |    57.4 | BORDERLINE    |
-| Zone 2: Neon District |       24 |         0 |      0 |    60.1 |        16.65 ms |       17.73 ms |    56.4 | BORDERLINE    |
-| Zone 3: Sky Rail Transit |       24 |         0 |      0 |    60.0 |        16.66 ms |       17.78 ms |    56.3 | BORDERLINE    |
-| Zone 4: Industrial Foundry |       24 |         0 |      0 |    60.1 |        16.63 ms |       17.41 ms |    57.4 | BORDERLINE    |
-| Zone 5: Flooded Conduits |       24 |         0 |      0 |    60.0 |        16.66 ms |       17.39 ms |    57.5 | BORDERLINE    |
-| Zone 6: Veyron Data Vault |       24 |         0 |      0 |    59.9 |        16.68 ms |       18.41 ms |    54.3 | OVER BUDGET   |
-| Zone 7: The Echo Core |       24 |         0 |      0 |    60.1 |        16.65 ms |       19.28 ms |    51.9 | BORDERLINE    |
+| Metro: Entrance (20m) |       24 |         0 |      0 |    60.0 |        16.68 ms |       18.45 ms |    54.2 | OVER BUDGET   |
+| Metro: Service/Train (200m) |       24 |         0 |      0 |    60.0 |        16.66 ms |       18.14 ms |    55.1 | BORDERLINE    |
+| Metro: Platform (280m) |       24 |         0 |      0 |    60.0 |        16.66 ms |       18.68 ms |    53.5 | BORDERLINE    |
+| Metro: Maint Cart (450m) |       24 |         0 |      0 |    59.9 |        16.70 ms |       21.00 ms |    47.6 | OVER BUDGET   |
+| Metro: Substation (535m) |       24 |         0 |      0 |    60.1 |        16.63 ms |       17.99 ms |    55.6 | BORDERLINE    |
+| Metro: Collapse (660m) |       24 |         0 |      0 |    60.0 |        16.66 ms |       18.89 ms |    52.9 | BORDERLINE    |
+| Metro: Checkpoint (760m) |       24 |         0 |      0 |    60.0 |        16.67 ms |       17.96 ms |    55.7 | OVER BUDGET   |
+| Zone 2: Neon District |       24 |         0 |      0 |    60.0 |        16.68 ms |       19.51 ms |    51.2 | OVER BUDGET   |
+| Zone 3: Sky Rail Transit |       24 |         0 |      0 |    60.0 |        16.68 ms |       17.82 ms |    56.1 | OVER BUDGET   |
+| Zone 4: Industrial Foundry |       24 |         0 |      0 |    60.0 |        16.68 ms |       20.08 ms |    49.8 | OVER BUDGET   |
+| Zone 5: Flooded Conduits |       24 |         0 |      0 |    60.0 |        16.67 ms |       18.19 ms |    55.0 | BORDERLINE    |
+| Zone 6: Veyron Data Vault |       24 |         0 |      0 |    60.0 |        16.66 ms |       17.95 ms |    55.7 | BORDERLINE    |
+| Zone 7: The Echo Core |       24 |         0 |      0 |    59.9 |        16.69 ms |       28.84 ms |    34.7 | OVER BUDGET   |
 
 ### Architectural Takeaways
 
