@@ -1,6 +1,55 @@
+use std::collections::HashMap;
 use bevy::prelude::*;
+use bevy::animation::graph::{AnimationGraph, AnimationNodeIndex};
 use crate::types::*;
 use crate::director::RunDirector;
+
+#[derive(Component)]
+pub struct KaiVisual;
+
+#[derive(Component)]
+pub struct KaiArmature;
+
+#[allow(dead_code)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum KaiAnimState {
+    Idle,
+    Run,
+    Jump,
+    Slide,
+    Dash,
+    Stumble,
+    Fall,
+    Death,
+    Lookback,
+}
+
+#[derive(Component, Default)]
+pub struct KaiAnimationController {
+    pub current_anim: Option<KaiAnimState>,
+}
+
+#[derive(Resource)]
+pub struct KaiModelAssets {
+    pub gltf: Handle<bevy::gltf::Gltf>,
+    pub scene: Handle<Scene>,
+    pub graph: Option<Handle<AnimationGraph>>,
+    pub animations: HashMap<String, AnimationNodeIndex>,
+}
+
+impl FromWorld for KaiModelAssets {
+    fn from_world(world: &mut World) -> Self {
+        let asset_server = world.resource::<AssetServer>();
+        let gltf = asset_server.load("Charecters/Kai/Kai_rigged.glb");
+        let scene = asset_server.load("Charecters/Kai/Kai_rigged.glb#Scene0");
+        Self {
+            gltf,
+            scene,
+            graph: None,
+            animations: HashMap::new(),
+        }
+    }
+}
 
 #[derive(Component)]
 pub struct ShieldVisual;
@@ -14,18 +63,23 @@ pub struct OverdriveVisual;
 #[derive(Component)]
 pub struct SlideSparksVisual;
 
+#[allow(dead_code)]
 #[derive(Component)]
 pub struct PlayerLeftArm;
 
+#[allow(dead_code)]
 #[derive(Component)]
 pub struct PlayerRightArm;
 
+#[allow(dead_code)]
 #[derive(Component)]
 pub struct PlayerLeftLeg;
 
+#[allow(dead_code)]
 #[derive(Component)]
 pub struct PlayerRightLeg;
 
+#[allow(dead_code)]
 #[derive(Component)]
 pub struct PlayerBackpackStrap;
 
@@ -33,13 +87,23 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, handle_run_reset_player)
+        app.init_resource::<KaiModelAssets>()
+            .add_systems(OnEnter(AppState::InGame), ensure_player_spawned)
+            .add_systems(
+                Update,
+                (
+                    setup_kai_animation_graph,
+                    attach_kai_animation_player,
+                    kai_animation_controller_system,
+                    update_kai_visual_transform,
+                    handle_run_reset_player,
+                ),
+            )
             .add_systems(
                 Update,
                 (
                     player_input,
                     player_visual_smoothing,
-                    player_locomotion_animation,
                     player_powerup_visuals,
                     stumble_recovery,
                 )
@@ -52,19 +116,236 @@ impl Plugin for PlayerPlugin {
     }
 }
 
+fn setup_kai_animation_graph(
+    mut kai_assets: ResMut<KaiModelAssets>,
+    gltf_assets: Res<Assets<bevy::gltf::Gltf>>,
+    mut animation_graphs: ResMut<Assets<AnimationGraph>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    asset_server: Res<AssetServer>,
+) {
+    if kai_assets.graph.is_some() {
+        return;
+    }
+
+    if let Some(gltf) = gltf_assets.get(&kai_assets.gltf) {
+        let mut graph = AnimationGraph::new();
+        let mut anim_map = HashMap::new();
+
+        // Map all named animations into the graph by exact name
+        for (name, clip_handle) in &gltf.named_animations {
+            let node_index = graph.add_clip(clip_handle.clone(), 1.0, graph.root);
+            anim_map.insert(name.to_string(), node_index);
+        }
+
+        // Robust animation aliases for Kai_rigged.glb or other Mixamo naming conventions
+        if !anim_map.contains_key("Kai_Run") {
+            if let Some(&idx) = anim_map.get("Sprint").or_else(|| anim_map.get("Run")) {
+                anim_map.insert("Kai_Run".to_string(), idx);
+            }
+        }
+        if !anim_map.contains_key("Kai_Jump") {
+            if let Some(&idx) = anim_map.get("Jump Start").or_else(|| anim_map.get("Jump")) {
+                anim_map.insert("Kai_Jump".to_string(), idx);
+            }
+        }
+        if !anim_map.contains_key("Kai_Slide") {
+            if let Some(&idx) = anim_map.get("Slide Start").or_else(|| anim_map.get("Slide")) {
+                anim_map.insert("Kai_Slide".to_string(), idx);
+            }
+        }
+        if !anim_map.contains_key("Kai_Death") {
+            if let Some(&idx) = anim_map.get("Death 02").or_else(|| anim_map.get("Death")) {
+                anim_map.insert("Kai_Death".to_string(), idx);
+            }
+        }
+        if !anim_map.contains_key("Kai_Idle") {
+            if let Some(&idx) = anim_map.get("Idle").or_else(|| anim_map.get("Sprint")) {
+                anim_map.insert("Kai_Idle".to_string(), idx);
+            }
+        }
+        if !anim_map.contains_key("Kai_Dash") {
+            if let Some(&idx) = anim_map.get("Sprint").or_else(|| anim_map.get("Kai_Run")) {
+                anim_map.insert("Kai_Dash".to_string(), idx);
+            }
+        }
+        if !anim_map.contains_key("Kai_Stumble") {
+            if let Some(&idx) = anim_map.get("Sprint").or_else(|| anim_map.get("Kai_Run")) {
+                anim_map.insert("Kai_Stumble".to_string(), idx);
+            }
+        }
+        if !anim_map.contains_key("Kai_Fall") {
+            if let Some(&idx) = anim_map.get("Death 02").or_else(|| anim_map.get("Kai_Death")) {
+                anim_map.insert("Kai_Fall".to_string(), idx);
+            }
+        }
+        if !anim_map.contains_key("Kai_Lookback") {
+            if let Some(&idx) = anim_map.get("Sprint").or_else(|| anim_map.get("Kai_Run")) {
+                anim_map.insert("Kai_Lookback".to_string(), idx);
+            }
+        }
+
+        let graph_handle = animation_graphs.add(graph);
+        kai_assets.graph = Some(graph_handle);
+        kai_assets.animations = anim_map;
+
+        // Apply authentic base color texture and ensure zero unwanted emissive glow
+        let mat_handle = gltf.named_materials.get("Material.001")
+            .or_else(|| gltf.named_materials.get("Material_0.001"));
+        if let Some(mat_handle) = mat_handle {
+            if let Some(mat) = materials.get_mut(mat_handle) {
+                if mat.base_color_texture.is_none() {
+                    mat.base_color_texture = Some(asset_server.load("Charecters/Kai/textures/texture_0.jpg"));
+                }
+                mat.emissive_texture = None;
+                mat.emissive = LinearRgba::BLACK;
+                if mat.normal_map_texture.is_none() {
+                    mat.normal_map_texture = Some(asset_server.load("Charecters/Kai/textures/texture_2.jpg"));
+                }
+                mat.perceptual_roughness = 0.85;
+                mat.metallic = 0.10;
+            }
+        }
+    }
+}
+
+fn attach_kai_animation_player(
+    mut commands: Commands,
+    kai_assets: Res<KaiModelAssets>,
+    mut players: Query<(Entity, &mut AnimationPlayer), Without<KaiArmature>>,
+    mut controller_q: Query<&mut KaiAnimationController>,
+) {
+    let Some(ref graph_handle) = kai_assets.graph else {
+        return;
+    };
+
+    for (entity, mut player) in players.iter_mut() {
+        commands.entity(entity)
+            .insert(graph_handle.clone())
+            .insert(KaiArmature);
+
+        if let Ok(mut controller) = controller_q.get_single_mut() {
+            controller.current_anim = None;
+        }
+
+        if let Some(&run_idx) = kai_assets.animations.get("Kai_Run") {
+            player.play(run_idx).repeat();
+        }
+    }
+}
+
+fn kai_animation_controller_system(
+    app_state: Res<State<AppState>>,
+    stats: Res<GameRunStats>,
+    powerups: Res<ActivePowerUps>,
+    kai_assets: Res<KaiModelAssets>,
+    mut controller_q: Query<(&Player, &mut KaiAnimationController)>,
+    mut player_anim_q: Query<&mut AnimationPlayer, With<KaiArmature>>,
+) {
+    let (player, mut controller) = match controller_q.get_single_mut() {
+        Ok(c) => c,
+        Err(_) => return,
+    };
+    let mut anim_player = match player_anim_q.get_single_mut() {
+        Ok(p) => p,
+        Err(_) => return,
+    };
+
+    let desired_state = match *app_state.get() {
+        AppState::GameOver => KaiAnimState::Death,
+        AppState::MainMenu | AppState::Paused | AppState::StoryLog => KaiAnimState::Idle,
+        AppState::InGame => {
+            if stats.stumble_intensity >= 0.9 {
+                KaiAnimState::Fall
+            } else if stats.stumble_intensity > 0.0 {
+                KaiAnimState::Stumble
+            } else if powerups.overdrive_timer > 0.0 && player.dash_cooldown > 0.0 {
+                KaiAnimState::Dash
+            } else if player.is_sliding {
+                KaiAnimState::Slide
+            } else if !player.is_grounded {
+                KaiAnimState::Jump
+            } else {
+                KaiAnimState::Run
+            }
+        }
+    };
+
+    if controller.current_anim != Some(desired_state) {
+        let anim_name = match desired_state {
+            KaiAnimState::Idle => "Kai_Idle",
+            KaiAnimState::Run => "Kai_Run",
+            KaiAnimState::Jump => "Kai_Jump",
+            KaiAnimState::Slide => "Kai_Slide",
+            KaiAnimState::Dash => "Kai_Dash",
+            KaiAnimState::Stumble => "Kai_Stumble",
+            KaiAnimState::Fall => "Kai_Fall",
+            KaiAnimState::Death => "Kai_Death",
+            KaiAnimState::Lookback => "Kai_Lookback",
+        };
+
+        if let Some(&node_idx) = kai_assets.animations.get(anim_name) {
+            anim_player.stop_all();
+            match desired_state {
+                KaiAnimState::Run | KaiAnimState::Idle => {
+                    anim_player.play(node_idx).repeat();
+                }
+                KaiAnimState::Slide => {
+                    anim_player.play(node_idx).repeat();
+                }
+                _ => {
+                    anim_player.start(node_idx);
+                }
+            }
+            controller.current_anim = Some(desired_state);
+        }
+    }
+}
+
+fn update_kai_visual_transform(
+    player_q: Query<&Player>,
+    mut visual_q: Query<&mut Transform, With<KaiVisual>>,
+) {
+    let Ok(player) = player_q.get_single() else { return };
+    let Ok(mut trans) = visual_q.get_single_mut() else { return };
+
+    if player.is_sliding {
+        // Counteract parent root scale during slide so Kai mesh maintains 1.0 natural scale
+        // and aligns feet with ground level at Y=0.0
+        trans.scale = Vec3::new(1.0 / 1.1, 1.0 / 0.45, 1.0 / 1.2);
+        trans.translation.y = -0.35 / 0.45;
+    } else {
+        trans.scale = Vec3::ONE;
+        trans.translation.y = -0.65;
+    }
+}
+
+fn ensure_player_spawned(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    stats: Res<GameRunStats>,
+    kai_assets: Res<KaiModelAssets>,
+    player_q: Query<Entity, With<Player>>,
+) {
+    if player_q.is_empty() {
+        spawn_player_entity(&mut commands, &mut meshes, &mut materials, stats.selected_character, &kai_assets);
+    }
+}
+
 fn handle_run_reset_player(
     mut events: EventReader<RunResetEvent>,
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    mut player_q: Query<(&mut Player, &mut Transform)>,
+    mut player_q: Query<(&mut Player, &mut Transform, Option<&mut KaiAnimationController>)>,
     mut history: ResMut<PlayerMovementHistory>,
     stats: Res<GameRunStats>,
+    kai_assets: Res<KaiModelAssets>,
 ) {
     for _ in events.read() {
         *history = PlayerMovementHistory::default();
 
-        if let Ok((mut player, mut transform)) = player_q.get_single_mut() {
+        if let Ok((mut player, mut transform, opt_ctrl)) = player_q.get_single_mut() {
             transform.translation = Vec3::new(0.0, 0.65, 0.0);
             transform.rotation = Quat::IDENTITY;
             transform.scale = Vec3::ONE;
@@ -79,8 +360,12 @@ fn handle_run_reset_player(
             player.has_double_jumped = false;
             player.invulnerable_timer = 0.0;
             player.dash_cooldown = 0.0;
+
+            if let Some(mut ctrl) = opt_ctrl {
+                ctrl.current_anim = None;
+            }
         } else {
-            spawn_player_entity(&mut commands, &mut meshes, &mut materials, stats.selected_character);
+            spawn_player_entity(&mut commands, &mut meshes, &mut materials, stats.selected_character, &kai_assets);
         }
     }
 }
@@ -91,8 +376,9 @@ pub fn spawn_player(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     stats: Res<GameRunStats>,
+    kai_assets: Res<KaiModelAssets>,
 ) {
-    spawn_player_entity(&mut commands, &mut meshes, &mut materials, stats.selected_character);
+    spawn_player_entity(&mut commands, &mut meshes, &mut materials, stats.selected_character, &kai_assets);
 }
 
 pub fn spawn_player_entity(
@@ -100,65 +386,11 @@ pub fn spawn_player_entity(
     meshes: &mut Assets<Mesh>,
     materials: &mut Assets<StandardMaterial>,
     selected_character: CharacterType,
+    kai_assets: &KaiModelAssets,
 ) {
-    let jacket_mat = materials.add(StandardMaterial {
-        base_color: Color::srgb(0.08, 0.08, 0.09),
-        perceptual_roughness: 0.70,
-        metallic: 0.15,
-        ..default()
-    });
-
-    let armor_trim_mat = materials.add(StandardMaterial {
-        base_color: Color::srgb(0.28, 0.30, 0.34),
-        metallic: 0.88,
-        perceptual_roughness: 0.25,
-        ..default()
-    });
-
-    let orange_accent_mat = materials.add(StandardMaterial {
-        base_color: Color::srgb(1.0, 0.45, 0.05),
-        emissive: LinearRgba::new(5.0, 2.0, 0.1, 1.0),
-        perceptual_roughness: 0.25,
-        ..default()
-    });
-
     let cyan_echo_core_mat = materials.add(StandardMaterial {
         base_color: Color::srgb(0.0, 0.90, 1.0),
         emissive: LinearRgba::new(0.6, 4.5, 6.0, 1.0),
-        ..default()
-    });
-
-    let visor_mat = materials.add(StandardMaterial {
-        base_color: Color::srgb(0.0, 0.95, 1.0),
-        emissive: LinearRgba::new(0.4, 4.8, 6.5, 1.0),
-        ..default()
-    });
-
-    let hair_mat = materials.add(StandardMaterial {
-        base_color: Color::srgb(0.05, 0.05, 0.07),
-        perceptual_roughness: 0.90,
-        metallic: 0.10,
-        ..default()
-    });
-
-    let shirt_mat = materials.add(StandardMaterial {
-        base_color: Color::srgb(0.85, 0.85, 0.88),
-        perceptual_roughness: 0.80,
-        metallic: 0.05,
-        ..default()
-    });
-
-    let skin_mat = materials.add(StandardMaterial {
-        base_color: Color::srgb(0.82, 0.68, 0.58),
-        perceptual_roughness: 0.65,
-        metallic: 0.0,
-        ..default()
-    });
-
-    let boots_mat = materials.add(StandardMaterial {
-        base_color: Color::srgb(0.10, 0.11, 0.13),
-        metallic: 0.85,
-        perceptual_roughness: 0.30,
         ..default()
     });
 
@@ -176,12 +408,16 @@ pub fn spawn_player_entity(
         ..default()
     });
 
-    // Spawn Root Courier (athletic V-shaped jacket torso)
+    let sparks_mat = materials.add(StandardMaterial {
+        base_color: Color::srgb(1.0, 0.65, 0.1),
+        emissive: LinearRgba::new(4.5, 2.0, 0.2, 1.0),
+        ..default()
+    });
+
+    // Spawn Root Courier entity
     commands
         .spawn((
-            PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.56, 0.48, 0.36)),
-                material: jacket_mat.clone(),
+            SpatialBundle {
                 transform: Transform::from_xyz(0.0, 0.65, 0.0),
                 ..default()
             },
@@ -197,375 +433,21 @@ pub fn spawn_player_entity(
                 invulnerable_timer: 0.0,
                 dash_cooldown: 0.0,
             },
+            KaiAnimationController::default(),
         ))
         .with_children(|parent| {
-            // 1. Undershirt Hem (peeking below jacket waistband)
-            parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.48, 0.10, 0.32)),
-                material: shirt_mat.clone(),
-                transform: Transform::from_xyz(0.0, -0.26, 0.0),
-                ..default()
-            });
-
-            // 2. High Jacket Collar with Signal Orange Trim
-            parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.34, 0.12, 0.30)),
-                material: jacket_mat.clone(),
-                transform: Transform::from_xyz(0.0, 0.26, 0.0),
-                ..default()
-            });
-            parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.32, 0.04, 0.04)),
-                material: orange_accent_mat.clone(),
-                transform: Transform::from_xyz(0.0, 0.30, -0.14),
-                ..default()
-            });
-
-            // 3. Tactical Chest Rig & Center Zipper Seam
-            parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.24, 0.40, 0.08)),
-                material: armor_trim_mat.clone(),
-                transform: Transform::from_xyz(0.0, 0.02, -0.16),
-                ..default()
-            });
-            parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.05, 0.42, 0.04)),
-                material: orange_accent_mat.clone(),
-                transform: Transform::from_xyz(0.0, 0.02, -0.19),
-                ..default()
-            });
-
-            // 4. Head, Spiked Cyberpunk Hair & Wraparound Cyan Visor
-            parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.28, 0.28, 0.28)),
-                material: skin_mat.clone(),
-                transform: Transform::from_xyz(0.0, 0.44, 0.0),
-                ..default()
-            });
-            // Hair crown & back spikes
-            parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.34, 0.18, 0.36)),
-                material: hair_mat.clone(),
-                transform: Transform::from_xyz(0.0, 0.52, 0.02),
-                ..default()
-            });
-            parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.32, 0.22, 0.16)),
-                material: hair_mat.clone(),
-                transform: Transform::from_xyz(0.0, 0.46, 0.14),
-                ..default()
-            });
-            parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.30, 0.12, 0.10)),
-                material: hair_mat.clone(),
-                transform: Transform::from_xyz(0.0, 0.50, -0.13),
-                ..default()
-            });
-            // Neon Cyan Wraparound Visor (Visible from front, side, and 3/4 rear!)
-            parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.30, 0.08, 0.06)),
-                material: visor_mat.clone(),
-                transform: Transform::from_xyz(0.0, 0.44, -0.16),
-                ..default()
-            });
-            parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.04, 0.07, 0.18)),
-                material: visor_mat.clone(),
-                transform: Transform::from_xyz(-0.15, 0.44, -0.07),
-                ..default()
-            });
-            parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.04, 0.07, 0.18)),
-                material: visor_mat.clone(),
-                transform: Transform::from_xyz(0.15, 0.44, -0.07),
-                ..default()
-            });
-
-            // 5. Backpack Module (CRITICAL 3RD-PERSON CAMERA FOCUS)
-            parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.36, 0.44, 0.16)),
-                material: jacket_mat.clone(),
-                transform: Transform::from_xyz(0.0, 0.06, 0.22),
-                ..default()
-            });
-            // Top roll-bar handle
-            parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.24, 0.06, 0.06)),
-                material: armor_trim_mat.clone(),
-                transform: Transform::from_xyz(0.0, 0.29, 0.22),
-                ..default()
-            });
-            // Inverted Signal Orange Triangle Core (`▽`) facing camera
-            parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.18, 0.05, 0.03)),
-                material: orange_accent_mat.clone(),
-                transform: Transform::from_xyz(0.0, 0.14, 0.305),
-                ..default()
-            });
-            parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.12, 0.05, 0.03)),
-                material: orange_accent_mat.clone(),
-                transform: Transform::from_xyz(0.0, 0.09, 0.305),
-                ..default()
-            });
-            parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.06, 0.05, 0.03)),
-                material: orange_accent_mat.clone(),
-                transform: Transform::from_xyz(0.0, 0.04, 0.305),
-                ..default()
-            });
-            // Dual Vertical Neon Cyan Battery Bars
-            parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.04, 0.28, 0.04)),
-                material: cyan_echo_core_mat.clone(),
-                transform: Transform::from_xyz(-0.17, 0.06, 0.28),
-                ..default()
-            });
-            parent.spawn(PbrBundle {
-                mesh: meshes.add(Cuboid::new(0.04, 0.28, 0.04)),
-                material: cyan_echo_core_mat.clone(),
-                transform: Transform::from_xyz(0.17, 0.06, 0.28),
-                ..default()
-            });
-            // Trailing Kinetic Straps / Ribbons
+            // Real 3D Kai GLB Model (Facing forward along -Z, feet aligned with track at Y=0.0)
             parent.spawn((
-                PbrBundle {
-                    mesh: meshes.add(Cuboid::new(0.03, 0.24, 0.02)),
-                    material: armor_trim_mat.clone(),
-                    transform: Transform::from_xyz(-0.10, -0.18, 0.26),
+                SceneBundle {
+                    scene: kai_assets.scene.clone(),
+                    transform: Transform::from_xyz(0.0, -0.65, 0.0)
+                        .with_rotation(Quat::from_rotation_y(std::f32::consts::PI)),
                     ..default()
                 },
-                PlayerBackpackStrap,
-            ));
-            parent.spawn((
-                PbrBundle {
-                    mesh: meshes.add(Cuboid::new(0.03, 0.24, 0.02)),
-                    material: armor_trim_mat.clone(),
-                    transform: Transform::from_xyz(0.10, -0.18, 0.26),
-                    ..default()
-                },
-                PlayerBackpackStrap,
+                KaiVisual,
             ));
 
-            // 6. Articulated Left Arm (Shoulder Pivot with Air Gap)
-            parent.spawn((
-                SpatialBundle {
-                    transform: Transform::from_xyz(-0.36, 0.18, 0.0),
-                    ..default()
-                },
-                PlayerLeftArm,
-            )).with_children(|arm| {
-                // Shoulder pauldron
-                arm.spawn(PbrBundle {
-                    mesh: meshes.add(Cuboid::new(0.16, 0.14, 0.20)),
-                    material: armor_trim_mat.clone(),
-                    transform: Transform::from_xyz(0.0, 0.0, 0.0),
-                    ..default()
-                });
-                // Upper arm (rolled-up sleeve)
-                arm.spawn(PbrBundle {
-                    mesh: meshes.add(Cuboid::new(0.13, 0.20, 0.14)),
-                    material: jacket_mat.clone(),
-                    transform: Transform::from_xyz(0.0, -0.13, 0.0),
-                    ..default()
-                });
-                // Forearm (bare skin)
-                arm.spawn(PbrBundle {
-                    mesh: meshes.add(Cuboid::new(0.10, 0.18, 0.11)),
-                    material: skin_mat.clone(),
-                    transform: Transform::from_xyz(0.0, -0.28, 0.0),
-                    ..default()
-                });
-                // Combat glove with cyan knuckle energy pad
-                arm.spawn(PbrBundle {
-                    mesh: meshes.add(Cuboid::new(0.11, 0.14, 0.12)),
-                    material: jacket_mat.clone(),
-                    transform: Transform::from_xyz(0.0, -0.40, 0.0),
-                    ..default()
-                });
-                arm.spawn(PbrBundle {
-                    mesh: meshes.add(Cuboid::new(0.08, 0.04, 0.06)),
-                    material: cyan_echo_core_mat.clone(),
-                    transform: Transform::from_xyz(0.0, -0.42, -0.05),
-                    ..default()
-                });
-            });
-
-            // 7. Articulated Right Arm (Shoulder Pivot with Air Gap)
-            parent.spawn((
-                SpatialBundle {
-                    transform: Transform::from_xyz(0.36, 0.18, 0.0),
-                    ..default()
-                },
-                PlayerRightArm,
-            )).with_children(|arm| {
-                // Shoulder pauldron
-                arm.spawn(PbrBundle {
-                    mesh: meshes.add(Cuboid::new(0.16, 0.14, 0.20)),
-                    material: armor_trim_mat.clone(),
-                    transform: Transform::from_xyz(0.0, 0.0, 0.0),
-                    ..default()
-                });
-                // Upper arm (rolled-up sleeve)
-                arm.spawn(PbrBundle {
-                    mesh: meshes.add(Cuboid::new(0.13, 0.20, 0.14)),
-                    material: jacket_mat.clone(),
-                    transform: Transform::from_xyz(0.0, -0.13, 0.0),
-                    ..default()
-                });
-                // Forearm (bare skin)
-                arm.spawn(PbrBundle {
-                    mesh: meshes.add(Cuboid::new(0.10, 0.18, 0.11)),
-                    material: skin_mat.clone(),
-                    transform: Transform::from_xyz(0.0, -0.28, 0.0),
-                    ..default()
-                });
-                // Combat glove with cyan knuckle energy pad
-                arm.spawn(PbrBundle {
-                    mesh: meshes.add(Cuboid::new(0.11, 0.14, 0.12)),
-                    material: jacket_mat.clone(),
-                    transform: Transform::from_xyz(0.0, -0.40, 0.0),
-                    ..default()
-                });
-                arm.spawn(PbrBundle {
-                    mesh: meshes.add(Cuboid::new(0.08, 0.04, 0.06)),
-                    material: cyan_echo_core_mat.clone(),
-                    transform: Transform::from_xyz(0.0, -0.42, -0.05),
-                    ..default()
-                });
-            });
-
-            // 8. Articulated Left Leg (Hip Pivot with Negative Space)
-            parent.spawn((
-                SpatialBundle {
-                    transform: Transform::from_xyz(-0.18, -0.26, 0.0),
-                    ..default()
-                },
-                PlayerLeftLeg,
-            )).with_children(|leg| {
-                // Thigh cargo pants
-                leg.spawn(PbrBundle {
-                    mesh: meshes.add(Cuboid::new(0.16, 0.26, 0.18)),
-                    material: jacket_mat.clone(),
-                    transform: Transform::from_xyz(0.0, -0.12, 0.0),
-                    ..default()
-                });
-                // Orange strap buckle
-                leg.spawn(PbrBundle {
-                    mesh: meshes.add(Cuboid::new(0.17, 0.04, 0.19)),
-                    material: orange_accent_mat.clone(),
-                    transform: Transform::from_xyz(0.0, -0.08, 0.0),
-                    ..default()
-                });
-                // Cyber knee armor plate
-                leg.spawn(PbrBundle {
-                    mesh: meshes.add(Cuboid::new(0.15, 0.12, 0.08)),
-                    material: armor_trim_mat.clone(),
-                    transform: Transform::from_xyz(0.0, -0.22, -0.08),
-                    ..default()
-                });
-                leg.spawn(PbrBundle {
-                    mesh: meshes.add(Cuboid::new(0.06, 0.04, 0.03)),
-                    material: cyan_echo_core_mat.clone(),
-                    transform: Transform::from_xyz(0.0, -0.22, -0.12),
-                    ..default()
-                });
-                // High-top courier boot
-                leg.spawn(PbrBundle {
-                    mesh: meshes.add(Cuboid::new(0.18, 0.24, 0.32)),
-                    material: boots_mat.clone(),
-                    transform: Transform::from_xyz(0.0, -0.46, 0.03),
-                    ..default()
-                });
-                // Titanium toe cap
-                leg.spawn(PbrBundle {
-                    mesh: meshes.add(Cuboid::new(0.16, 0.08, 0.08)),
-                    material: armor_trim_mat.clone(),
-                    transform: Transform::from_xyz(0.0, -0.54, -0.12),
-                    ..default()
-                });
-                // Neon Cyan Sole (faces camera during sprint stride!)
-                leg.spawn(PbrBundle {
-                    mesh: meshes.add(Cuboid::new(0.16, 0.05, 0.30)),
-                    material: cyan_echo_core_mat.clone(),
-                    transform: Transform::from_xyz(0.0, -0.58, 0.03),
-                    ..default()
-                });
-                // Neon Cyan Heel Thruster Bar
-                leg.spawn(PbrBundle {
-                    mesh: meshes.add(Cuboid::new(0.14, 0.08, 0.05)),
-                    material: cyan_echo_core_mat.clone(),
-                    transform: Transform::from_xyz(0.0, -0.48, 0.18),
-                    ..default()
-                });
-            });
-
-            // 9. Articulated Right Leg (Hip Pivot with Negative Space)
-            parent.spawn((
-                SpatialBundle {
-                    transform: Transform::from_xyz(0.18, -0.26, 0.0),
-                    ..default()
-                },
-                PlayerRightLeg,
-            )).with_children(|leg| {
-                // Thigh cargo pants
-                leg.spawn(PbrBundle {
-                    mesh: meshes.add(Cuboid::new(0.16, 0.26, 0.18)),
-                    material: jacket_mat.clone(),
-                    transform: Transform::from_xyz(0.0, -0.12, 0.0),
-                    ..default()
-                });
-                // Orange strap buckle
-                leg.spawn(PbrBundle {
-                    mesh: meshes.add(Cuboid::new(0.17, 0.04, 0.19)),
-                    material: orange_accent_mat.clone(),
-                    transform: Transform::from_xyz(0.0, -0.08, 0.0),
-                    ..default()
-                });
-                // Cyber knee armor plate
-                leg.spawn(PbrBundle {
-                    mesh: meshes.add(Cuboid::new(0.15, 0.12, 0.08)),
-                    material: armor_trim_mat.clone(),
-                    transform: Transform::from_xyz(0.0, -0.22, -0.08),
-                    ..default()
-                });
-                leg.spawn(PbrBundle {
-                    mesh: meshes.add(Cuboid::new(0.06, 0.04, 0.03)),
-                    material: cyan_echo_core_mat.clone(),
-                    transform: Transform::from_xyz(0.0, -0.22, -0.12),
-                    ..default()
-                });
-                // High-top courier boot
-                leg.spawn(PbrBundle {
-                    mesh: meshes.add(Cuboid::new(0.18, 0.24, 0.32)),
-                    material: boots_mat.clone(),
-                    transform: Transform::from_xyz(0.0, -0.46, 0.03),
-                    ..default()
-                });
-                // Titanium toe cap
-                leg.spawn(PbrBundle {
-                    mesh: meshes.add(Cuboid::new(0.16, 0.08, 0.08)),
-                    material: armor_trim_mat.clone(),
-                    transform: Transform::from_xyz(0.0, -0.54, -0.12),
-                    ..default()
-                });
-                // Neon Cyan Sole (faces camera during sprint stride!)
-                leg.spawn(PbrBundle {
-                    mesh: meshes.add(Cuboid::new(0.16, 0.05, 0.30)),
-                    material: cyan_echo_core_mat.clone(),
-                    transform: Transform::from_xyz(0.0, -0.58, 0.03),
-                    ..default()
-                });
-                // Neon Cyan Heel Thruster Bar
-                leg.spawn(PbrBundle {
-                    mesh: meshes.add(Cuboid::new(0.14, 0.08, 0.05)),
-                    material: cyan_echo_core_mat.clone(),
-                    transform: Transform::from_xyz(0.0, -0.48, 0.18),
-                    ..default()
-                });
-            });
-
-            // 10. Kinetic Powerup & Movement Visual Attachments
+            // Powerup & Movement Visual Attachments
             // Shield Bubble
             parent.spawn((
                 PbrBundle {
@@ -600,11 +482,6 @@ pub fn spawn_player_entity(
             ));
 
             // Rail Slide Sparks
-            let sparks_mat = materials.add(StandardMaterial {
-                base_color: Color::srgb(1.0, 0.65, 0.1),
-                emissive: LinearRgba::new(4.5, 2.0, 0.2, 1.0),
-                ..default()
-            });
             parent.spawn((
                 PbrBundle {
                     mesh: meshes.add(Cuboid::new(0.65, 0.08, 0.9)),
@@ -831,95 +708,6 @@ fn player_visual_smoothing(
     let cur_rot = transform.rotation;
     let target_rot = Quat::from_rotation_z(target_tilt) * Quat::from_rotation_x(target_pitch);
     transform.rotation = cur_rot.slerp(target_rot, (24.0 * dt).min(1.0));
-}
-
-fn player_locomotion_animation(
-    time: Res<Time>,
-    player_q: Query<(&Player, &Transform)>,
-    mut left_arm_q: Query<&mut Transform, (With<PlayerLeftArm>, Without<PlayerRightArm>, Without<PlayerLeftLeg>, Without<PlayerRightLeg>, Without<PlayerBackpackStrap>, Without<Player>)>,
-    mut right_arm_q: Query<&mut Transform, (With<PlayerRightArm>, Without<PlayerLeftArm>, Without<PlayerLeftLeg>, Without<PlayerRightLeg>, Without<PlayerBackpackStrap>, Without<Player>)>,
-    mut left_leg_q: Query<&mut Transform, (With<PlayerLeftLeg>, Without<PlayerLeftArm>, Without<PlayerRightArm>, Without<PlayerRightLeg>, Without<PlayerBackpackStrap>, Without<Player>)>,
-    mut right_leg_q: Query<&mut Transform, (With<PlayerRightLeg>, Without<PlayerLeftArm>, Without<PlayerRightArm>, Without<PlayerLeftLeg>, Without<PlayerBackpackStrap>, Without<Player>)>,
-    mut strap_q: Query<&mut Transform, (With<PlayerBackpackStrap>, Without<PlayerLeftArm>, Without<PlayerRightArm>, Without<PlayerLeftLeg>, Without<PlayerRightLeg>, Without<Player>)>,
-) {
-    let (player, _p_trans) = match player_q.get_single() {
-        Ok(p) => p,
-        Err(_) => return,
-    };
-
-    let dt = time.delta_seconds();
-    let t = time.elapsed_seconds();
-
-    if player.is_sliding {
-        // Slide pose: low streamlined lean, right leg extended forward, left knee tucked, arms balancing
-        if let Ok(mut arm) = left_arm_q.get_single_mut() {
-            let target_rot = Quat::from_rotation_x(0.65) * Quat::from_rotation_z(0.35);
-            arm.rotation = arm.rotation.slerp(target_rot, 20.0 * dt);
-        }
-        if let Ok(mut arm) = right_arm_q.get_single_mut() {
-            let target_rot = Quat::from_rotation_x(-0.85) * Quat::from_rotation_z(-0.25);
-            arm.rotation = arm.rotation.slerp(target_rot, 20.0 * dt);
-        }
-        if let Ok(mut leg) = left_leg_q.get_single_mut() {
-            let target_rot = Quat::from_rotation_x(0.85);
-            leg.rotation = leg.rotation.slerp(target_rot, 20.0 * dt);
-        }
-        if let Ok(mut leg) = right_leg_q.get_single_mut() {
-            let target_rot = Quat::from_rotation_x(-1.10);
-            leg.rotation = leg.rotation.slerp(target_rot, 20.0 * dt);
-        }
-    } else if !player.is_grounded {
-        // Jump pose: athletic tuck, knees bent, arms back/out for balance
-        let jump_pitch = (player.y_velocity * 0.05).clamp(-0.4, 0.4);
-        if let Ok(mut arm) = left_arm_q.get_single_mut() {
-            let target_rot = Quat::from_rotation_x(0.55 + jump_pitch) * Quat::from_rotation_z(-0.25);
-            arm.rotation = arm.rotation.slerp(target_rot, 15.0 * dt);
-        }
-        if let Ok(mut arm) = right_arm_q.get_single_mut() {
-            let target_rot = Quat::from_rotation_x(0.55 + jump_pitch) * Quat::from_rotation_z(0.25);
-            arm.rotation = arm.rotation.slerp(target_rot, 15.0 * dt);
-        }
-        if let Ok(mut leg) = left_leg_q.get_single_mut() {
-            let target_rot = Quat::from_rotation_x(-0.65);
-            leg.rotation = leg.rotation.slerp(target_rot, 15.0 * dt);
-        }
-        if let Ok(mut leg) = right_leg_q.get_single_mut() {
-            let target_rot = Quat::from_rotation_x(-0.45);
-            leg.rotation = leg.rotation.slerp(target_rot, 15.0 * dt);
-        }
-    } else {
-        // High-speed run stride cycle (running cadence ~15 rad/s)
-        let stride_speed = 15.0;
-        let stride_sin = (t * stride_speed).sin();
-
-        // Arm swing (opposing leg stride)
-        let arm_amp = 0.55;
-        if let Ok(mut arm) = left_arm_q.get_single_mut() {
-            let target_rot = Quat::from_rotation_x(-stride_sin * arm_amp) * Quat::from_rotation_z(-0.08);
-            arm.rotation = arm.rotation.slerp(target_rot, 25.0 * dt);
-        }
-        if let Ok(mut arm) = right_arm_q.get_single_mut() {
-            let target_rot = Quat::from_rotation_x(stride_sin * arm_amp) * Quat::from_rotation_z(0.08);
-            arm.rotation = arm.rotation.slerp(target_rot, 25.0 * dt);
-        }
-
-        // Leg stride (kicking back reveals cyan glowing thruster soles to camera)
-        let leg_amp = 0.65;
-        if let Ok(mut leg) = left_leg_q.get_single_mut() {
-            let target_rot = Quat::from_rotation_x(stride_sin * leg_amp);
-            leg.rotation = leg.rotation.slerp(target_rot, 25.0 * dt);
-        }
-        if let Ok(mut leg) = right_leg_q.get_single_mut() {
-            let target_rot = Quat::from_rotation_x(-stride_sin * leg_amp);
-            leg.rotation = leg.rotation.slerp(target_rot, 25.0 * dt);
-        }
-
-        // Trailing backpack straps flutter
-        for mut strap in strap_q.iter_mut() {
-            let flutter = (t * 22.0).sin() * 0.18 + 0.22;
-            strap.rotation = Quat::from_rotation_x(flutter);
-        }
-    }
 }
 
 fn player_powerup_visuals(

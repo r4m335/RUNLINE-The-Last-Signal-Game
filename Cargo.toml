@@ -17,8 +17,13 @@ bevy = { version = "0.14.2", default-features = false, features = [
     "default_font",
     "tonemapping_luts",
     "png",
+    "jpeg",
     "vorbis",
     "wav",
+    "bevy_gltf",
+    "bevy_scene",
+    "bevy_animation",
+    "animation",
     "multi_threaded"
 ] }
 rand = "0.8"
