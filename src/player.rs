@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::time::Duration;
 use bevy::prelude::*;
 use bevy::animation::graph::{AnimationGraph, AnimationNodeIndex};
 use crate::types::*;
@@ -10,23 +11,63 @@ pub struct KaiVisual;
 #[derive(Component)]
 pub struct KaiArmature;
 
-#[allow(dead_code)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum KaiAnimState {
-    Idle,
-    Run,
-    Jump,
-    Slide,
-    Dash,
-    Stumble,
-    Fall,
+    Sprint,
+    JumpStart,
+    JumpLand,
+    SlideStart,
+    SlideExit,
     Death,
-    Lookback,
 }
 
-#[derive(Component, Default)]
+impl KaiAnimState {
+    pub fn clip_name(&self) -> &'static str {
+        match self {
+            KaiAnimState::Sprint => "Sprint",
+            KaiAnimState::JumpStart => "Jump Start",
+            KaiAnimState::JumpLand => "Jump Land",
+            KaiAnimState::SlideStart => "Slide Start",
+            KaiAnimState::SlideExit => "Slide Exit",
+            KaiAnimState::Death => "Death 02",
+        }
+    }
+
+    pub fn transition_duration(&self) -> Duration {
+        match self {
+            KaiAnimState::Sprint => Duration::from_secs_f32(0.10),
+            KaiAnimState::JumpStart => Duration::from_secs_f32(0.08),
+            KaiAnimState::JumpLand => Duration::from_secs_f32(0.06),
+            KaiAnimState::SlideStart => Duration::from_secs_f32(0.08),
+            KaiAnimState::SlideExit => Duration::from_secs_f32(0.08),
+            KaiAnimState::Death => Duration::from_secs_f32(0.12),
+        }
+    }
+
+    pub fn is_looping(&self) -> bool {
+        matches!(self, KaiAnimState::Sprint)
+    }
+}
+
+#[derive(Component)]
 pub struct KaiAnimationController {
     pub current_anim: Option<KaiAnimState>,
+    pub was_grounded: bool,
+    pub was_sliding: bool,
+    pub landing_timer: f32,
+    pub slide_exit_timer: f32,
+}
+
+impl Default for KaiAnimationController {
+    fn default() -> Self {
+        Self {
+            current_anim: None,
+            was_grounded: true,
+            was_sliding: false,
+            landing_timer: 0.0,
+            slide_exit_timer: 0.0,
+        }
+    }
 }
 
 #[derive(Resource)]
@@ -131,57 +172,10 @@ fn setup_kai_animation_graph(
         let mut graph = AnimationGraph::new();
         let mut anim_map = HashMap::new();
 
-        // Map all named animations into the graph by exact name
+        // Register exact animation clips from Kai_rigged.glb
         for (name, clip_handle) in &gltf.named_animations {
             let node_index = graph.add_clip(clip_handle.clone(), 1.0, graph.root);
             anim_map.insert(name.to_string(), node_index);
-        }
-
-        // Robust animation aliases for Kai_rigged.glb or other Mixamo naming conventions
-        if !anim_map.contains_key("Kai_Run") {
-            if let Some(&idx) = anim_map.get("Sprint").or_else(|| anim_map.get("Run")) {
-                anim_map.insert("Kai_Run".to_string(), idx);
-            }
-        }
-        if !anim_map.contains_key("Kai_Jump") {
-            if let Some(&idx) = anim_map.get("Jump Start").or_else(|| anim_map.get("Jump")) {
-                anim_map.insert("Kai_Jump".to_string(), idx);
-            }
-        }
-        if !anim_map.contains_key("Kai_Slide") {
-            if let Some(&idx) = anim_map.get("Slide Start").or_else(|| anim_map.get("Slide")) {
-                anim_map.insert("Kai_Slide".to_string(), idx);
-            }
-        }
-        if !anim_map.contains_key("Kai_Death") {
-            if let Some(&idx) = anim_map.get("Death 02").or_else(|| anim_map.get("Death")) {
-                anim_map.insert("Kai_Death".to_string(), idx);
-            }
-        }
-        if !anim_map.contains_key("Kai_Idle") {
-            if let Some(&idx) = anim_map.get("Idle").or_else(|| anim_map.get("Sprint")) {
-                anim_map.insert("Kai_Idle".to_string(), idx);
-            }
-        }
-        if !anim_map.contains_key("Kai_Dash") {
-            if let Some(&idx) = anim_map.get("Sprint").or_else(|| anim_map.get("Kai_Run")) {
-                anim_map.insert("Kai_Dash".to_string(), idx);
-            }
-        }
-        if !anim_map.contains_key("Kai_Stumble") {
-            if let Some(&idx) = anim_map.get("Sprint").or_else(|| anim_map.get("Kai_Run")) {
-                anim_map.insert("Kai_Stumble".to_string(), idx);
-            }
-        }
-        if !anim_map.contains_key("Kai_Fall") {
-            if let Some(&idx) = anim_map.get("Death 02").or_else(|| anim_map.get("Kai_Death")) {
-                anim_map.insert("Kai_Fall".to_string(), idx);
-            }
-        }
-        if !anim_map.contains_key("Kai_Lookback") {
-            if let Some(&idx) = anim_map.get("Sprint").or_else(|| anim_map.get("Kai_Run")) {
-                anim_map.insert("Kai_Lookback".to_string(), idx);
-            }
         }
 
         let graph_handle = animation_graphs.add(graph);
@@ -219,82 +213,116 @@ fn attach_kai_animation_player(
     };
 
     for (entity, mut player) in players.iter_mut() {
+        let mut transitions = AnimationTransitions::new();
+        if let Some(&sprint_idx) = kai_assets.animations.get("Sprint") {
+            transitions.play(&mut player, sprint_idx, Duration::ZERO).repeat();
+        }
+
         commands.entity(entity)
             .insert(graph_handle.clone())
+            .insert(transitions)
             .insert(KaiArmature);
 
         if let Ok(mut controller) = controller_q.get_single_mut() {
-            controller.current_anim = None;
-        }
-
-        if let Some(&run_idx) = kai_assets.animations.get("Kai_Run") {
-            player.play(run_idx).repeat();
+            controller.current_anim = Some(KaiAnimState::Sprint);
+            controller.was_grounded = true;
+            controller.was_sliding = false;
+            controller.landing_timer = 0.0;
+            controller.slide_exit_timer = 0.0;
         }
     }
 }
 
 fn kai_animation_controller_system(
+    time: Res<Time>,
     app_state: Res<State<AppState>>,
-    stats: Res<GameRunStats>,
-    powerups: Res<ActivePowerUps>,
     kai_assets: Res<KaiModelAssets>,
     mut controller_q: Query<(&Player, &mut KaiAnimationController)>,
-    mut player_anim_q: Query<&mut AnimationPlayer, With<KaiArmature>>,
+    mut player_anim_q: Query<(&mut AnimationPlayer, &mut AnimationTransitions), With<KaiArmature>>,
 ) {
     let (player, mut controller) = match controller_q.get_single_mut() {
         Ok(c) => c,
         Err(_) => return,
     };
-    let mut anim_player = match player_anim_q.get_single_mut() {
+    let (mut anim_player, mut transitions) = match player_anim_q.get_single_mut() {
         Ok(p) => p,
         Err(_) => return,
     };
 
-    let desired_state = match *app_state.get() {
-        AppState::GameOver => KaiAnimState::Death,
-        AppState::MainMenu | AppState::Paused | AppState::StoryLog => KaiAnimState::Idle,
-        AppState::InGame => {
-            if stats.stumble_intensity >= 0.9 {
-                KaiAnimState::Fall
-            } else if stats.stumble_intensity > 0.0 {
-                KaiAnimState::Stumble
-            } else if powerups.overdrive_timer > 0.0 && player.dash_cooldown > 0.0 {
-                KaiAnimState::Dash
-            } else if player.is_sliding {
-                KaiAnimState::Slide
-            } else if !player.is_grounded {
-                KaiAnimState::Jump
+    let dt = time.delta_seconds();
+
+    // Step 4: Death is a proper final state in GameOver. Once in Death, do not restart.
+    if *app_state.get() == AppState::GameOver {
+        if controller.current_anim != Some(KaiAnimState::Death) {
+            controller.current_anim = Some(KaiAnimState::Death);
+            if let Some(&death_idx) = kai_assets.animations.get(KaiAnimState::Death.clip_name()) {
+                transitions.play(&mut anim_player, death_idx, KaiAnimState::Death.transition_duration());
+            }
+        }
+        return;
+    }
+
+    // Outside active gameplay (Menu / Paused / Story), hold state
+    if *app_state.get() != AppState::InGame {
+        return;
+    }
+
+    // Decrement non-interrupting transient timers
+    if controller.landing_timer > 0.0 {
+        controller.landing_timer = (controller.landing_timer - dt).max(0.0);
+    }
+    if controller.slide_exit_timer > 0.0 {
+        controller.slide_exit_timer = (controller.slide_exit_timer - dt).max(0.0);
+    }
+
+    // Step 2 & Step 3: Determine desired animation based on real gameplay kinematics
+    let desired_state = if !player.is_grounded {
+        // Airborne: Play Jump Start immediately, cancel slide exit or landing
+        controller.was_grounded = false;
+        controller.landing_timer = 0.0;
+        controller.slide_exit_timer = 0.0;
+        KaiAnimState::JumpStart
+    } else {
+        // Grounded: Detect touchdown from air
+        if !controller.was_grounded {
+            controller.was_grounded = true;
+            if !player.is_sliding {
+                controller.landing_timer = 0.25;
+            }
+        }
+
+        if player.is_sliding {
+            controller.was_sliding = true;
+            controller.landing_timer = 0.0;
+            controller.slide_exit_timer = 0.0;
+            KaiAnimState::SlideStart
+        } else {
+            // Detect transition out of slide
+            if controller.was_sliding {
+                controller.was_sliding = false;
+                controller.slide_exit_timer = 0.25;
+            }
+
+            if controller.slide_exit_timer > 0.0 {
+                KaiAnimState::SlideExit
+            } else if controller.landing_timer > 0.0 {
+                KaiAnimState::JumpLand
             } else {
-                KaiAnimState::Run
+                KaiAnimState::Sprint
             }
         }
     };
 
+    // Step 5: Smooth AnimationTransitions blending
     if controller.current_anim != Some(desired_state) {
-        let anim_name = match desired_state {
-            KaiAnimState::Idle => "Kai_Idle",
-            KaiAnimState::Run => "Kai_Run",
-            KaiAnimState::Jump => "Kai_Jump",
-            KaiAnimState::Slide => "Kai_Slide",
-            KaiAnimState::Dash => "Kai_Dash",
-            KaiAnimState::Stumble => "Kai_Stumble",
-            KaiAnimState::Fall => "Kai_Fall",
-            KaiAnimState::Death => "Kai_Death",
-            KaiAnimState::Lookback => "Kai_Lookback",
-        };
-
-        if let Some(&node_idx) = kai_assets.animations.get(anim_name) {
-            anim_player.stop_all();
-            match desired_state {
-                KaiAnimState::Run | KaiAnimState::Idle => {
-                    anim_player.play(node_idx).repeat();
-                }
-                KaiAnimState::Slide => {
-                    anim_player.play(node_idx).repeat();
-                }
-                _ => {
-                    anim_player.start(node_idx);
-                }
+        if let Some(&node_idx) = kai_assets.animations.get(desired_state.clip_name()) {
+            let active = transitions.play(
+                &mut anim_player,
+                node_idx,
+                desired_state.transition_duration(),
+            );
+            if desired_state.is_looping() {
+                active.repeat();
             }
             controller.current_anim = Some(desired_state);
         }
@@ -338,6 +366,7 @@ fn handle_run_reset_player(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut player_q: Query<(&mut Player, &mut Transform, Option<&mut KaiAnimationController>)>,
+    mut anim_q: Query<(&mut AnimationPlayer, &mut AnimationTransitions), With<KaiArmature>>,
     mut history: ResMut<PlayerMovementHistory>,
     stats: Res<GameRunStats>,
     kai_assets: Res<KaiModelAssets>,
@@ -363,6 +392,16 @@ fn handle_run_reset_player(
 
             if let Some(mut ctrl) = opt_ctrl {
                 ctrl.current_anim = None;
+                ctrl.was_grounded = true;
+                ctrl.was_sliding = false;
+                ctrl.landing_timer = 0.0;
+                ctrl.slide_exit_timer = 0.0;
+            }
+
+            if let Ok((mut anim_player, mut transitions)) = anim_q.get_single_mut() {
+                if let Some(&sprint_idx) = kai_assets.animations.get("Sprint") {
+                    transitions.play(&mut anim_player, sprint_idx, Duration::ZERO).repeat();
+                }
             }
         } else {
             spawn_player_entity(&mut commands, &mut meshes, &mut materials, stats.selected_character, &kai_assets);
