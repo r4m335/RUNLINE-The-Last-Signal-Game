@@ -285,6 +285,12 @@ fn init_environment_assets(
     commands.insert_resource(env_assets);
     crate::environment_props::init_prop_assets(&mut commands, &mut meshes, &mut materials);
     crate::environment_signage::init_signage_assets(&mut commands, &mut images, &mut materials);
+    crate::neon_district::init_neon_district_assets(
+        &mut commands,
+        &mut meshes,
+        &mut materials,
+        &mut images,
+    );
 }
 
 fn animate_environment_fans(
@@ -302,6 +308,7 @@ pub fn spawn_modular_environment_slice(
     env: &EnvironmentAssets,
     props: Option<&crate::environment_props::PropAssets>,
     signage: Option<&crate::environment_signage::SignageAssets>,
+    neon: Option<&crate::neon_district::NeonDistrictAssets>,
     z_center: f32,
     length: f32,
     distance: f32,
@@ -314,6 +321,19 @@ pub fn spawn_modular_environment_slice(
                 env,
                 props_ref,
                 signage_ref,
+                z_center,
+                length,
+                segment_dist,
+            );
+        }
+    } else if segment_dist < 1800.0 {
+        if let Some(neon_ref) = neon {
+            return crate::neon_district::spawn_neon_district_segment(
+                commands,
+                env,
+                neon_ref,
+                props,
+                signage,
                 z_center,
                 length,
                 segment_dist,

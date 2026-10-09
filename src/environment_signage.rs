@@ -417,7 +417,7 @@ fn create_hazard_stripes_image() -> Image {
     make_image(w as u32, h as u32, buf)
 }
 
-fn make_image(w: u32, h: u32, data: Vec<u8>) -> Image {
+pub(crate) fn make_image(w: u32, h: u32, data: Vec<u8>) -> Image {
     Image::new(
         Extent3d {
             width: w,
@@ -431,7 +431,7 @@ fn make_image(w: u32, h: u32, data: Vec<u8>) -> Image {
     )
 }
 
-fn set_pixel(buf: &mut [u8], stride: usize, x: usize, y: usize, color: [u8; 4]) {
+pub(crate) fn set_pixel(buf: &mut [u8], stride: usize, x: usize, y: usize, color: [u8; 4]) {
     if x < stride && y * stride + x < buf.len() / 4 {
         let idx = (y * stride + x) * 4;
         buf[idx] = color[0];
@@ -444,7 +444,7 @@ fn set_pixel(buf: &mut [u8], stride: usize, x: usize, y: usize, color: [u8; 4]) 
 // -----------------------------------------------------------------------------
 // BITMAP FONT RENDERER (5x7 PIXEL MATRIX)
 // -----------------------------------------------------------------------------
-fn draw_string(
+pub(crate) fn draw_string(
     buf: &mut [u8],
     stride: usize,
     max_h: usize,
