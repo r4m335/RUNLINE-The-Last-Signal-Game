@@ -135,6 +135,28 @@ pub struct EnemySquadManager {
     pub boss_spawned_milestone_7: bool,
 }
 
+const HUNTER_INTRO_DISTANCE: f32 = 850.0;
+
+/// Hunter timing is an encounter-introduction threshold, not a zone boundary.
+/// Once introduced, Hunters remain eligible through the rest of Zone 1 and in
+/// every later zone, subject to the scheduler's cooldown and fairness checks.
+pub(crate) fn hunter_encounter_eligible(distance: f32, active_zone_id: usize) -> bool {
+    distance >= HUNTER_INTRO_DISTANCE || active_zone_id >= 2
+}
+
+pub(crate) fn hunter_scheduler_ready(
+    distance: f32,
+    active_zone_id: usize,
+    active_boss: bool,
+    has_hunter: bool,
+    hunter_cooldown: f32,
+) -> bool {
+    hunter_encounter_eligible(distance, active_zone_id)
+        && !active_boss
+        && !has_hunter
+        && hunter_cooldown <= 0.0
+}
+
 pub struct EnemyPlugin;
 
 impl Plugin for EnemyPlugin {
@@ -643,16 +665,18 @@ fn update_enemy_spawning_and_pacing(
         });
     }
 
-    // 2. Hunter Interceptor predator encounter in Zone 2+ (Neon District onwards)
+    // 2. Hunter Interceptor predator encounter after the Zone 1 introduction
     // Controlled predator pacing & fairness guarantees:
     // - Cooldown: 4-7 seconds between encounters
     // - Solvability: Player must have >= 2 navigable lanes ahead to evade safely
     // - Concurrency protection: Does not spawn during active boss fight or concurrent Hunter attack
-    if director.active_zone_id >= 2
-        && !squad_mgr.active_boss
-        && !has_hunter
-        && squad_mgr.hunter_cooldown <= 0.0
-    {
+    if hunter_scheduler_ready(
+        stats.distance,
+        director.active_zone_id,
+        squad_mgr.active_boss,
+        has_hunter,
+        squad_mgr.hunter_cooldown,
+    ) {
         // Check obstacle density in track window ahead [p.z - 25m, p.z - 5m]
         let mut lane_blocked = [false; 3];
         for (obs, o_trans) in obs_q.iter() {
@@ -1583,6 +1607,26 @@ fn animate_enemy_thrusters(time: Res<Time>, mut query: Query<&mut Transform, Wit
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_hunter_zone_eligibility_preserves_intro_and_later_zones() {
+        assert!(!hunter_encounter_eligible(0.0, 1));
+        assert!(!hunter_encounter_eligible(849.99, 1));
+        assert!(hunter_encounter_eligible(850.0, 1));
+        assert!(hunter_encounter_eligible(1500.0, 1));
+        assert!(hunter_encounter_eligible(1999.99, 1));
+        assert!(hunter_encounter_eligible(2000.0, 2));
+        assert!(hunter_encounter_eligible(4000.0, 3));
+    }
+
+    #[test]
+    fn test_hunter_scheduler_respects_cooldown_and_concurrency_limits() {
+        assert!(hunter_scheduler_ready(1500.0, 1, false, false, 0.0));
+        assert!(!hunter_scheduler_ready(1500.0, 1, false, false, 0.1));
+        assert!(!hunter_scheduler_ready(1500.0, 1, false, true, 0.0));
+        assert!(!hunter_scheduler_ready(1500.0, 1, true, false, 0.0));
+        assert!(hunter_scheduler_ready(2000.0, 2, false, false, 0.0));
+    }
 
     #[test]
     fn test_enemy_systems_parameter_initialization_no_conflicts() {

@@ -543,6 +543,27 @@ pub fn get_pattern_catalog() -> Vec<PatternChunk> {
                 Vec3::new(2.2, 0.5, 0.3),
             )
             .with_fragment_line(Lane::Right, -6.0, 6, 3.5, 0.85),
+        // Late Zone 1 train introduction: both Metro silhouettes remain
+        // complexity-1 encounters so extending Old Metro to 2,000m does not
+        // remove trains while the player is still on the onboarding profile.
+        PatternChunk::new("Old Metro Service Train", 1, 35.0)
+            .with_obstacle(
+                Lane::Center,
+                -18.0,
+                ObstacleType::StaticTrain,
+                Vec3::new(2.2, 2.5, 12.0),
+            )
+            .with_fragment_line(Lane::Left, -8.0, 5, 3.2, 0.85)
+            .with_fragment_line(Lane::Right, -8.0, 5, 3.2, 0.85),
+        PatternChunk::new("Old Metro Express", 1, 35.0)
+            .with_obstacle(
+                Lane::Right,
+                -20.0,
+                ObstacleType::MovingTrain { speed: 8.0 },
+                Vec3::new(2.2, 2.5, 14.0),
+            )
+            .with_fragment_line(Lane::Left, -8.0, 6, 3.0, 0.85)
+            .with_fragment_line(Lane::Center, -8.0, 6, 3.0, 0.85),
         // -------------------------------------------------------------
         // COMPLEXITY 2: NEON DISTRICT (2,000 - 4,000m) — REACT
         // -------------------------------------------------------------
@@ -1572,6 +1593,76 @@ mod tests {
                 "Phase 5 at {}m must be solvable",
                 d
             );
+        }
+    }
+
+    #[test]
+    fn test_zone_1_can_schedule_metro_train_encounters() {
+        let catalog = get_pattern_catalog();
+        let train_patterns: Vec<&PatternChunk> = catalog
+            .iter()
+            .filter(|pattern| {
+                pattern.min_complexity == 1
+                    && pattern.obstacles.iter().any(|obstacle| {
+                        matches!(
+                            obstacle.obstacle_type,
+                            ObstacleType::StaticTrain | ObstacleType::MovingTrain { .. }
+                        )
+                    })
+            })
+            .collect();
+
+        assert_eq!(
+            train_patterns.len(),
+            2,
+            "Zone 1 must retain both stationary and moving Metro train patterns"
+        );
+        for pattern in train_patterns {
+            assert!(
+                verify_intra_chunk_solvability(pattern).is_ok(),
+                "Zone 1 train pattern '{}' must remain solvable",
+                pattern.name
+            );
+        }
+
+        // The final quarter is randomized, so sample the real selector rather
+        // than testing only a zone number or catalog entry.
+        for distance in [1500.0, 1750.0, 1999.0] {
+            let selected_train = (0..128).any(|_| {
+                let pattern = select_validated_pattern(1, None, 16.0, distance);
+                pattern.obstacles.iter().any(|obstacle| {
+                    matches!(
+                        obstacle.obstacle_type,
+                        ObstacleType::StaticTrain | ObstacleType::MovingTrain { .. }
+                    )
+                })
+            });
+            assert!(
+                selected_train,
+                "Zone 1 train encounter must be selectable at {distance}m"
+            );
+        }
+    }
+
+    #[test]
+    fn test_zone_2_train_eligibility_remains_intact() {
+        for distance in [2000.0, 2600.0, 3400.0, 3999.0] {
+            let selected = (0..128).any(|_| {
+                let pattern = select_validated_pattern(2, None, 18.4, distance);
+                pattern.obstacles.iter().any(|obstacle| {
+                    matches!(
+                        obstacle.obstacle_type,
+                        ObstacleType::StaticTrain | ObstacleType::MovingTrain { .. }
+                    )
+                })
+            });
+
+            if distance >= 2600.0 {
+                assert!(
+                    selected,
+                    "Zone 2 train encounter must remain selectable at {distance}m"
+                );
+            }
         }
     }
 }
