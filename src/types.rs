@@ -331,6 +331,12 @@ pub enum PoolType {
     TallPillar,
     StaticTrain,
     MovingTrain,
+    // Zone 2 Neon District Dedicated Obstacles
+    NeonRoadBarrier,
+    NeonOverheadScanner,
+    NeonCheckpointPillar,
+    NeonAutoVan,
+    NeonCyberBus,
     EchoFragment,
     DataChip,
     PowerUp,

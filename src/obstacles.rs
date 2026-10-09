@@ -14,6 +14,55 @@ impl Plugin for ObstaclePlugin {
     }
 }
 
+/// Selects the pooled visual prefab for an obstacle without changing its
+/// gameplay type, dimensions, lane, or movement data.
+///
+/// The obstacle's world position is used as the run-distance coordinate. This
+/// matters for rolling-track spawning: a chunk can be generated before the
+/// player reaches it, but its appearance must still match the zone it belongs
+/// to.
+pub fn resolve_obstacle_pool_type(obstacle_type: ObstacleType, distance: f32) -> PoolType {
+    let is_neon_district = get_zone_for_distance(distance).id == 2;
+
+    match obstacle_type {
+        ObstacleType::LowBarrier => {
+            if is_neon_district {
+                PoolType::NeonRoadBarrier
+            } else {
+                PoolType::LowBarrier
+            }
+        }
+        ObstacleType::HighHangingWire => {
+            if is_neon_district {
+                PoolType::NeonOverheadScanner
+            } else {
+                PoolType::HighHangingWire
+            }
+        }
+        ObstacleType::TallPillar => {
+            if is_neon_district {
+                PoolType::NeonCheckpointPillar
+            } else {
+                PoolType::TallPillar
+            }
+        }
+        ObstacleType::StaticTrain => {
+            if is_neon_district {
+                PoolType::NeonAutoVan
+            } else {
+                PoolType::StaticTrain
+            }
+        }
+        ObstacleType::MovingTrain { .. } => {
+            if is_neon_district {
+                PoolType::NeonCyberBus
+            } else {
+                PoolType::MovingTrain
+            }
+        }
+    }
+}
+
 #[allow(dead_code)]
 pub fn spawn_segment_obstacles(
     commands: &mut Commands,
@@ -27,6 +76,7 @@ pub fn spawn_segment_obstacles(
     let mut rng = rand::thread_rng();
     let zone = get_zone_for_distance(distance);
     let density = density_override.unwrap_or(zone.obstacle_density);
+    let neon_visuals = zone.id == 2;
 
     let hazard_mat = materials.add(StandardMaterial {
         base_color: Color::srgb(1.0, 0.50, 0.05),
@@ -62,6 +112,42 @@ pub fn spawn_segment_obstacles(
         ..default()
     });
 
+    let neon_vehicle_mat = materials.add(StandardMaterial {
+        base_color: Color::srgb(0.08, 0.16, 0.22),
+        metallic: 0.92,
+        perceptual_roughness: 0.18,
+        ..default()
+    });
+
+    let neon_vehicle_cabin_mat = materials.add(StandardMaterial {
+        base_color: Color::srgb(0.05, 0.30, 0.38),
+        metallic: 0.85,
+        perceptual_roughness: 0.10,
+        ..default()
+    });
+
+    let neon_road_barrier_mat = materials.add(StandardMaterial {
+        base_color: Color::srgb(0.12, 0.20, 0.24),
+        emissive: LinearRgba::new(0.1, 1.2, 1.8, 1.0),
+        metallic: 0.75,
+        perceptual_roughness: 0.28,
+        ..default()
+    });
+
+    let neon_scanner_mat = materials.add(StandardMaterial {
+        base_color: Color::srgb(0.16, 0.18, 0.24),
+        metallic: 0.90,
+        perceptual_roughness: 0.20,
+        ..default()
+    });
+
+    let neon_checkpoint_mat = materials.add(StandardMaterial {
+        base_color: Color::srgb(0.11, 0.13, 0.18),
+        metallic: 0.92,
+        perceptual_roughness: 0.20,
+        ..default()
+    });
+
     // Subdivide segment into 2 obstacle slots
     let slots = [z_start - 12.0, z_start - 28.0];
 
@@ -85,8 +171,16 @@ pub fn spawn_segment_obstacles(
                     // Tall Pillar
                     commands.spawn((
                         PbrBundle {
-                            mesh: meshes.add(Cuboid::new(1.8, 4.0, 1.2)),
-                            material: pillar_mat.clone(),
+                            mesh: if neon_visuals {
+                                meshes.add(Cuboid::new(1.65, 3.8, 1.1))
+                            } else {
+                                meshes.add(Cuboid::new(1.8, 4.0, 1.2))
+                            },
+                            material: if neon_visuals {
+                                neon_checkpoint_mat.clone()
+                            } else {
+                                pillar_mat.clone()
+                            },
                             transform: Transform::from_xyz(blocked_lane.x_pos(), 2.0, z_pos),
                             ..default()
                         },
@@ -101,8 +195,16 @@ pub fn spawn_segment_obstacles(
                     // Low Barrier (jumpable)
                     commands.spawn((
                         PbrBundle {
-                            mesh: meshes.add(Cuboid::new(2.1, 0.85, 0.4)),
-                            material: hazard_mat.clone(),
+                            mesh: if neon_visuals {
+                                meshes.add(Cuboid::new(2.1, 0.32, 0.22))
+                            } else {
+                                meshes.add(Cuboid::new(2.1, 0.85, 0.4))
+                            },
+                            material: if neon_visuals {
+                                neon_road_barrier_mat.clone()
+                            } else {
+                                hazard_mat.clone()
+                            },
                             transform: Transform::from_xyz(jump_lane.x_pos(), 0.42, z_pos),
                             ..default()
                         },
@@ -119,8 +221,16 @@ pub fn spawn_segment_obstacles(
                     let slide_lane = Lane::from_index(rng.gen_range(-1..=1));
                     commands.spawn((
                         PbrBundle {
-                            mesh: meshes.add(Cuboid::new(2.2, 0.5, 0.3)),
-                            material: wire_mat.clone(),
+                            mesh: if neon_visuals {
+                                meshes.add(Cuboid::new(2.2, 0.28, 0.35))
+                            } else {
+                                meshes.add(Cuboid::new(2.2, 0.5, 0.3))
+                            },
+                            material: if neon_visuals {
+                                neon_scanner_mat.clone()
+                            } else {
+                                wire_mat.clone()
+                            },
                             transform: Transform::from_xyz(slide_lane.x_pos(), 1.7, z_pos),
                             ..default()
                         },
@@ -133,15 +243,26 @@ pub fn spawn_segment_obstacles(
                     ));
                 }
                 2 => {
-                    // Pattern 2: Stationary Metro Train on one lane
+                    // Pattern 2: Stationary Metro Train / Zone 2 autonomous van
                     let train_lane = Lane::from_index(rng.gen_range(-1..=1));
                     let lane_x = train_lane.x_pos();
+                    let body_mesh = if neon_visuals {
+                        meshes.add(Cuboid::new(2.1, 1.4, 9.8))
+                    } else {
+                        meshes.add(Cuboid::new(2.2, 2.5, 12.0))
+                    };
+                    let body_material = if neon_visuals {
+                        neon_vehicle_mat.clone()
+                    } else {
+                        train_body_mat.clone()
+                    };
+                    let front_z = if neon_visuals { 4.91 } else { 6.05 };
 
                     commands
                         .spawn((
                             PbrBundle {
-                                mesh: meshes.add(Cuboid::new(2.2, 2.5, 12.0)),
-                                material: train_body_mat.clone(),
+                                mesh: body_mesh,
+                                material: body_material,
                                 transform: Transform::from_xyz(lane_x, 1.25, z_pos),
                                 ..default()
                             },
@@ -153,31 +274,50 @@ pub fn spawn_segment_obstacles(
                             Despawnable { z_center: z_pos },
                         ))
                         .with_children(|train| {
+                            if neon_visuals {
+                                train.spawn(PbrBundle {
+                                    mesh: meshes.add(Cuboid::new(1.9, 0.85, 4.2)),
+                                    material: neon_vehicle_cabin_mat.clone(),
+                                    transform: Transform::from_xyz(0.0, 0.75, 0.8),
+                                    ..default()
+                                });
+                            }
                             train.spawn(PbrBundle {
                                 mesh: meshes.add(Sphere::new(0.2)),
                                 material: train_light_mat.clone(),
-                                transform: Transform::from_xyz(-0.7, 0.2, 6.05),
+                                transform: Transform::from_xyz(-0.7, 0.2, front_z),
                                 ..default()
                             });
                             train.spawn(PbrBundle {
                                 mesh: meshes.add(Sphere::new(0.2)),
                                 material: train_light_mat.clone(),
-                                transform: Transform::from_xyz(0.7, 0.2, 6.05),
+                                transform: Transform::from_xyz(0.7, 0.2, front_z),
                                 ..default()
                             });
                         });
                 }
                 3 => {
-                    // Pattern 3: Moving Metro Train approaching if distance > 600m
+                    // Pattern 3: Moving Metro Train / Zone 2 transit bus if distance > 600m
                     if distance > 600.0 {
                         let train_lane = Lane::from_index(rng.gen_range(-1..=1));
                         let lane_x = train_lane.x_pos();
+                        let body_mesh = if neon_visuals {
+                            meshes.add(Cuboid::new(2.15, 2.2, 13.6))
+                        } else {
+                            meshes.add(Cuboid::new(2.2, 2.5, 14.0))
+                        };
+                        let body_material = if neon_visuals {
+                            neon_vehicle_mat.clone()
+                        } else {
+                            train_body_mat.clone()
+                        };
+                        let front_z = if neon_visuals { 6.81 } else { 7.05 };
 
                         commands
                             .spawn((
                                 PbrBundle {
-                                    mesh: meshes.add(Cuboid::new(2.2, 2.5, 14.0)),
-                                    material: train_body_mat.clone(),
+                                    mesh: body_mesh,
+                                    material: body_material,
                                     transform: Transform::from_xyz(lane_x, 1.25, z_pos - 15.0),
                                     ..default()
                                 },
@@ -190,16 +330,24 @@ pub fn spawn_segment_obstacles(
                                 Despawnable { z_center: z_pos },
                             ))
                             .with_children(|train| {
+                                if neon_visuals {
+                                    train.spawn(PbrBundle {
+                                        mesh: meshes.add(Cuboid::new(1.95, 1.1, 0.1)),
+                                        material: neon_vehicle_cabin_mat.clone(),
+                                        transform: Transform::from_xyz(0.0, 0.35, front_z),
+                                        ..default()
+                                    });
+                                }
                                 train.spawn(PbrBundle {
                                     mesh: meshes.add(Sphere::new(0.25)),
                                     material: train_light_mat.clone(),
-                                    transform: Transform::from_xyz(-0.7, 0.2, 7.05),
+                                    transform: Transform::from_xyz(-0.7, 0.2, front_z),
                                     ..default()
                                 });
                                 train.spawn(PbrBundle {
                                     mesh: meshes.add(Sphere::new(0.25)),
                                     material: train_light_mat.clone(),
-                                    transform: Transform::from_xyz(0.7, 0.2, 7.05),
+                                    transform: Transform::from_xyz(0.7, 0.2, front_z),
                                     ..default()
                                 });
                             });
@@ -213,8 +361,16 @@ pub fn spawn_segment_obstacles(
                             let barrier_lane = Lane::from_index(l);
                             commands.spawn((
                                 PbrBundle {
-                                    mesh: meshes.add(Cuboid::new(2.1, 0.85, 0.4)),
-                                    material: hazard_mat.clone(),
+                                    mesh: if neon_visuals {
+                                        meshes.add(Cuboid::new(2.1, 0.32, 0.22))
+                                    } else {
+                                        meshes.add(Cuboid::new(2.1, 0.85, 0.4))
+                                    },
+                                    material: if neon_visuals {
+                                        neon_road_barrier_mat.clone()
+                                    } else {
+                                        hazard_mat.clone()
+                                    },
                                     transform: Transform::from_xyz(
                                         barrier_lane.x_pos(),
                                         0.42,
