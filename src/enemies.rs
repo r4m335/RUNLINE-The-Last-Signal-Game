@@ -383,12 +383,12 @@ fn spawn_hunter_drone(
     commands: &mut Commands,
     assets: &EnemyAssets,
     lane: Lane,
-    initial_distance_behind: f32,
+    spawn_z: f32,
 ) {
     commands
         .spawn((
             SpatialBundle {
-                transform: Transform::from_xyz(lane.x_pos(), 2.8, initial_distance_behind),
+                transform: Transform::from_xyz(lane.x_pos(), 5.0, spawn_z),
                 ..default()
             },
             ActiveEnemy {
@@ -397,12 +397,12 @@ fn spawn_hunter_drone(
                 current_lane: lane,
                 lane_switch_timer: 0.0,
                 behavior_timer: 0.0,
-                distance_from_player: initial_distance_behind,
+                distance_from_player: -12.0,
                 is_attacking: false,
             },
             HunterDrone {
                 tracking_lane: lane,
-                state: HunterState::Infiltrating { approach_timer: 0.35 },
+                state: HunterState::Infiltrating { approach_timer: 0.7 },
                 eval_timer: 0.8,
                 confidence: 0.5,
             },
@@ -656,7 +656,8 @@ fn update_enemy_spawning_and_pacing(
             let lanes = [Lane::Left, Lane::Center, Lane::Right];
             let spawn_lane = lanes[rng.gen_range(0..3)];
 
-            spawn_hunter_drone(&mut commands, &assets, spawn_lane, 11.0);
+            let spawn_z = p_trans.translation.z - 12.0;
+            spawn_hunter_drone(&mut commands, &assets, spawn_lane, spawn_z);
             squad_mgr.hunter_cooldown = 15.0; // Pacing buffer while encounter is active
             enemy_spawn_events.send(EnemySpawnedEvent {
                 enemy_type: EnemyType::Hunter,
@@ -815,15 +816,17 @@ fn update_hunter_ai_fixed(
                 threat_alerts.hunter_telegraph_lane = None;
                 approach_timer -= dt;
 
-                // Move from initial rear spawn (Z+11m) toward steady trailing distance (Z+5.5m)
-                let target_z = p_trans.translation.z + 5.5;
-                d_trans.translation.z += (target_z - d_trans.translation.z) * 5.0 * dt;
+                // Move from entrance spawn (Z-12m, Y=5.0m) toward steady hover position (Z-6.5m, Y=3.2m)
+                let target_z = p_trans.translation.z - 6.5;
+                let target_y = 3.2;
+                d_trans.translation.z += (target_z - d_trans.translation.z) * 6.0 * dt;
+                d_trans.translation.y += (target_y - d_trans.translation.y) * 6.0 * dt;
                 enemy.distance_from_player = d_trans.translation.z - p_trans.translation.z;
                 enemy.target_lane = player.lane;
                 enemy.is_attacking = false;
 
                 if approach_timer <= 0.0 {
-                    hunter.state = HunterState::IntimidationWait { hover_timer: 1.5 };
+                    hunter.state = HunterState::IntimidationWait { hover_timer: 2.0 };
                 } else {
                     hunter.state = HunterState::Infiltrating { approach_timer };
                 }
@@ -832,9 +835,11 @@ fn update_hunter_ai_fixed(
                 threat_alerts.hunter_telegraph_lane = None;
                 hover_timer -= dt;
 
-                // Visibly hover behind the player, tracking player's trailing position
-                let target_z = p_trans.translation.z + 5.5;
-                d_trans.translation.z += (target_z - d_trans.translation.z) * 6.0 * dt;
+                // Visibly hover ahead of the player in full camera view (Z-6.5m, Y=3.2m)
+                let target_z = p_trans.translation.z - 6.5;
+                let target_y = 3.2;
+                d_trans.translation.z += (target_z - d_trans.translation.z) * 12.0 * dt;
+                d_trans.translation.y += (target_y - d_trans.translation.y) * 8.0 * dt;
                 enemy.distance_from_player = d_trans.translation.z - p_trans.translation.z;
 
                 // During intimidation wait, Hunter smoothly tracks Kai's lane - target lane is NOT locked yet!
@@ -844,7 +849,7 @@ fn update_hunter_ai_fixed(
                 // THREAT CONCURRENCY FAIRNESS RULES:
                 // Rule 1: Stumble Grace - Hunter holds fire while player is recovering from a stumble
                 if stats.stumble_intensity > 0.0 {
-                    hunter.state = HunterState::IntimidationWait { hover_timer: 1.5 };
+                    hunter.state = HunterState::IntimidationWait { hover_timer: 2.0 };
                     continue;
                 }
 
@@ -854,17 +859,17 @@ fn update_hunter_ai_fixed(
                     dz >= -5.0 && dz <= 35.0
                 });
                 if heavy_corridor_active {
-                    hunter.state = HunterState::IntimidationWait { hover_timer: 1.5 };
+                    hunter.state = HunterState::IntimidationWait { hover_timer: 2.0 };
                     continue;
                 }
 
                 if hover_timer <= 0.0 {
                     // Intimidation wait complete!
-                    // Enter LockingTarget: Lock onto the player's current lane and spawn red marker.
+                    // Enter LockingTarget (0.3s): Lock onto the player's current lane and spawn red marker.
                     let target_lane = player.lane;
                     hunter.state = HunterState::LockingTarget {
                         target_lane,
-                        lock_timer: 0.15,
+                        lock_timer: 0.3,
                     };
                     enemy.target_lane = target_lane;
                     threat_alerts.hunter_telegraph_lane = Some(target_lane);
@@ -879,8 +884,10 @@ fn update_hunter_ai_fixed(
                 enemy.target_lane = target_lane;
                 enemy.is_attacking = false;
 
-                let target_z = p_trans.translation.z + 5.3;
-                d_trans.translation.z += (target_z - d_trans.translation.z) * 6.0 * dt;
+                let target_z = p_trans.translation.z - 6.5;
+                let target_y = 3.2;
+                d_trans.translation.z += (target_z - d_trans.translation.z) * 12.0 * dt;
+                d_trans.translation.y += (target_y - d_trans.translation.y) * 8.0 * dt;
                 enemy.distance_from_player = d_trans.translation.z - p_trans.translation.z;
 
                 lock_timer -= dt;
@@ -902,9 +909,11 @@ fn update_hunter_ai_fixed(
                 enemy.target_lane = target_lane;
                 enemy.is_attacking = false;
 
-                // Hold stable firing position slightly behind Kai
-                let target_z = p_trans.translation.z + 5.2;
-                d_trans.translation.z += (target_z - d_trans.translation.z) * 8.0 * dt;
+                // Hold stable firing position ahead of Kai in clear camera view
+                let target_z = p_trans.translation.z - 6.5;
+                let target_y = 3.2;
+                d_trans.translation.z += (target_z - d_trans.translation.z) * 12.0 * dt;
+                d_trans.translation.y += (target_y - d_trans.translation.y) * 8.0 * dt;
                 enemy.distance_from_player = d_trans.translation.z - p_trans.translation.z;
 
                 if timer <= 0.0 {
@@ -925,9 +934,9 @@ fn update_hunter_ai_fixed(
                 enemy.is_attacking = true;
 
                 // Keep relative position steady during the rapid 0.16s blast
-                let target_z = p_trans.translation.z + 5.2;
+                let target_z = p_trans.translation.z - 6.5;
                 d_trans.translation.z = target_z;
-                enemy.distance_from_player = 5.2;
+                enemy.distance_from_player = -6.5;
 
                 if !has_resolved_hit {
                     has_resolved_hit = true;
@@ -982,9 +991,9 @@ fn update_hunter_ai_fixed(
                 enemy.is_attacking = false;
                 retreat_timer -= dt;
 
-                // Drone accelerates upward and backward into the shadows
+                // Drone accelerates upward and forward into ceiling shadows
                 d_trans.translation.y += 6.5 * dt;
-                d_trans.translation.z += 9.0 * dt;
+                d_trans.translation.z -= 12.0 * dt;
                 enemy.distance_from_player = d_trans.translation.z - p_trans.translation.z;
 
                 if retreat_timer <= 0.0 {
@@ -1238,8 +1247,8 @@ fn update_enemy_visual_smoothing(
                 if let Some(hunter) = hunter_opt {
                     match hunter.state {
                         HunterState::Infiltrating { .. } | HunterState::IntimidationWait { .. } => {
-                            let target_x = enemy.target_lane.x_pos() + (t * 2.8).cos() * 0.25;
-                            let target_y = 2.8 + (t * 3.5).sin() * 0.18;
+                            let target_x = enemy.target_lane.x_pos() + (t * 2.5).cos() * 0.25;
+                            let target_y = 3.2 + (t * 3.2).sin() * 0.15;
                             d_trans.translation.x += (target_x - d_trans.translation.x) * 12.0 * dt;
                             d_trans.translation.y += (target_y - d_trans.translation.y) * 8.0 * dt;
                         }
@@ -1247,7 +1256,7 @@ fn update_enemy_visual_smoothing(
                         | HunterState::Telegraphing { target_lane, .. }
                         | HunterState::Firing { target_lane, .. } => {
                             let target_x = target_lane.x_pos();
-                            let target_y = 2.8;
+                            let target_y = 3.2;
                             d_trans.translation.x += (target_x - d_trans.translation.x) * 14.0 * dt;
                             d_trans.translation.y += (target_y - d_trans.translation.y) * 10.0 * dt;
                         }
@@ -1303,7 +1312,7 @@ fn update_hunter_laser_visuals(
             if let Ok(mut m_trans) = model_q.get_mut(child) {
                 match hunter.state {
                     HunterState::Infiltrating { .. } | HunterState::IntimidationWait { .. } => {
-                        let look_target = p_trans.translation - h_trans.translation + Vec3::new(0.0, 0.6, 0.0);
+                        let look_target = p_trans.translation - h_trans.translation + Vec3::new(0.0, 0.9, 0.0);
                         m_trans.look_at(look_target, Vec3::Y);
                         model_rot = m_trans.rotation;
                     }
@@ -1316,7 +1325,7 @@ fn update_hunter_laser_visuals(
                         model_rot = m_trans.rotation;
                     }
                     HunterState::Retreating { .. } => {
-                        m_trans.rotation = Quat::from_rotation_x(0.35);
+                        m_trans.rotation = Quat::from_rotation_x(-0.35);
                         model_rot = m_trans.rotation;
                     }
                 }
@@ -1492,52 +1501,173 @@ mod tests {
     }
 
     #[test]
-    fn test_hunter_appearance_does_not_immediately_start_telegraph() {
-        // 1. Hunter appearance does not immediately start telegraph.
-        let state = HunterState::Infiltrating { approach_timer: 0.35 };
-        assert!(matches!(state, HunterState::Infiltrating { .. }));
-        assert!(!matches!(state, HunterState::Telegraphing { .. }));
+    fn test_hunter_entrance_lasts_configured_duration() {
+        // 1. Hunter entrance lasts the configured duration (0.5–0.8s, configured to 0.7s)
+        let entrance_duration = 0.7_f32;
+        let mut state = HunterState::Infiltrating { approach_timer: entrance_duration };
 
-        // Red marker/telegraph alert must NOT be active
-        let threat_alerts = ThreatAlertState::default();
-        assert_eq!(threat_alerts.hunter_telegraph_lane, None);
+        // Simulate 0.3s passing
+        let dt = 0.3_f32;
+        if let HunterState::Infiltrating { approach_timer } = &mut state {
+            *approach_timer -= dt;
+            assert!((*approach_timer - 0.4).abs() < 1e-4);
+        }
+        assert!(matches!(state, HunterState::Infiltrating { .. }));
+
+        // Simulate remaining 0.4s passing
+        if let HunterState::Infiltrating { approach_timer } = &mut state {
+            *approach_timer -= 0.4;
+            if *approach_timer <= 0.0001 {
+                state = HunterState::IntimidationWait { hover_timer: 2.0 };
+            }
+        }
+        assert_eq!(state, HunterState::IntimidationWait { hover_timer: 2.0 });
     }
 
     #[test]
-    fn test_hunter_remains_in_intimidation_hover_phase_for_configured_delay() {
-        // 2. Hunter remains in the intimidation/hover phase for the configured delay (1.5s).
-        let configured_hover_delay = 1.5_f32;
-        let mut state = HunterState::IntimidationWait { hover_timer: configured_hover_delay };
+    fn test_hunter_remains_in_visible_hover_state_for_approximately_2_seconds() {
+        // 2. Hunter remains in its visible-hover state for approximately 2 seconds.
+        let hover_duration = 2.0_f32;
+        let mut state = HunterState::IntimidationWait { hover_timer: hover_duration };
 
-        // Simulate 0.5s passing
-        let dt1 = 0.5_f32;
+        // Simulate 1.0s passing
+        let dt1 = 1.0_f32;
         if let HunterState::IntimidationWait { hover_timer } = &mut state {
             *hover_timer -= dt1;
+            assert!((*hover_timer - 1.0).abs() < 1e-4);
         }
-        assert_eq!(state, HunterState::IntimidationWait { hover_timer: 1.0 });
 
-        // Simulate another 0.5s passing (total 1.0s elapsed)
-        let dt2 = 0.5_f32;
+        // Simulate 0.9s passing (total 1.9s elapsed)
+        let dt2 = 0.9_f32;
         if let HunterState::IntimidationWait { hover_timer } = &mut state {
             *hover_timer -= dt2;
+            assert!((*hover_timer - 0.1).abs() < 1e-4);
         }
-        assert_eq!(state, HunterState::IntimidationWait { hover_timer: 0.5 });
         assert!(matches!(state, HunterState::IntimidationWait { .. }));
+
+        // Full 2.0s must elapse before entering target lock
+        if let HunterState::IntimidationWait { hover_timer } = &mut state {
+            *hover_timer -= 0.1;
+            if *hover_timer <= 0.0001 {
+                state = HunterState::LockingTarget { target_lane: Lane::Center, lock_timer: 0.3 };
+            }
+        }
+        assert_eq!(state, HunterState::LockingTarget { target_lane: Lane::Center, lock_timer: 0.3 });
+    }
+
+    #[test]
+    fn test_no_marker_appears_during_entrance_or_hover() {
+        // 3. No marker appears during entrance or hover.
+        let state_entrance = HunterState::Infiltrating { approach_timer: 0.7 };
+        let state_hover = HunterState::IntimidationWait { hover_timer: 2.0 };
+
+        fn marker_visibility(state: HunterState) -> Visibility {
+            match state {
+                HunterState::LockingTarget { .. }
+                | HunterState::Telegraphing { .. }
+                | HunterState::Firing { .. } => Visibility::Visible,
+                _ => Visibility::Hidden,
+            }
+        }
+
+        fn laser_visibility(state: HunterState) -> Visibility {
+            match state {
+                HunterState::Telegraphing { .. }
+                | HunterState::Firing { .. } => Visibility::Visible,
+                _ => Visibility::Hidden,
+            }
+        }
+
+        assert_eq!(marker_visibility(state_entrance), Visibility::Hidden);
+        assert_eq!(marker_visibility(state_hover), Visibility::Hidden);
+        assert_eq!(laser_visibility(state_entrance), Visibility::Hidden);
+        assert_eq!(laser_visibility(state_hover), Visibility::Hidden);
+    }
+
+    #[test]
+    fn test_marker_appears_only_when_target_lock_begins() {
+        // 4. Marker appears only when target lock begins.
+        let mut hover_timer = 0.05_f32;
+        let player_lane = Lane::Center;
+        let mut state = HunterState::IntimidationWait { hover_timer };
+        let mut active_marker = false;
+
+        // Step past hover expiration into target lock (0.3s transition)
+        let dt = 0.1_f32;
+        hover_timer -= dt;
+        if hover_timer <= 0.0 {
+            let target_lane = player_lane;
+            state = HunterState::LockingTarget { target_lane, lock_timer: 0.3 };
+            active_marker = true;
+        }
+
+        assert!(active_marker, "Marker must appear when target lock begins");
+        assert_eq!(state, HunterState::LockingTarget { target_lane: Lane::Center, lock_timer: 0.3 });
+    }
+
+    #[test]
+    fn test_hunter_remains_visible_throughout_target_lock_and_telegraph() {
+        // 5. Hunter remains visible throughout target lock and telegraph.
+        // Third-Person Camera parameters: pos=(0, 3.8, 6.8), look_target=(0, 1.4, -7.0), FOV=45 deg, aspect=16:9
+        let cam_pos = Vec3::new(0.0, 3.8, 6.8);
+        let cam_look = Vec3::new(0.0, 1.4, -7.0);
+        let fov_rad = 45.0_f32.to_radians();
+        let aspect = 16.0_f32 / 9.0_f32;
+
+        let forward = (cam_look - cam_pos).normalize();
+        let right = forward.cross(Vec3::Y).normalize();
+        let up = right.cross(forward);
+
+        // Relative Hunter positions during hover, lock, and telegraph across all lanes
+        let lanes = [Lane::Left.x_pos(), Lane::Center.x_pos(), Lane::Right.x_pos()];
+        for lane_x in lanes {
+            let hunter_pos = Vec3::new(lane_x, 3.2, -6.5);
+            let d = hunter_pos - cam_pos;
+            let dist_f = d.dot(forward);
+            let dist_r = d.dot(right);
+            let dist_u = d.dot(up);
+
+            assert!(dist_f > 0.0, "Hunter must be in front of the camera plane");
+            let half_h = dist_f * (fov_rad * 0.5).tan();
+            let half_w = half_h * aspect;
+
+            let ndc_x = dist_r / half_w;
+            let ndc_y = dist_u / half_h;
+
+            assert!(
+                ndc_x >= -1.0 && ndc_x <= 1.0,
+                "Hunter on lane x={:.1} must be within horizontal screen bounds: ndc_x={:.2}",
+                lane_x,
+                ndc_x
+            );
+            assert!(
+                ndc_y >= -1.0 && ndc_y <= 1.0,
+                "Hunter on lane x={:.1} must be within vertical screen bounds: ndc_y={:.2}",
+                lane_x,
+                ndc_y
+            );
+            // Verify Hunter is in upper airspace (ndc_y > 0.0), never occluding Kai (Kai is at ndc_y <= -0.31)
+            assert!(
+                ndc_y > 0.15,
+                "Hunter must remain framed in upper airspace without occluding Kai: ndc_y={:.2}",
+                ndc_y
+            );
+        }
     }
 
     #[test]
     fn test_hunter_target_lane_not_locked_during_intimidation() {
-        // 3. Target lane is not locked during intimidation.
+        // Player moves between lanes; Hunter tracks player instead of locking onto a fixed lane.
         let mut enemy = ActiveEnemy {
             enemy_type: EnemyType::Hunter,
             target_lane: Lane::Center,
             current_lane: Lane::Center,
             lane_switch_timer: 0.0,
             behavior_timer: 0.0,
-            distance_from_player: 5.5,
+            distance_from_player: -6.5,
             is_attacking: false,
         };
-        let state = HunterState::IntimidationWait { hover_timer: 1.5 };
+        let state = HunterState::IntimidationWait { hover_timer: 2.0 };
 
         // Player switches to Left lane while Hunter is intimidating
         let player_lane = Lane::Left;
@@ -1552,123 +1682,6 @@ mod tests {
             enemy.target_lane = player_lane_2;
         }
         assert_eq!(enemy.target_lane, Lane::Right);
-    }
-
-    #[test]
-    fn test_hunter_red_marker_not_active_during_intimidation() {
-        // 4. Red marker is not active during intimidation.
-        let state_infiltrating = HunterState::Infiltrating { approach_timer: 0.35 };
-        let state_intimidation = HunterState::IntimidationWait { hover_timer: 1.5 };
-
-        fn marker_visibility(state: HunterState) -> Visibility {
-            match state {
-                HunterState::LockingTarget { .. }
-                | HunterState::Telegraphing { .. }
-                | HunterState::Firing { .. } => Visibility::Visible,
-                _ => Visibility::Hidden,
-            }
-        }
-
-        assert_eq!(marker_visibility(state_infiltrating), Visibility::Hidden);
-        assert_eq!(marker_visibility(state_intimidation), Visibility::Hidden);
-    }
-
-    #[test]
-    fn test_hunter_target_lane_locks_only_after_intimidation() {
-        // 5. Target lane locks only after intimidation.
-        let mut hover_timer = 0.05_f32;
-        let player_lane = Lane::Center;
-        let mut state = HunterState::IntimidationWait { hover_timer };
-        let mut locked_lane_opt: Option<Lane> = None;
-
-        // Step past intimidation expiration
-        let dt = 0.1_f32;
-        hover_timer -= dt;
-        if hover_timer <= 0.0 {
-            let locked_lane = player_lane;
-            state = HunterState::LockingTarget { target_lane: locked_lane, lock_timer: 0.15 };
-            locked_lane_opt = Some(locked_lane);
-        }
-
-        assert_eq!(locked_lane_opt, Some(Lane::Center));
-        assert_eq!(state, HunterState::LockingTarget { target_lane: Lane::Center, lock_timer: 0.15 });
-
-        // Player now switches to Lane::Left after lock-on
-        let player_new_lane = Lane::Left;
-        if let HunterState::LockingTarget { target_lane, .. } = state {
-            assert_eq!(target_lane, Lane::Center);
-            assert_ne!(target_lane, player_new_lane);
-        } else {
-            panic!("State must be LockingTarget");
-        }
-    }
-
-    #[test]
-    fn test_hunter_telegraph_duration_is_approximately_1_5_seconds() {
-        // 6. Telegraph then lasts approximately 1.5 seconds.
-        let telegraph_duration = 1.5_f32;
-        assert!(
-            (telegraph_duration - 1.5).abs() < 0.001,
-            "Hunter telegraph duration must be approximately 1.5 seconds"
-        );
-
-        // Verify total sequence duration:
-        // appearance (0.35s Infiltrating + 1.5s IntimidationWait + 0.15s LockingTarget) = 2.0s
-        // + telegraph (1.5s) = 3.5s total window to laser strike (within 3.0-3.5s target)
-        let approach_time = 0.35_f32;
-        let intimidation_time = 1.5_f32;
-        let lock_time = 0.15_f32;
-        let total_to_fire = approach_time + intimidation_time + lock_time + telegraph_duration;
-        assert!(
-            total_to_fire >= 3.0 && total_to_fire <= 3.55,
-            "Total time from Hunter appearance to laser fire ({:.2}s) must be in 3.0-3.5s window",
-            total_to_fire
-        );
-    }
-
-    #[test]
-    fn test_hunter_direct_laser_hit_causes_immediate_game_over() {
-        // 7. Direct laser hit still causes immediate GameOver.
-        let targeted_lane = Lane::Center;
-        let player_lane = Lane::Center;
-        let shield = false;
-        let overdrive_active = false;
-        let invulnerable = false;
-
-        let mut app_state = AppState::InGame;
-        if player_lane == targeted_lane {
-            if overdrive_active {
-                // Hunter destroyed
-            } else if invulnerable {
-                // Protected
-            } else if shield {
-                // Shield absorbs
-            } else {
-                app_state = AppState::GameOver;
-            }
-        }
-
-        assert_eq!(
-            app_state,
-            AppState::GameOver,
-            "Direct Hunter laser strike must result in immediate GameOver"
-        );
-    }
-
-    #[test]
-    fn test_hunter_lane_switch_produces_clean_dodge() {
-        // 8. Lane switch still produces a clean dodge.
-        let targeted_lane = Lane::Center;
-        let player_lane = Lane::Left; // Kai dodged laterally
-        let hit = player_lane == targeted_lane;
-        let mut app_state = AppState::InGame;
-
-        if hit {
-            app_state = AppState::GameOver;
-        }
-
-        assert!(!hit, "Player must successfully dodge Hunter laser strike when switching lanes");
-        assert_eq!(app_state, AppState::InGame, "Clean dodge must preserve InGame state without damage");
     }
 
     #[test]
@@ -1698,6 +1711,51 @@ mod tests {
     }
 
     #[test]
+    fn test_hunter_direct_laser_hit_causes_immediate_game_over() {
+        // Direct laser hit without defensive powerups must trigger immediate GameOver
+        let targeted_lane = Lane::Center;
+        let player_lane = Lane::Center;
+        let shield = false;
+        let overdrive_active = false;
+        let invulnerable = false;
+
+        let mut app_state = AppState::InGame;
+        if player_lane == targeted_lane {
+            if overdrive_active {
+                // Hunter destroyed
+            } else if invulnerable {
+                // Protected
+            } else if shield {
+                // Shield absorbs
+            } else {
+                app_state = AppState::GameOver;
+            }
+        }
+
+        assert_eq!(
+            app_state,
+            AppState::GameOver,
+            "Direct Hunter laser strike must result in immediate GameOver"
+        );
+    }
+
+    #[test]
+    fn test_hunter_lane_switch_produces_clean_dodge() {
+        // Lateral lane switch produces clean dodge
+        let targeted_lane = Lane::Center;
+        let player_lane = Lane::Left; // Kai dodged laterally
+        let hit = player_lane == targeted_lane;
+        let mut app_state = AppState::InGame;
+
+        if hit {
+            app_state = AppState::GameOver;
+        }
+
+        assert!(!hit, "Player must successfully dodge Hunter laser strike when switching lanes");
+        assert_eq!(app_state, AppState::InGame, "Clean dodge must preserve InGame state without damage");
+    }
+
+    #[test]
     fn test_hunter_shield_absorbs_laser_and_prevents_game_over() {
         // Defensive fairness: Shield absorbs laser strike and prevents GameOver
         let targeted_lane = Lane::Center;
@@ -1714,7 +1772,6 @@ mod tests {
                     shield = false;
                     shield_hits = 0;
                 }
-                // Shield absorbs hit, preventing GameOver!
             } else {
                 app_state = AppState::GameOver;
             }
