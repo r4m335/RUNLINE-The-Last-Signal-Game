@@ -50,6 +50,7 @@ fn handle_run_reset_track(
     prop_assets: Option<Res<crate::environment_props::PropAssets>>,
     signage_assets: Option<Res<crate::environment_signage::SignageAssets>>,
     neon_assets: Option<Res<crate::neon_district::NeonDistrictAssets>>,
+    industrial_assets: Option<Res<crate::industrial_sector::IndustrialSectorAssets>>,
     pool_assets: Res<PoolAssets>,
     powerup_assets: Option<Res<PowerUpModelAssets>>,
     mut pool: ResMut<EntityPool>,
@@ -115,6 +116,7 @@ fn handle_run_reset_track(
                 prop_assets.as_deref(),
                 signage_assets.as_deref(),
                 neon_assets.as_deref(),
+                industrial_assets.as_deref(),
                 z_center,
                 SEGMENT_LENGTH,
                 (-z_center).max(0.0),
@@ -131,7 +133,7 @@ fn handle_run_reset_track(
                     director.profile.pattern_complexity,
                     last_chunk_ref.as_ref(),
                     stats.speed,
-                    0.0,
+                    (-z_start).max(0.0),
                 );
                 track_mgr.last_chunk = Some(chunk);
             }
@@ -151,6 +153,7 @@ fn maintain_rolling_track(
     prop_assets: Option<Res<crate::environment_props::PropAssets>>,
     signage_assets: Option<Res<crate::environment_signage::SignageAssets>>,
     neon_assets: Option<Res<crate::neon_district::NeonDistrictAssets>>,
+    industrial_assets: Option<Res<crate::industrial_sector::IndustrialSectorAssets>>,
     pool_assets: Res<PoolAssets>,
     powerup_assets: Option<Res<PowerUpModelAssets>>,
     mut pool: ResMut<EntityPool>,
@@ -174,6 +177,7 @@ fn maintain_rolling_track(
             prop_assets.as_deref(),
             signage_assets.as_deref(),
             neon_assets.as_deref(),
+            industrial_assets.as_deref(),
             z_center,
             SEGMENT_LENGTH,
             (-z_center).max(0.0),
@@ -189,7 +193,7 @@ fn maintain_rolling_track(
             director.profile.pattern_complexity,
             last_chunk_ref.as_ref(),
             stats.speed,
-            stats.distance,
+            (-z_start).max(0.0),
         );
         track_mgr.last_chunk = Some(chunk);
 
@@ -1614,6 +1618,7 @@ fn spawn_segment(
     prop_assets: Option<&crate::environment_props::PropAssets>,
     signage_assets: Option<&crate::environment_signage::SignageAssets>,
     neon_assets: Option<&crate::neon_district::NeonDistrictAssets>,
+    industrial_assets: Option<&crate::industrial_sector::IndustrialSectorAssets>,
     z_center: f32,
     length: f32,
     distance: f32,
@@ -1624,6 +1629,7 @@ fn spawn_segment(
         prop_assets,
         signage_assets,
         neon_assets,
+        industrial_assets,
         z_center,
         length,
         distance,

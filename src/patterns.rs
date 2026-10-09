@@ -1012,6 +1012,63 @@ pub fn select_validated_pattern(
         } else {
             matching
         }
+    } else if complexity <= 3 && zone.id == 3 {
+        // Zone 3 (Industrial Sector: 4,000 - 6,000m) COMBINE pacing:
+        // 0-20%: industrial entry with familiar hazards
+        // 20-45%: freight-yard train interactions
+        // 45-70%: combined obstacle actions
+        // 70-90%: Hunter pressure is paired with train-capable patterns
+        // 90-100%: highest Zone 3 intensity before Flooded Metro
+        let zone3_progress = normalized_zone_progress(3, distance);
+        let matching: Vec<PatternChunk> = if zone3_progress < 0.20 {
+            catalog
+                .iter()
+                .filter(|p| {
+                    p.min_complexity == 2
+                        && (p.name.contains("Slalom")
+                            || p.name.contains("Pulse")
+                            || p.name.contains("Wire"))
+                })
+                .cloned()
+                .collect()
+        } else if zone3_progress < 0.45 {
+            catalog
+                .iter()
+                .filter(|p| p.name == "Rooftop Fork" || p.name == "Twin Rail Squeeze")
+                .cloned()
+                .collect()
+        } else if zone3_progress < 0.70 {
+            catalog
+                .iter()
+                .filter(|p| {
+                    p.name == "Foundry Needle"
+                        || p.name == "Vault-to-Slide Combo"
+                        || p.name == "Rooftop Fork"
+                })
+                .cloned()
+                .collect()
+        } else if zone3_progress < 0.90 {
+            catalog
+                .iter()
+                .filter(|p| p.name == "Foundry Needle" || p.name == "Twin Rail Squeeze")
+                .cloned()
+                .collect()
+        } else {
+            catalog
+                .iter()
+                .filter(|p| p.min_complexity == 3)
+                .cloned()
+                .collect()
+        };
+
+        if matching.is_empty() {
+            catalog
+                .into_iter()
+                .filter(|p| p.min_complexity <= complexity)
+                .collect()
+        } else {
+            matching
+        }
     } else {
         catalog
             .into_iter()
@@ -1699,5 +1756,44 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn test_zone_3_combine_progression_selects_expected_pattern_families() {
+        let entry = select_validated_pattern(3, None, 20.8, 4000.0);
+        assert!(
+            entry.name.contains("Slalom")
+                || entry.name.contains("Pulse")
+                || entry.name.contains("Wire"),
+            "Zone 3 entry must begin with familiar hazards: {}",
+            entry.name
+        );
+
+        for (distance, expected_names) in [
+            (4400.0, &["Rooftop Fork", "Twin Rail Squeeze"] as &[&str]),
+            (
+                4900.0,
+                &["Foundry Needle", "Vault-to-Slide Combo", "Rooftop Fork"] as &[&str],
+            ),
+            (5400.0, &["Foundry Needle", "Twin Rail Squeeze"] as &[&str]),
+        ] {
+            let selected = (0..128).any(|_| {
+                let pattern = select_validated_pattern(3, None, 20.8, distance);
+                expected_names.iter().any(|name| pattern.name == *name)
+            });
+            assert!(
+                selected,
+                "Zone 3 at {distance}m must select its authored pattern family"
+            );
+        }
+
+        let high_intensity = (0..128).any(|_| {
+            let pattern = select_validated_pattern(3, None, 20.8, 5800.0);
+            pattern.min_complexity == 3 && verify_intra_chunk_solvability(&pattern).is_ok()
+        });
+        assert!(
+            high_intensity,
+            "Zone 3 transition patterns must remain solvable"
+        );
     }
 }

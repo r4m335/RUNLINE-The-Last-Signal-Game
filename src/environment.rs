@@ -12,6 +12,7 @@ pub struct EnvironmentalSign;
 pub enum EnvironmentRoute {
     OldMetro,
     NeonDistrict,
+    IndustrialSector,
     Generic,
 }
 
@@ -22,6 +23,7 @@ pub fn environment_route_for_distance(distance: f32) -> EnvironmentRoute {
     match get_zone_for_distance(distance).id {
         1 => EnvironmentRoute::OldMetro,
         2 => EnvironmentRoute::NeonDistrict,
+        3 => EnvironmentRoute::IndustrialSector,
         _ => EnvironmentRoute::Generic,
     }
 }
@@ -309,6 +311,11 @@ fn init_environment_assets(
         &mut materials,
         &mut images,
     );
+    crate::industrial_sector::init_industrial_sector_assets(
+        &mut commands,
+        &mut meshes,
+        &mut materials,
+    );
 }
 
 fn animate_environment_fans(
@@ -327,6 +334,7 @@ pub fn spawn_modular_environment_slice(
     props: Option<&crate::environment_props::PropAssets>,
     signage: Option<&crate::environment_signage::SignageAssets>,
     neon: Option<&crate::neon_district::NeonDistrictAssets>,
+    industrial: Option<&crate::industrial_sector::IndustrialSectorAssets>,
     z_center: f32,
     length: f32,
     _distance: f32,
@@ -354,6 +362,18 @@ pub fn spawn_modular_environment_slice(
                     neon_ref,
                     props,
                     signage,
+                    z_center,
+                    length,
+                    segment_dist,
+                );
+            }
+        }
+        EnvironmentRoute::IndustrialSector => {
+            if let Some(industrial_ref) = industrial {
+                return crate::industrial_sector::spawn_industrial_sector_segment(
+                    commands,
+                    env,
+                    industrial_ref,
                     z_center,
                     length,
                     segment_dist,
@@ -703,6 +723,11 @@ mod tests {
                     environment_route_for_distance(at),
                     EnvironmentRoute::NeonDistrict
                 );
+            } else if zone.id == 3 {
+                assert_eq!(
+                    environment_route_for_distance(at),
+                    EnvironmentRoute::IndustrialSector
+                );
             } else {
                 assert_eq!(
                     environment_route_for_distance(at),
@@ -728,6 +753,18 @@ mod tests {
         assert_eq!(
             environment_route_for_distance(ZONES[1].end_distance - 0.01),
             EnvironmentRoute::NeonDistrict
+        );
+        assert_eq!(
+            environment_route_for_distance(ZONES[2].start_distance),
+            EnvironmentRoute::IndustrialSector
+        );
+        assert_eq!(
+            environment_route_for_distance(ZONES[2].end_distance - 0.01),
+            EnvironmentRoute::IndustrialSector
+        );
+        assert_eq!(
+            environment_route_for_distance(ZONES[3].start_distance),
+            EnvironmentRoute::Generic
         );
     }
 }

@@ -7,6 +7,7 @@ mod environment;
 mod environment_lighting;
 mod environment_props;
 mod environment_signage;
+mod industrial_sector;
 mod neon_district;
 mod neon_district_landmarks;
 mod obstacles;
