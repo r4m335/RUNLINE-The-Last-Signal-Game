@@ -543,9 +543,8 @@ pub fn get_pattern_catalog() -> Vec<PatternChunk> {
                 Vec3::new(2.2, 0.5, 0.3),
             )
             .with_fragment_line(Lane::Right, -6.0, 6, 3.5, 0.85),
-        // Late Zone 1 train introduction: both Metro silhouettes remain
-        // complexity-1 encounters so extending Old Metro to 2,000m does not
-        // remove trains while the player is still on the onboarding profile.
+        // Zone 1 train encounters remain complexity-1 so Metro silhouettes can
+        // enter early without promoting the whole zone to Neon difficulty.
         PatternChunk::new("Old Metro Service Train", 1, 35.0)
             .with_obstacle(
                 Lane::Center,
@@ -904,6 +903,8 @@ pub fn select_validated_pattern(
     // 37.5–56.25%: slide obstacles (hanging wires with low crystal trails)
     // 56.25–75%: multi-lane choice gates
     // 75–100%: combinations + Scout pursuer pressure
+    // The first 400m stays focused on controls; introduce the static train
+    // at 20% progress (400m) and the moving train at 32.5% (650m).
     let zone1_progress = normalized_zone_progress(1, distance);
     let zone2_progress = normalized_zone_progress(2, distance);
     let zone = get_zone_for_distance(distance);
@@ -917,13 +918,22 @@ pub fn select_validated_pattern(
         } else if zone1_progress < 0.375 {
             catalog
                 .iter()
-                .filter(|p| p.name.contains("Vault"))
+                .filter(|p| {
+                    p.name.contains("Vault")
+                        || (zone1_progress >= 0.20 && p.name == "Old Metro Service Train")
+                        || (zone1_progress >= 0.325 && p.name == "Old Metro Express")
+                })
                 .cloned()
                 .collect()
         } else if zone1_progress < 0.5625 {
             catalog
                 .iter()
-                .filter(|p| p.name.contains("Slide") || p.name.contains("Wire"))
+                .filter(|p| {
+                    p.name.contains("Slide")
+                        || p.name.contains("Wire")
+                        || p.name == "Old Metro Service Train"
+                        || p.name == "Old Metro Express"
+                })
                 .cloned()
                 .collect()
         } else if zone1_progress < 0.75 {
@@ -1449,36 +1459,45 @@ mod tests {
         for d in [375.0, 500.0, 625.0, 749.0] {
             let pattern = select_validated_pattern(1, None, 16.0, d);
             assert!(
-                pattern.name.contains("Vault"),
-                "Tier 2 (150-300m) at {}m selected non-vault pattern: {}",
+                pattern.name.contains("Vault")
+                    || pattern.name == "Old Metro Service Train"
+                    || pattern.name == "Old Metro Express",
+                "Tier 2 at {}m selected an unexpected pattern: {}",
                 d,
                 pattern.name
             );
-            let has_jump_hurdle = pattern
-                .obstacles
-                .iter()
-                .any(|o| o.obstacle_type == ObstacleType::LowBarrier);
-            assert!(has_jump_hurdle, "Tier 2 at {}m must teach jump hurdle", d);
+            if pattern.name.contains("Vault") {
+                let has_jump_hurdle = pattern
+                    .obstacles
+                    .iter()
+                    .any(|o| o.obstacle_type == ObstacleType::LowBarrier);
+                assert!(has_jump_hurdle, "Tier 2 at {}m must teach jump hurdle", d);
+            }
         }
 
         // Tier 3: 300–450m (Slide obstacles with low crystal trails)
         for d in [750.0, 875.0, 1000.0, 1124.0] {
             let pattern = select_validated_pattern(1, None, 16.0, d);
+            let is_slide_pattern = pattern.name.contains("Slide") || pattern.name.contains("Wire");
+            let is_train_pattern =
+                pattern.name == "Old Metro Service Train" || pattern.name == "Old Metro Express";
             assert!(
-                pattern.name.contains("Slide") || pattern.name.contains("Wire"),
-                "Tier 3 (300-450m) at {}m selected non-slide pattern: {}",
+                is_slide_pattern || is_train_pattern,
+                "Tier 3 at {}m selected an unexpected pattern: {}",
                 d,
                 pattern.name
             );
-            let has_slide_obstacle = pattern
-                .obstacles
-                .iter()
-                .any(|o| o.obstacle_type == ObstacleType::HighHangingWire);
-            assert!(
-                has_slide_obstacle,
-                "Tier 3 at {}m must teach slide obstacle",
-                d
-            );
+            if is_slide_pattern {
+                let has_slide_obstacle = pattern
+                    .obstacles
+                    .iter()
+                    .any(|o| o.obstacle_type == ObstacleType::HighHangingWire);
+                assert!(
+                    has_slide_obstacle,
+                    "Tier 3 at {}m must teach slide obstacle",
+                    d
+                );
+            }
         }
 
         // Tier 4: 450–600m (Multi-lane choice gates)
@@ -1625,9 +1644,9 @@ mod tests {
             );
         }
 
-        // The final quarter is randomized, so sample the real selector rather
-        // than testing only a zone number or catalog entry.
-        for distance in [1500.0, 1750.0, 1999.0] {
+        // Train phases are randomized, so sample the real selector rather than
+        // testing only a zone number or catalog entry.
+        for distance in [400.0, 650.0, 1000.0, 1500.0, 1999.0] {
             let selected_train = (0..128).any(|_| {
                 let pattern = select_validated_pattern(1, None, 16.0, distance);
                 pattern.obstacles.iter().any(|obstacle| {
@@ -1640,6 +1659,22 @@ mod tests {
             assert!(
                 selected_train,
                 "Zone 1 train encounter must be selectable at {distance}m"
+            );
+        }
+
+        for distance in [0.0, 200.0, 399.99] {
+            let selected_train = (0..64).any(|_| {
+                let pattern = select_validated_pattern(1, None, 16.0, distance);
+                pattern.obstacles.iter().any(|obstacle| {
+                    matches!(
+                        obstacle.obstacle_type,
+                        ObstacleType::StaticTrain | ObstacleType::MovingTrain { .. }
+                    )
+                })
+            });
+            assert!(
+                !selected_train,
+                "Zone 1 onboarding at {distance}m must remain train-free"
             );
         }
     }
