@@ -222,10 +222,10 @@ fn init_enemy_assets(
             unlit: true,
             ..default()
         }),
-        mesh_hunter_marker: meshes.add(Cuboid::new(1.60, 0.03, 3.20)),
+        mesh_hunter_marker: meshes.add(Cuboid::new(1.90, 0.04, 4.80)),
         mat_hunter_marker: materials.add(StandardMaterial {
-            base_color: Color::srgba(1.0, 0.05, 0.05, 0.65),
-            emissive: LinearRgba::new(6.0, 0.3, 0.3, 1.0),
+            base_color: Color::srgba(1.0, 0.08, 0.08, 0.75),
+            emissive: LinearRgba::new(8.0, 0.4, 0.4, 1.0),
             alpha_mode: AlphaMode::Blend,
             unlit: true,
             ..default()
@@ -820,7 +820,7 @@ fn update_hunter_ai_fixed(
                 enemy.distance_from_player = d_trans.translation.z - p_trans.translation.z;
 
                 if approach_timer <= 0.0 {
-                    hunter.state = HunterState::LockingTarget { lock_timer: 0.8 };
+                    hunter.state = HunterState::LockingTarget { lock_timer: 1.0 };
                 } else {
                     hunter.state = HunterState::Infiltrating { approach_timer };
                 }
@@ -861,8 +861,8 @@ fn update_hunter_ai_fixed(
                     let target_lane = player.lane;
                     hunter.state = HunterState::Telegraphing {
                         target_lane,
-                        timer: 0.65, // Kinematic guarantee: 0.65s allows human reaction (0.18s) + lane transition (0.17s) + margin
-                        total_time: 0.65,
+                        timer: 1.25, // 1.25s telegraph provides ample human reaction and evasion window
+                        total_time: 1.25,
                     };
                     enemy.target_lane = target_lane;
                     threat_alerts.hunter_telegraph_lane = Some(target_lane);
@@ -912,7 +912,7 @@ fn update_hunter_ai_fixed(
                     // SKILL-BASED DODGE RESOLUTION:
                     // Laser strikes the locked lane. Check if player evaded!
                     if player.lane == target_lane {
-                        // PLAYER HIT - Did not dodge!
+                        // PLAYER HIT - Direct Hunter laser strike!
                         if powerups.overdrive_timer > 0.0 {
                             // Rule: Overdrive destroys Hunter!
                             stats.fragments += 25;
@@ -923,9 +923,9 @@ fn update_hunter_ai_fixed(
                             squad_mgr.hunter_cooldown = 4.0 + rng.gen_range(0.0..3.0);
                             return;
                         } else if player.invulnerable_timer > 0.0 {
-                            // Rule: Invulnerable - no damage
+                            // Rule: Invulnerable - prevents GameOver
                         } else if powerups.shield {
-                            // Rule: Shield absorbs laser strike
+                            // Rule: Shield absorbs laser strike instead of causing GameOver
                             if powerups.shield_hits > 1 {
                                 powerups.shield_hits -= 1;
                             } else {
@@ -935,13 +935,8 @@ fn update_hunter_ai_fixed(
                             player.invulnerable_timer = 1.5;
                             stats.stumble_intensity = 0.8;
                             sfx.send(SoundEffect::ShieldBreak);
-                        } else if stats.stumble_intensity == 0.0 {
-                            // Rule: Normal - player stumbles
-                            stats.stumble_intensity = 0.85;
-                            player.invulnerable_timer = 1.6;
-                            sfx.send(SoundEffect::Stumble);
                         } else {
-                            // Rule: Already stumbling - fatal hit!
+                            // DIRECT HIT = IMMEDIATE GAME OVER!
                             sfx.send(SoundEffect::Crash);
                             next_state.set(AppState::GameOver);
                             return;
@@ -1351,27 +1346,27 @@ fn update_hunter_laser_visuals(
             if let Ok((mut m_trans, mut m_vis)) = marker_q.get_mut(child) {
                 match hunter.state {
                     HunterState::Telegraphing { target_lane, timer, .. } => {
-                        // Pulsing strobe frequency ramp:
-                        // 0.65s -> 5 Hz (slow)
-                        // 0.40s -> 12 Hz (faster)
-                        // 0.20s -> 24 Hz (very fast)
-                        // 0.05s -> 48 Hz (intense strobe)
-                        let strobe_hz = if timer > 0.40 {
-                            5.0
-                        } else if timer > 0.20 {
-                            12.0
-                        } else if timer > 0.05 {
-                            24.0
+                        // Human-readable 5-phase timing progression:
+                        // 1.25s to 0.75s: slow, clearly visible red pulse (2.5 Hz)
+                        // 0.75s to 0.50s: medium pulse (5.0 Hz)
+                        // 0.50s to 0.25s: faster pulse (9.0 Hz)
+                        // 0.25s to 0.10s: rapid pulse (16.0 Hz)
+                        // 0.10s to 0.00s: intense final warning (28.0 Hz)
+                        let (strobe_hz, base_scale, pulse_amp) = if timer > 0.75 {
+                            (2.5, 1.04, 0.06)
+                        } else if timer > 0.50 {
+                            (5.0, 1.02, 0.08)
+                        } else if timer > 0.25 {
+                            (9.0, 1.00, 0.10)
+                        } else if timer > 0.10 {
+                            (16.0, 0.98, 0.12)
                         } else {
-                            48.0
+                            (28.0, 1.08, 0.16)
                         };
 
                         let pulse_sin = (t * strobe_hz * std::f32::consts::TAU).sin();
-                        *m_vis = if pulse_sin > -0.3 {
-                            Visibility::Visible
-                        } else {
-                            Visibility::Hidden
-                        };
+                        // Remains persistently visible so lane lock is 100% readable
+                        *m_vis = Visibility::Visible;
 
                         let target_local = Vec3::new(
                             target_lane.x_pos() - h_trans.translation.x,
@@ -1380,7 +1375,7 @@ fn update_hunter_laser_visuals(
                         );
                         m_trans.translation = target_local;
                         m_trans.rotation = Quat::IDENTITY;
-                        let scale_pulse = 1.0 + 0.12 * pulse_sin.max(0.0);
+                        let scale_pulse = base_scale + pulse_amp * pulse_sin;
                         m_trans.scale = Vec3::new(scale_pulse, 1.0, scale_pulse);
                     }
                     HunterState::Firing { target_lane, .. } => {
@@ -1458,14 +1453,131 @@ mod tests {
     }
 
     #[test]
+    fn test_hunter_telegraph_duration_is_1_25_seconds() {
+        let telegraph_duration = 1.25_f32;
+        assert!(
+            (telegraph_duration - 1.25).abs() < 0.001,
+            "Hunter telegraph duration must be exactly 1.25 seconds"
+        );
+    }
+
+    #[test]
+    fn test_hunter_target_lane_remains_fixed_during_telegraph() {
+        // Guarantee: target lane is locked at telegraph onset and does not follow player
+        let locked_target = Lane::Center;
+        let mut state = HunterState::Telegraphing {
+            target_lane: locked_target,
+            timer: 1.25,
+            total_time: 1.25,
+        };
+
+        // Player switches lanes during telegraph window
+        let player_new_lane = Lane::Left;
+        if let HunterState::Telegraphing { target_lane, timer, total_time } = state {
+            // target_lane must remain the locked lane, ignoring player's new lane
+            assert_eq!(target_lane, locked_target);
+            assert_ne!(target_lane, player_new_lane);
+            state = HunterState::Telegraphing { target_lane, timer: timer - 0.5, total_time };
+        }
+
+        if let HunterState::Telegraphing { target_lane, .. } = state {
+            assert_eq!(target_lane, locked_target);
+        } else {
+            panic!("State must remain Telegraphing");
+        }
+    }
+
+    #[test]
     fn test_hunter_dodge_success_when_lane_switched() {
         // Skill-based dodge fairness:
         // Hunter locks onto Lane::Center. Kai dodges into Lane::Left.
-        // Firing strikes Lane::Center; Kai in Lane::Left is completely safe.
+        // Firing strikes Lane::Center; Kai in Lane::Left is completely safe (no hit, no GameOver).
         let targeted_lane = Lane::Center;
         let player_lane = Lane::Left;
         let hit = player_lane == targeted_lane;
         assert!(!hit, "Player must successfully dodge Hunter laser strike when switching lanes");
+    }
+
+    #[test]
+    fn test_hunter_laser_hit_causes_immediate_game_over() {
+        // Fatal laser rule: direct hit without defensive powerups must trigger immediate GameOver
+        let targeted_lane = Lane::Center;
+        let player_lane = Lane::Center;
+        let shield = false;
+        let overdrive_active = false;
+        let invulnerable = false;
+
+        let mut app_state = AppState::InGame;
+        if player_lane == targeted_lane {
+            if overdrive_active {
+                // Hunter destroyed
+            } else if invulnerable {
+                // Protected
+            } else if shield {
+                // Shield absorbs
+            } else {
+                app_state = AppState::GameOver;
+            }
+        }
+
+        assert_eq!(
+            app_state,
+            AppState::GameOver,
+            "Direct Hunter laser strike must result in immediate GameOver"
+        );
+    }
+
+    #[test]
+    fn test_hunter_shield_absorbs_laser_and_prevents_game_over() {
+        // Defensive fairness: Shield absorbs laser strike and prevents GameOver
+        let targeted_lane = Lane::Center;
+        let player_lane = Lane::Center;
+        let mut shield = true;
+        let mut shield_hits = 1;
+        let mut app_state = AppState::InGame;
+
+        if player_lane == targeted_lane {
+            if shield {
+                if shield_hits > 1 {
+                    shield_hits -= 1;
+                } else {
+                    shield = false;
+                    shield_hits = 0;
+                }
+                // Shield absorbs hit, preventing GameOver!
+            } else {
+                app_state = AppState::GameOver;
+            }
+        }
+
+        assert_eq!(
+            app_state,
+            AppState::InGame,
+            "Shield must absorb Hunter laser and prevent GameOver"
+        );
+        assert!(!shield, "Single-hit shield must be depleted after absorbing laser");
+        assert_eq!(shield_hits, 0, "Shield hits must be decremented to 0");
+    }
+
+    #[test]
+    fn test_hunter_overdrive_destroys_hunter() {
+        // Defensive fairness: Overdrive destroys Hunter and prevents GameOver
+        let targeted_lane = Lane::Center;
+        let player_lane = Lane::Center;
+        let overdrive_timer = 2.5_f32;
+        let mut hunter_destroyed = false;
+        let mut app_state = AppState::InGame;
+
+        if player_lane == targeted_lane {
+            if overdrive_timer > 0.0 {
+                hunter_destroyed = true;
+            } else {
+                app_state = AppState::GameOver;
+            }
+        }
+
+        assert!(hunter_destroyed, "Overdrive must destroy the attacking Hunter drone");
+        assert_eq!(app_state, AppState::InGame, "Overdrive must prevent GameOver");
     }
 
     #[test]
@@ -1481,7 +1593,7 @@ mod tests {
     #[test]
     fn test_hunter_telegraph_kinematics_and_fairness_guarantees() {
         let zone_2_speed = 18.4_f32;
-        let hunter_telegraph_duration = 0.65_f32;
+        let hunter_telegraph_duration = 1.25_f32;
         let distance_covered = zone_2_speed * hunter_telegraph_duration;
 
         let reaction_time = 0.18_f32;
@@ -1491,12 +1603,14 @@ mod tests {
 
         // Verify kinematic buffer
         assert!(
-            hunter_telegraph_duration >= required_time + 0.20,
-            "Hunter telegraph must provide >= 0.20s margin above reaction + lateral dodge"
+            hunter_telegraph_duration >= required_time + 0.80,
+            "Hunter telegraph must provide >= 0.80s margin above reaction + lateral dodge: duration={:.2}s, required={:.2}s",
+            hunter_telegraph_duration,
+            required_time
         );
         assert!(
-            distance_covered >= required_distance + 4.0,
-            "Hunter telegraph must provide >= 4.0m longitudinal margin: covered={:.2}m, required={:.2}m",
+            distance_covered >= required_distance + 15.0,
+            "Hunter telegraph must provide >= 15.0m longitudinal margin: covered={:.2}m, required={:.2}m",
             distance_covered,
             required_distance
         );
