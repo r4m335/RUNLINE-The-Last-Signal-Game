@@ -49,6 +49,7 @@ fn handle_run_reset_track(
     prop_assets: Option<Res<crate::environment_props::PropAssets>>,
     signage_assets: Option<Res<crate::environment_signage::SignageAssets>>,
     pool_assets: Res<PoolAssets>,
+    powerup_assets: Option<Res<PowerUpModelAssets>>,
     mut pool: ResMut<EntityPool>,
     director: Res<RunDirector>,
     stats: Res<GameRunStats>,
@@ -111,6 +112,7 @@ fn handle_run_reset_track(
                 let chunk = spawn_pattern_chunk(
                     &mut commands,
                     &pool_assets,
+                    powerup_assets.as_deref(),
                     &mut pool,
                     z_start,
                     director.profile.pattern_complexity,
@@ -136,6 +138,7 @@ fn maintain_rolling_track(
     prop_assets: Option<Res<crate::environment_props::PropAssets>>,
     signage_assets: Option<Res<crate::environment_signage::SignageAssets>>,
     pool_assets: Res<PoolAssets>,
+    powerup_assets: Option<Res<PowerUpModelAssets>>,
     mut pool: ResMut<EntityPool>,
     player_q: Query<&Transform, With<Player>>,
     director: Res<RunDirector>,
@@ -165,6 +168,7 @@ fn maintain_rolling_track(
         let chunk = spawn_pattern_chunk(
             &mut commands,
             &pool_assets,
+            powerup_assets.as_deref(),
             &mut pool,
             z_start,
             director.profile.pattern_complexity,
@@ -184,6 +188,7 @@ fn maintain_rolling_track(
 pub fn spawn_pattern_chunk(
     commands: &mut Commands,
     pool_assets: &PoolAssets,
+    powerup_assets: Option<&PowerUpModelAssets>,
     pool: &mut EntityPool,
     z_start: f32,
     complexity: u8,
@@ -774,43 +779,47 @@ pub fn spawn_pattern_chunk(
             _ => CollectibleType::DoubleJump,
         };
 
-        if let Some(entity) = pool.pop(PoolType::PowerUp) {
-            commands.entity(entity).insert((
-                Transform::from_xyz(p_lane.x_pos(), 1.2, world_z),
-                Visibility::Inherited,
-                CollectibleItem {
-                    item_type: p_type,
-                    lane: p_lane,
-                    initial_y: 1.2,
-                    rot_speed: 4.0,
-                },
-                Despawnable { z_center: world_z },
-                PooledItem { pool_type: PoolType::PowerUp, is_active: true },
-            ));
-        } else {
-            commands.spawn((
-                SpatialBundle {
-                    transform: Transform::from_xyz(p_lane.x_pos(), 1.2, world_z),
-                    ..default()
-                },
-                CollectibleItem {
-                    item_type: p_type,
-                    lane: p_lane,
-                    initial_y: 1.2,
-                    rot_speed: 4.0,
-                },
-                Despawnable { z_center: world_z },
-                PooledItem { pool_type: PoolType::PowerUp, is_active: true },
-            )).with_children(|parent| {
-                match p_type {
-                    CollectibleType::EchoShield => {
-                        // Hexagonal core
+        let mut p_cmd = commands.spawn((
+            SpatialBundle {
+                transform: Transform::from_xyz(p_lane.x_pos(), 1.2, world_z),
+                ..default()
+            },
+            CollectibleItem {
+                item_type: p_type,
+                lane: p_lane,
+                initial_y: 1.2,
+                rot_speed: 3.5,
+            },
+            Despawnable { z_center: world_z },
+        ));
+
+        p_cmd.with_children(|parent| {
+            match p_type {
+                CollectibleType::EchoShield => {
+                    if let Some(assets) = powerup_assets {
+                        parent.spawn(SceneBundle {
+                            scene: assets.shield_scene.clone(),
+                            transform: Transform::from_scale(Vec3::splat(0.48)),
+                            ..default()
+                        });
+                        // 🛡️ Cyan/blue recognition glow
+                        parent.spawn(PointLightBundle {
+                            point_light: PointLight {
+                                color: Color::srgb(0.08, 0.85, 1.0),
+                                intensity: 6500.0,
+                                range: 4.5,
+                                shadows_enabled: false,
+                                ..default()
+                            },
+                            ..default()
+                        });
+                    } else {
+                        // Fallback procedural geometry
                         parent.spawn(PbrBundle {
                             mesh: pool_assets.mesh_shield_hex.clone(),
                             material: pool_assets.mat_powerup_shield.clone(),
                             ..default()
                         });
-                        // 3 orbiting deflector plates
                         parent.spawn(PbrBundle {
                             mesh: pool_assets.mesh_shield_plate.clone(),
                             material: pool_assets.mat_powerup_shield.clone(),
@@ -818,33 +827,38 @@ pub fn spawn_pattern_chunk(
                             ..default()
                         });
                         parent.spawn(PbrBundle {
-                            mesh: pool_assets.mesh_shield_plate.clone(),
-                            material: pool_assets.mat_powerup_shield.clone(),
-                            transform: Transform::from_xyz(-0.33, 0.0, -0.19).with_rotation(Quat::from_rotation_y(2.094)),
-                            ..default()
-                        });
-                        parent.spawn(PbrBundle {
-                            mesh: pool_assets.mesh_shield_plate.clone(),
-                            material: pool_assets.mat_powerup_shield.clone(),
-                            transform: Transform::from_xyz(0.33, 0.0, -0.19).with_rotation(Quat::from_rotation_y(-2.094)),
-                            ..default()
-                        });
-                        // Translucent energy ring
-                        parent.spawn(PbrBundle {
                             mesh: pool_assets.mesh_shield_ring.clone(),
                             material: pool_assets.mat_powerup_shield.clone(),
                             ..default()
                         });
                     }
-                    CollectibleType::Magnet => {
-                        // Horseshoe top arch
+                }
+                CollectibleType::Magnet => {
+                    if let Some(assets) = powerup_assets {
+                        parent.spawn(SceneBundle {
+                            scene: assets.magnet_scene.clone(),
+                            transform: Transform::from_scale(Vec3::splat(0.48)),
+                            ..default()
+                        });
+                        // 🧲 Magenta/purple recognition glow
+                        parent.spawn(PointLightBundle {
+                            point_light: PointLight {
+                                color: Color::srgb(1.0, 0.15, 0.90),
+                                intensity: 6500.0,
+                                range: 4.5,
+                                shadows_enabled: false,
+                                ..default()
+                            },
+                            ..default()
+                        });
+                    } else {
+                        // Fallback procedural geometry
                         parent.spawn(PbrBundle {
                             mesh: pool_assets.mesh_magnet_arch.clone(),
                             material: pool_assets.mat_powerup_magnet.clone(),
                             transform: Transform::from_xyz(0.0, 0.22, 0.0),
                             ..default()
                         });
-                        // Left & right downward prongs
                         parent.spawn(PbrBundle {
                             mesh: pool_assets.mesh_magnet_prong.clone(),
                             material: pool_assets.mat_powerup_magnet.clone(),
@@ -857,72 +871,64 @@ pub fn spawn_pattern_chunk(
                             transform: Transform::from_xyz(0.20, -0.06, 0.0),
                             ..default()
                         });
-                        // Silver/chrome contact poles
-                        parent.spawn(PbrBundle {
-                            mesh: pool_assets.mesh_magnet_pole.clone(),
-                            material: pool_assets.mat_magnet_pole.clone(),
-                            transform: Transform::from_xyz(-0.20, -0.32, 0.0),
-                            ..default()
-                        });
-                        parent.spawn(PbrBundle {
-                            mesh: pool_assets.mesh_magnet_pole.clone(),
-                            material: pool_assets.mat_magnet_pole.clone(),
-                            transform: Transform::from_xyz(0.20, -0.32, 0.0),
-                            ..default()
-                        });
-                        // Orbiting flux ring
-                        parent.spawn(PbrBundle {
-                            mesh: pool_assets.mesh_magnet_ring.clone(),
-                            material: pool_assets.mat_powerup_magnet.clone(),
-                            transform: Transform::from_xyz(0.0, -0.08, 0.0),
-                            ..default()
-                        });
                     }
-                    CollectibleType::Overdrive => {
-                        // Elongated diamond turbine spike
+                }
+                CollectibleType::Overdrive => {
+                    if let Some(assets) = powerup_assets {
+                        parent.spawn(SceneBundle {
+                            scene: assets.overdrive_scene.clone(),
+                            transform: Transform::from_scale(Vec3::splat(0.48)),
+                            ..default()
+                        });
+                        // ⚡ Orange/yellow recognition glow
+                        parent.spawn(PointLightBundle {
+                            point_light: PointLight {
+                                color: Color::srgb(1.0, 0.55, 0.05),
+                                intensity: 7500.0,
+                                range: 4.5,
+                                shadows_enabled: false,
+                                ..default()
+                            },
+                            ..default()
+                        });
+                    } else {
+                        // Fallback procedural geometry
                         parent.spawn(PbrBundle {
                             mesh: pool_assets.mesh_overdrive_diamond.clone(),
                             material: pool_assets.mat_powerup_overdrive.clone(),
                             ..default()
                         });
-                        // Dual tilted gyro rings
                         parent.spawn(PbrBundle {
                             mesh: pool_assets.mesh_overdrive_ring.clone(),
                             material: pool_assets.mat_powerup_overdrive.clone(),
                             transform: Transform::from_rotation(Quat::from_rotation_x(0.785)),
                             ..default()
                         });
-                        parent.spawn(PbrBundle {
-                            mesh: pool_assets.mesh_overdrive_ring.clone(),
-                            material: pool_assets.mat_powerup_overdrive.clone(),
-                            transform: Transform::from_rotation(Quat::from_rotation_z(0.785)),
-                            ..default()
-                        });
-                    }
-                    _ => {
-                        // Double Jump: dual upward winged chevrons & double thrust rings
-                        parent.spawn(PbrBundle {
-                            mesh: pool_assets.mesh_jump_chevron.clone(),
-                            material: pool_assets.mat_powerup_jump.clone(),
-                            transform: Transform::from_xyz(0.0, -0.08, 0.0),
-                            ..default()
-                        });
-                        parent.spawn(PbrBundle {
-                            mesh: pool_assets.mesh_jump_chevron.clone(),
-                            material: pool_assets.mat_powerup_jump.clone(),
-                            transform: Transform::from_xyz(0.0, 0.12, 0.0),
-                            ..default()
-                        });
-                        parent.spawn(PbrBundle {
-                            mesh: pool_assets.mesh_jump_ring.clone(),
-                            material: pool_assets.mat_powerup_jump.clone(),
-                            transform: Transform::from_xyz(0.0, -0.26, 0.0),
-                            ..default()
-                        });
                     }
                 }
-            });
-        }
+                _ => {
+                    // Double Jump: dual upward winged chevrons & double thrust rings
+                    parent.spawn(PbrBundle {
+                        mesh: pool_assets.mesh_jump_chevron.clone(),
+                        material: pool_assets.mat_powerup_jump.clone(),
+                        transform: Transform::from_xyz(0.0, -0.08, 0.0),
+                        ..default()
+                    });
+                    parent.spawn(PbrBundle {
+                        mesh: pool_assets.mesh_jump_chevron.clone(),
+                        material: pool_assets.mat_powerup_jump.clone(),
+                        transform: Transform::from_xyz(0.0, 0.12, 0.0),
+                        ..default()
+                    });
+                    parent.spawn(PbrBundle {
+                        mesh: pool_assets.mesh_jump_ring.clone(),
+                        material: pool_assets.mat_powerup_jump.clone(),
+                        transform: Transform::from_xyz(0.0, -0.26, 0.0),
+                        ..default()
+                    });
+                }
+            }
+        });
     }
 
     chunk

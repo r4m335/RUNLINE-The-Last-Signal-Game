@@ -309,6 +309,13 @@ pub struct CollectibleItem {
     pub rot_speed: f32,
 }
 
+#[derive(Resource, Clone, Default)]
+pub struct PowerUpModelAssets {
+    pub shield_scene: Handle<Scene>,
+    pub magnet_scene: Handle<Scene>,
+    pub overdrive_scene: Handle<Scene>,
+}
+
 #[derive(Component)]
 #[allow(dead_code)]
 pub struct ChaserDrone {
@@ -316,6 +323,7 @@ pub struct ChaserDrone {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[allow(dead_code)]
 pub enum PoolType {
     LowBarrier,
     HighHangingWire,

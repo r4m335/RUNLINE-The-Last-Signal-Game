@@ -7,19 +7,28 @@ pub struct CollectiblePlugin;
 
 impl Plugin for CollectiblePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            Update,
-            animate_collectibles.run_if(in_state(AppState::InGame)),
-        )
-        .add_systems(
-            FixedUpdate,
-            (
-                magnet_attract_fragments,
-                collect_items_fixed,
+        app.add_systems(Startup, setup_powerup_models)
+            .add_systems(
+                Update,
+                animate_collectibles.run_if(in_state(AppState::InGame)),
             )
-                .run_if(in_state(AppState::InGame)),
-        );
+            .add_systems(
+                FixedUpdate,
+                (
+                    magnet_attract_fragments,
+                    collect_items_fixed,
+                )
+                    .run_if(in_state(AppState::InGame)),
+            );
     }
+}
+
+pub fn setup_powerup_models(mut commands: Commands, asset_server: Res<AssetServer>) {
+    commands.insert_resource(PowerUpModelAssets {
+        shield_scene: asset_server.load("Power-ups/Shield.glb#Scene0"),
+        magnet_scene: asset_server.load("Power-ups/Magnet.glb#Scene0"),
+        overdrive_scene: asset_server.load("Power-ups/Overdrive.glb#Scene0"),
+    });
 }
 
 #[allow(dead_code)]
@@ -291,8 +300,19 @@ fn animate_collectibles(
     let dt = time.delta_seconds();
 
     for (mut transform, item) in query.iter_mut() {
-        transform.translation.y = item.initial_y + (t * 3.0 + transform.translation.z * 0.1).sin() * 0.15;
+        // Floating / bobbing
+        transform.translation.y = item.initial_y + (t * 2.8 + transform.translation.z * 0.1).sin() * 0.14;
+        // Slow continuous rotation
         transform.rotate_y(item.rot_speed * dt);
+
+        // Subtle scale pulse on power-ups (±6% breathing)
+        match item.item_type {
+            CollectibleType::EchoShield | CollectibleType::Magnet | CollectibleType::Overdrive => {
+                let pulse = 1.0 + (t * 3.5).sin() * 0.06;
+                transform.scale = Vec3::splat(pulse);
+            }
+            _ => {}
+        }
     }
 }
 
@@ -400,3 +420,70 @@ fn collect_items_fixed(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_powerup_collection_shield() {
+        let mut powerups = ActivePowerUps::default();
+        let mut stats = GameRunStats::default();
+
+        powerups.shield = true;
+        powerups.shield_hits = 1;
+        stats.score += 50;
+
+        assert!(powerups.shield);
+        assert_eq!(powerups.shield_hits, 1);
+        assert_eq!(stats.score, 50);
+    }
+
+    #[test]
+    fn test_powerup_collection_magnet() {
+        let mut powerups = ActivePowerUps::default();
+        let mut stats = GameRunStats::default();
+
+        let dur = 8.0_f32;
+        powerups.magnet_timer = dur;
+        stats.score += 50;
+
+        assert_eq!(powerups.magnet_timer, 8.0);
+        assert_eq!(stats.score, 50);
+    }
+
+    #[test]
+    fn test_powerup_collection_overdrive() {
+        let mut powerups = ActivePowerUps::default();
+        let mut stats = GameRunStats::default();
+
+        powerups.overdrive_timer = 6.0;
+        stats.score += 100;
+
+        assert_eq!(powerups.overdrive_timer, 6.0);
+        assert_eq!(stats.score, 100);
+    }
+
+    #[test]
+    fn test_powerup_subtle_scale_pulse_bounds() {
+        // Subtle scale pulse is defined as 1.0 + (t * 3.5).sin() * 0.06
+        for step in 0..100 {
+            let t = step as f32 * 0.1;
+            let pulse = 1.0 + (t * 3.5).sin() * 0.06;
+            assert!(pulse >= 0.94 - 1e-5 && pulse <= 1.06 + 1e-5, "Pulse {:.3} must be within [0.94, 1.06]", pulse);
+        }
+    }
+
+    #[test]
+    fn test_powerup_floating_bobbing_amplitude() {
+        // Bobbing is defined as initial_y + (t * 2.8 + z * 0.1).sin() * 0.14
+        let initial_y = 1.2_f32;
+        for step in 0..100 {
+            let t = step as f32 * 0.1;
+            let z = -step as f32 * 2.0;
+            let y = initial_y + (t * 2.8 + z * 0.1).sin() * 0.14;
+            assert!(y >= initial_y - 0.141 && y <= initial_y + 0.141, "Bobbing height {:.3} must be within amplitude", y);
+        }
+    }
+}
+

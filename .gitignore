@@ -19,3 +19,7 @@ $RECYCLE.BIN/
 *.swo
 *~
 *.log
+
+# Raw high-poly source assets (>100MB) & scratch
+*_original.glb
+scratch/
