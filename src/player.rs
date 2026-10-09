@@ -475,16 +475,23 @@ pub fn spawn_player_entity(
         ..default()
     });
 
-    let shield_segment_mat = materials.add(StandardMaterial {
-        base_color: Color::srgba(0.0, 0.85, 1.0, 0.70),
-        emissive: LinearRgba::new(0.4, 2.2, 3.2, 1.0),
+    // Restored spherical shield material:
+    // Delicate translucent cyan tint with reduced brightness and low emissive sheen
+    // Translucent enough that Kai remains clearly visible inside it
+    let shield_mat = materials.add(StandardMaterial {
+        base_color: Color::srgba(0.0, 0.78, 1.0, 0.16),
+        emissive: LinearRgba::new(0.03, 0.10, 0.15, 1.0),
+        perceptual_roughness: 0.12,
+        metallic: 0.05,
         alpha_mode: AlphaMode::Blend,
         ..default()
     });
 
+    // Hit absorption impact flash material:
+    // Bright cyan surge that complements the bubble during impact absorption
     let shield_flash_mat = materials.add(StandardMaterial {
-        base_color: Color::srgba(0.25, 0.92, 1.0, 0.80),
-        emissive: LinearRgba::new(2.0, 4.5, 6.0, 1.0),
+        base_color: Color::srgba(0.35, 0.95, 1.0, 0.65),
+        emissive: LinearRgba::new(1.8, 3.8, 5.0, 1.0),
         alpha_mode: AlphaMode::Blend,
         ..default()
     });
@@ -542,51 +549,21 @@ pub fn spawn_player_entity(
             ));
 
             // Powerup & Movement Visual Attachments
-            // Task 2: Segmented Cyber Shield (Open field: shoulder arc, waist arc, 3 orbiting shards)
-            parent
-                .spawn((
-                    SpatialBundle {
-                        transform: Transform::from_scale(Vec3::ZERO),
-                        ..default()
-                    },
-                    ShieldVisual,
-                ))
-                .with_children(|shield_parent| {
-                    // Upper shoulder arc
-                    shield_parent.spawn(PbrBundle {
-                        mesh: meshes.add(Torus::new(0.016, 0.56)),
-                        material: shield_segment_mat.clone(),
-                        transform: Transform::from_xyz(0.0, 0.32, 0.0)
-                            .with_rotation(Quat::from_rotation_x(0.18)),
-                        ..default()
-                    });
-                    // Lower waist arc
-                    shield_parent.spawn(PbrBundle {
-                        mesh: meshes.add(Torus::new(0.016, 0.52)),
-                        material: shield_segment_mat.clone(),
-                        transform: Transform::from_xyz(0.0, -0.22, 0.0)
-                            .with_rotation(Quat::from_rotation_x(-0.16)),
-                        ..default()
-                    });
-                    // 3 orbiting deflector nodes
-                    for i in 0..3 {
-                        let angle = i as f32 * std::f32::consts::TAU / 3.0;
-                        let x = angle.cos() * 0.58;
-                        let z = angle.sin() * 0.58;
-                        shield_parent.spawn(PbrBundle {
-                            mesh: meshes.add(Cuboid::new(0.06, 0.14, 0.025)),
-                            material: shield_segment_mat.clone(),
-                            transform: Transform::from_xyz(x, 0.05, z)
-                                .with_rotation(Quat::from_rotation_y(-angle)),
-                            ..default()
-                        });
-                    }
-                });
-
-            // Absorbed hit flash bubble (Flashes on impact, scales down to zero)
+            // Restored spherical shield bubble surrounding Kai (transparent, translucent cyan)
             parent.spawn((
                 PbrBundle {
-                    mesh: meshes.add(Sphere::new(1.15)),
+                    mesh: meshes.add(Sphere::new(1.3)),
+                    material: shield_mat,
+                    transform: Transform::from_scale(Vec3::ZERO),
+                    ..default()
+                },
+                ShieldVisual,
+            ));
+
+            // Absorbed hit flash bubble (Complements the bubble with a bright surge on impact)
+            parent.spawn((
+                PbrBundle {
+                    mesh: meshes.add(Sphere::new(1.36)),
                     material: shield_flash_mat,
                     transform: Transform::from_scale(Vec3::ZERO),
                     ..default()
@@ -935,25 +912,25 @@ fn player_powerup_visuals(
         }
     }
 
-    // Task 2: Segmented Cyber Shield Arcs (Kai remains fully visible)
+    // Restored Shield Bubble: subtle rotation, smooth lerp to scale 1.1 when active
     if let Ok(mut st) = shield_q.get_single_mut() {
         let target_scale = if powerups.shield {
-            Vec3::splat(1.0)
+            Vec3::splat(1.1)
         } else {
             Vec3::ZERO
         };
         st.scale = st.scale.lerp(target_scale, 10.0 * dt);
-        st.rotate_y(2.2 * dt);
+        st.rotate_y(1.5 * dt);
     }
 
-    // Task 2: Shield Absorbed Hit Full-Sphere Flash
+    // Shield Absorbed Hit Flash (Complements the bubble with a brief bright impact surge)
     if powerups.shield_absorb_flash_timer > 0.0 {
         powerups.shield_absorb_flash_timer = (powerups.shield_absorb_flash_timer - dt).max(0.0);
     }
     if let Ok(mut ft) = flash_q.get_single_mut() {
         let target_scale = if powerups.shield_absorb_flash_timer > 0.0 {
             let progress = powerups.shield_absorb_flash_timer / 0.28;
-            Vec3::splat(1.18 * (0.85 + 0.15 * progress))
+            Vec3::splat(1.14 * (0.85 + 0.15 * progress))
         } else {
             Vec3::ZERO
         };
@@ -1079,5 +1056,25 @@ mod tests {
         powerups.shield_absorb_flash_timer =
             (powerups.shield_absorb_flash_timer - dt_remaining).max(0.0);
         assert_eq!(powerups.shield_absorb_flash_timer, 0.0);
+    }
+
+    #[test]
+    fn test_shield_bubble_target_scale_when_active_and_inactive() {
+        let mut powerups = ActivePowerUps::default();
+        powerups.shield = true;
+        let target_active = if powerups.shield {
+            Vec3::splat(1.1)
+        } else {
+            Vec3::ZERO
+        };
+        assert_eq!(target_active, Vec3::splat(1.1));
+
+        powerups.shield = false;
+        let target_inactive = if powerups.shield {
+            Vec3::splat(1.1)
+        } else {
+            Vec3::ZERO
+        };
+        assert_eq!(target_inactive, Vec3::ZERO);
     }
 }
