@@ -1,6 +1,6 @@
-use bevy::prelude::*;
 use crate::types::*;
 use crate::zones::get_zone_for_distance;
+use bevy::prelude::*;
 use rand::Rng;
 
 pub struct ObstaclePlugin;
@@ -9,11 +9,7 @@ impl Plugin for ObstaclePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             FixedUpdate,
-            (
-                update_moving_trains,
-                lane_aware_collision_check,
-            )
-                .run_if(in_state(AppState::InGame)),
+            (update_moving_trains, lane_aware_collision_check).run_if(in_state(AppState::InGame)),
         );
     }
 }
@@ -219,7 +215,11 @@ pub fn spawn_segment_obstacles(
                                 PbrBundle {
                                     mesh: meshes.add(Cuboid::new(2.1, 0.85, 0.4)),
                                     material: hazard_mat.clone(),
-                                    transform: Transform::from_xyz(barrier_lane.x_pos(), 0.42, z_pos),
+                                    transform: Transform::from_xyz(
+                                        barrier_lane.x_pos(),
+                                        0.42,
+                                        z_pos,
+                                    ),
                                     ..default()
                                 },
                                 ActiveObstacle {
@@ -307,6 +307,7 @@ fn lane_aware_collision_check(
         if collided {
             // Shield absorbs hit
             if powerups.shield {
+                powerups.shield_absorb_flash_timer = 0.28;
                 if powerups.shield_hits > 1 {
                     powerups.shield_hits -= 1;
                 } else {
@@ -389,7 +390,12 @@ pub mod tests {
         // Standing at normal ground Y=0.65, scale=1.0, not sliding
         // LowBarrier center Y=0.42, height=0.85 -> top=0.845
         let collided = check_obstacle_vertical_collision(
-            0.65, 1.0, false, ObstacleType::LowBarrier, 0.42, 0.85,
+            0.65,
+            1.0,
+            false,
+            ObstacleType::LowBarrier,
+            0.42,
+            0.85,
         );
         assert!(collided, "Standing player must collide with low barrier");
     }
@@ -398,18 +404,34 @@ pub mod tests {
     fn test_low_barrier_jump_clears() {
         // Jumping player at realistic apex (Y=1.84m with v0=9.0m/s, ~1.19m vertical rise)
         let collided = check_obstacle_vertical_collision(
-            1.84, 1.0, false, ObstacleType::LowBarrier, 0.42, 0.85,
+            1.84,
+            1.0,
+            false,
+            ObstacleType::LowBarrier,
+            0.42,
+            0.85,
         );
-        assert!(!collided, "Jumping player at Y=1.84m must clear low barrier");
+        assert!(
+            !collided,
+            "Jumping player at Y=1.84m must clear low barrier"
+        );
     }
 
     #[test]
     fn test_low_barrier_sliding_hits() {
         // Sliding into low barrier (scale.y=0.45, Y=0.35, is_sliding=true)
         let collided = check_obstacle_vertical_collision(
-            0.35, 0.45, true, ObstacleType::LowBarrier, 0.42, 0.85,
+            0.35,
+            0.45,
+            true,
+            ObstacleType::LowBarrier,
+            0.42,
+            0.85,
         );
-        assert!(collided, "Sliding player must NOT clear low barrier (must jump)");
+        assert!(
+            collided,
+            "Sliding player must NOT clear low barrier (must jump)"
+        );
     }
 
     #[test]
@@ -417,7 +439,12 @@ pub mod tests {
         // Standing at Y=0.65, scale=1.0 -> head top = 1.60m
         // HighHangingWire center Y=1.7, height=0.5 -> bottom=1.45m
         let collided = check_obstacle_vertical_collision(
-            0.65, 1.0, false, ObstacleType::HighHangingWire, 1.7, 0.5,
+            0.65,
+            1.0,
+            false,
+            ObstacleType::HighHangingWire,
+            1.7,
+            0.5,
         );
         assert!(collided, "Standing player must hit high hanging wire");
     }
@@ -426,16 +453,29 @@ pub mod tests {
     fn test_hanging_wire_sliding_clears() {
         // Sliding at Y=0.35, scale=0.45, is_sliding=true -> head top ≈ 0.78m < 1.45m
         let collided = check_obstacle_vertical_collision(
-            0.35, 0.45, true, ObstacleType::HighHangingWire, 1.7, 0.5,
+            0.35,
+            0.45,
+            true,
+            ObstacleType::HighHangingWire,
+            1.7,
+            0.5,
         );
-        assert!(!collided, "Sliding player must cleanly duck under hanging wire");
+        assert!(
+            !collided,
+            "Sliding player must cleanly duck under hanging wire"
+        );
     }
 
     #[test]
     fn test_hanging_wire_jumping_hits() {
         // Jumping into hanging wire (Y=2.0m, scale=1.0, not sliding)
         let collided = check_obstacle_vertical_collision(
-            2.0, 1.0, false, ObstacleType::HighHangingWire, 1.7, 0.5,
+            2.0,
+            1.0,
+            false,
+            ObstacleType::HighHangingWire,
+            1.7,
+            0.5,
         );
         assert!(collided, "Jumping into hanging wire must collide");
     }
@@ -443,10 +483,8 @@ pub mod tests {
     #[test]
     fn test_pillar_always_collides_vertically() {
         // Pillar is full lane block
-        let collided = check_obstacle_vertical_collision(
-            0.65, 1.0, false, ObstacleType::TallPillar, 2.0, 4.0,
-        );
+        let collided =
+            check_obstacle_vertical_collision(0.65, 1.0, false, ObstacleType::TallPillar, 2.0, 4.0);
         assert!(collided, "Pillar must always collide in vertical check");
     }
 }
-

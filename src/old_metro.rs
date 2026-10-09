@@ -1,10 +1,10 @@
-use bevy::prelude::*;
-use crate::types::*;
 use crate::environment::EnvironmentAssets;
+use crate::environment_lighting::FlickeringLight;
 use crate::environment_props::PropAssets;
 use crate::environment_signage::SignageAssets;
-use crate::environment_lighting::FlickeringLight;
 use crate::old_metro_landmarks;
+use crate::types::*;
+use bevy::prelude::*;
 
 /// The 7 distinct narrative chapters across Old Metro (0–800m).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -29,14 +29,14 @@ pub enum OldMetroChapter {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OldMetroVariant {
     // 0–100m Entrance
-    AbandonedEntrance,   // 0–40m
-    DamagedTunnel,       // 40–70m
-    EchoTraces,          // 70–100m
+    AbandonedEntrance, // 0–40m
+    DamagedTunnel,     // 40–70m
+    EchoTraces,        // 70–100m
 
     // 100–220m Service Tunnel
-    PipeCorridor,        // 100–140m
-    MaintenanceAccess,   // 140–180m
-    DerelictCarriage,    // 180–220m
+    PipeCorridor,      // 100–140m
+    MaintenanceAccess, // 140–180m
+    DerelictCarriage,  // 180–220m
 
     // 220–350m Platform
     PlatformApproach,    // 220–260m
@@ -45,9 +45,9 @@ pub enum OldMetroVariant {
     PlatformExit,        // 330–350m
 
     // 350–470m Maintenance Junction
-    JunctionManifold,    // 350–390m
-    VentilationShaft,    // 390–430m
-    MaintenanceCart,     // 430–470m
+    JunctionManifold, // 350–390m
+    VentilationShaft, // 390–430m
+    MaintenanceCart,  // 430–470m
 
     // 470–600m Power Substation
     SubstationFeeders,   // 470–510m
@@ -55,14 +55,14 @@ pub enum OldMetroVariant {
     EchoContaminatedGen, // 560–600m
 
     // 600–700m Collapsed Section
-    ShoringWarning,      // 600–640m
-    DeepCollapseRubble,  // 640–675m
-    EmergencyBreach,     // 675–700m
+    ShoringWarning,     // 600–640m
+    DeepCollapseRubble, // 640–675m
+    EmergencyBreach,    // 675–700m
 
     // 700–800m Veyron Checkpoint
-    SecurityPerimeter,   // 700–740m
-    CheckpointGantry,    // 740–775m
-    NeonExitPortal,      // 775–800m
+    SecurityPerimeter, // 700–740m
+    CheckpointGantry,  // 740–775m
+    NeonExitPortal,    // 775–800m
 }
 
 pub fn get_old_metro_chapter(distance: f32) -> OldMetroChapter {
@@ -191,14 +191,10 @@ pub fn spawn_old_metro_segment(
                     );
                 }
                 OldMetroChapter::PowerSubstation => {
-                    old_metro_landmarks::spawn_substation_sub_section(
-                        seg, props, variant, is_even,
-                    );
+                    old_metro_landmarks::spawn_substation_sub_section(seg, props, variant, is_even);
                 }
                 OldMetroChapter::CollapsedSection => {
-                    old_metro_landmarks::spawn_collapse_sub_section(
-                        seg, props, variant, is_even,
-                    );
+                    old_metro_landmarks::spawn_collapse_sub_section(seg, props, variant, is_even);
                 }
                 OldMetroChapter::VeyronCheckpoint => {
                     old_metro_landmarks::spawn_checkpoint_sub_section(
@@ -432,7 +428,11 @@ fn spawn_layered_subway_walls(
     }
 
     // Cable conduit trays along wall lower perimeter
-    let tray_x = if is_even { wall_x_left + 0.3 } else { wall_x_right - 0.3 };
+    let tray_x = if is_even {
+        wall_x_left + 0.3
+    } else {
+        wall_x_right - 0.3
+    };
     seg.spawn(PbrBundle {
         mesh: env.mesh_conduit_tray.clone(),
         material: env.mat_steel_truss.clone(),
@@ -452,45 +452,87 @@ fn select_tile_variant(
         | OldMetroVariant::EmergencyBreach => {
             // Severe damage zone: 35% broken, 30% cracked, 25% dirty, 10% normal
             if hash < 35 {
-                (props.mesh_tile_panel_broken.clone(), props.mat_tile_broken.clone())
+                (
+                    props.mesh_tile_panel_broken.clone(),
+                    props.mat_tile_broken.clone(),
+                )
             } else if hash < 65 {
-                (props.mesh_tile_panel_cracked.clone(), props.mat_tile_cracked.clone())
+                (
+                    props.mesh_tile_panel_cracked.clone(),
+                    props.mat_tile_cracked.clone(),
+                )
             } else if hash < 90 {
-                (props.mesh_tile_panel_dirty.clone(), props.mat_tile_dirty.clone())
+                (
+                    props.mesh_tile_panel_dirty.clone(),
+                    props.mat_tile_dirty.clone(),
+                )
             } else {
-                (props.mesh_tile_panel_normal.clone(), props.mat_tile_normal.clone())
+                (
+                    props.mesh_tile_panel_normal.clone(),
+                    props.mat_tile_normal.clone(),
+                )
             }
         }
         OldMetroVariant::MainStationPlatform | OldMetroVariant::PlatformApproach => {
             // Cleaner station tiles: 85% normal, 10% dirty, 5% cracked
             if hash < 85 {
-                (props.mesh_tile_panel_normal.clone(), props.mat_tile_normal.clone())
+                (
+                    props.mesh_tile_panel_normal.clone(),
+                    props.mat_tile_normal.clone(),
+                )
             } else if hash < 95 {
-                (props.mesh_tile_panel_dirty.clone(), props.mat_tile_dirty.clone())
+                (
+                    props.mesh_tile_panel_dirty.clone(),
+                    props.mat_tile_dirty.clone(),
+                )
             } else {
-                (props.mesh_tile_panel_cracked.clone(), props.mat_tile_cracked.clone())
+                (
+                    props.mesh_tile_panel_cracked.clone(),
+                    props.mat_tile_cracked.clone(),
+                )
             }
         }
         OldMetroVariant::EchoTraces | OldMetroVariant::EchoContaminatedGen => {
             // Subtle cyan trace glow on damaged tiles
             if hash < 15 {
-                (props.mesh_tile_panel_broken.clone(), props.mat_graffiti_cyan.clone())
+                (
+                    props.mesh_tile_panel_broken.clone(),
+                    props.mat_graffiti_cyan.clone(),
+                )
             } else if hash < 75 {
-                (props.mesh_tile_panel_normal.clone(), props.mat_tile_normal.clone())
+                (
+                    props.mesh_tile_panel_normal.clone(),
+                    props.mat_tile_normal.clone(),
+                )
             } else {
-                (props.mesh_tile_panel_dirty.clone(), props.mat_tile_dirty.clone())
+                (
+                    props.mesh_tile_panel_dirty.clone(),
+                    props.mat_tile_dirty.clone(),
+                )
             }
         }
         _ => {
             // Standard distribution: 70% normal, 15% dirty, 10% cracked, 5% broken
             if hash < 70 {
-                (props.mesh_tile_panel_normal.clone(), props.mat_tile_normal.clone())
+                (
+                    props.mesh_tile_panel_normal.clone(),
+                    props.mat_tile_normal.clone(),
+                )
             } else if hash < 85 {
-                (props.mesh_tile_panel_dirty.clone(), props.mat_tile_dirty.clone())
+                (
+                    props.mesh_tile_panel_dirty.clone(),
+                    props.mat_tile_dirty.clone(),
+                )
             } else if hash < 95 {
-                (props.mesh_tile_panel_cracked.clone(), props.mat_tile_cracked.clone())
+                (
+                    props.mesh_tile_panel_cracked.clone(),
+                    props.mat_tile_cracked.clone(),
+                )
             } else {
-                (props.mesh_tile_panel_broken.clone(), props.mat_tile_broken.clone())
+                (
+                    props.mesh_tile_panel_broken.clone(),
+                    props.mat_tile_broken.clone(),
+                )
             }
         }
     }
@@ -542,13 +584,15 @@ fn spawn_structural_tunnel_ribs(
     seg.spawn(PbrBundle {
         mesh: env.mesh_catenary_wire.clone(),
         material: env.mat_catenary_wire.clone(),
-        transform: Transform::from_xyz(-1.2, 4.4, 0.0).with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
+        transform: Transform::from_xyz(-1.2, 4.4, 0.0)
+            .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
         ..default()
     });
     seg.spawn(PbrBundle {
         mesh: env.mesh_catenary_wire.clone(),
         material: env.mat_catenary_wire.clone(),
-        transform: Transform::from_xyz(1.2, 4.4, 0.0).with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
+        transform: Transform::from_xyz(1.2, 4.4, 0.0)
+            .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
         ..default()
     });
 
@@ -556,7 +600,8 @@ fn spawn_structural_tunnel_ribs(
     seg.spawn(PbrBundle {
         mesh: env.mesh_cable_bundle.clone(),
         material: env.mat_cables.clone(),
-        transform: Transform::from_xyz(if is_even { -2.8 } else { 2.8 }, 5.0, 0.0).with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
+        transform: Transform::from_xyz(if is_even { -2.8 } else { 2.8 }, 5.0, 0.0)
+            .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
         ..default()
     });
 }
@@ -629,7 +674,8 @@ fn spawn_authored_lighting(
     chapter: OldMetroChapter,
     seg_idx: i32,
 ) {
-    if chapter == OldMetroChapter::CollapsedSection || chapter == OldMetroChapter::VeyronCheckpoint {
+    if chapter == OldMetroChapter::CollapsedSection || chapter == OldMetroChapter::VeyronCheckpoint
+    {
         return;
     }
 
@@ -714,60 +760,147 @@ mod tests {
         assert_eq!(get_old_metro_chapter(300.0), OldMetroChapter::Platform);
         assert_eq!(get_old_metro_chapter(349.9), OldMetroChapter::Platform);
 
-        assert_eq!(get_old_metro_chapter(350.0), OldMetroChapter::MaintenanceJunction);
-        assert_eq!(get_old_metro_chapter(400.0), OldMetroChapter::MaintenanceJunction);
-        assert_eq!(get_old_metro_chapter(469.9), OldMetroChapter::MaintenanceJunction);
+        assert_eq!(
+            get_old_metro_chapter(350.0),
+            OldMetroChapter::MaintenanceJunction
+        );
+        assert_eq!(
+            get_old_metro_chapter(400.0),
+            OldMetroChapter::MaintenanceJunction
+        );
+        assert_eq!(
+            get_old_metro_chapter(469.9),
+            OldMetroChapter::MaintenanceJunction
+        );
 
-        assert_eq!(get_old_metro_chapter(470.0), OldMetroChapter::PowerSubstation);
-        assert_eq!(get_old_metro_chapter(550.0), OldMetroChapter::PowerSubstation);
-        assert_eq!(get_old_metro_chapter(599.9), OldMetroChapter::PowerSubstation);
+        assert_eq!(
+            get_old_metro_chapter(470.0),
+            OldMetroChapter::PowerSubstation
+        );
+        assert_eq!(
+            get_old_metro_chapter(550.0),
+            OldMetroChapter::PowerSubstation
+        );
+        assert_eq!(
+            get_old_metro_chapter(599.9),
+            OldMetroChapter::PowerSubstation
+        );
 
-        assert_eq!(get_old_metro_chapter(600.0), OldMetroChapter::CollapsedSection);
-        assert_eq!(get_old_metro_chapter(650.0), OldMetroChapter::CollapsedSection);
-        assert_eq!(get_old_metro_chapter(699.9), OldMetroChapter::CollapsedSection);
+        assert_eq!(
+            get_old_metro_chapter(600.0),
+            OldMetroChapter::CollapsedSection
+        );
+        assert_eq!(
+            get_old_metro_chapter(650.0),
+            OldMetroChapter::CollapsedSection
+        );
+        assert_eq!(
+            get_old_metro_chapter(699.9),
+            OldMetroChapter::CollapsedSection
+        );
 
-        assert_eq!(get_old_metro_chapter(700.0), OldMetroChapter::VeyronCheckpoint);
-        assert_eq!(get_old_metro_chapter(750.0), OldMetroChapter::VeyronCheckpoint);
-        assert_eq!(get_old_metro_chapter(799.9), OldMetroChapter::VeyronCheckpoint);
+        assert_eq!(
+            get_old_metro_chapter(700.0),
+            OldMetroChapter::VeyronCheckpoint
+        );
+        assert_eq!(
+            get_old_metro_chapter(750.0),
+            OldMetroChapter::VeyronCheckpoint
+        );
+        assert_eq!(
+            get_old_metro_chapter(799.9),
+            OldMetroChapter::VeyronCheckpoint
+        );
     }
 
     #[test]
     fn test_old_metro_sub_section_variants() {
         // Entrance
-        assert_eq!(get_old_metro_variant(15.0), OldMetroVariant::AbandonedEntrance);
+        assert_eq!(
+            get_old_metro_variant(15.0),
+            OldMetroVariant::AbandonedEntrance
+        );
         assert_eq!(get_old_metro_variant(55.0), OldMetroVariant::DamagedTunnel);
         assert_eq!(get_old_metro_variant(85.0), OldMetroVariant::EchoTraces);
 
         // Service Tunnel
         assert_eq!(get_old_metro_variant(120.0), OldMetroVariant::PipeCorridor);
-        assert_eq!(get_old_metro_variant(160.0), OldMetroVariant::MaintenanceAccess);
-        assert_eq!(get_old_metro_variant(200.0), OldMetroVariant::DerelictCarriage);
+        assert_eq!(
+            get_old_metro_variant(160.0),
+            OldMetroVariant::MaintenanceAccess
+        );
+        assert_eq!(
+            get_old_metro_variant(200.0),
+            OldMetroVariant::DerelictCarriage
+        );
 
         // Platform
-        assert_eq!(get_old_metro_variant(240.0), OldMetroVariant::PlatformApproach);
-        assert_eq!(get_old_metro_variant(280.0), OldMetroVariant::MainStationPlatform);
+        assert_eq!(
+            get_old_metro_variant(240.0),
+            OldMetroVariant::PlatformApproach
+        );
+        assert_eq!(
+            get_old_metro_variant(280.0),
+            OldMetroVariant::MainStationPlatform
+        );
         assert_eq!(get_old_metro_variant(315.0), OldMetroVariant::StationAdWall);
         assert_eq!(get_old_metro_variant(340.0), OldMetroVariant::PlatformExit);
 
         // Maintenance Junction
-        assert_eq!(get_old_metro_variant(370.0), OldMetroVariant::JunctionManifold);
-        assert_eq!(get_old_metro_variant(410.0), OldMetroVariant::VentilationShaft);
-        assert_eq!(get_old_metro_variant(450.0), OldMetroVariant::MaintenanceCart);
+        assert_eq!(
+            get_old_metro_variant(370.0),
+            OldMetroVariant::JunctionManifold
+        );
+        assert_eq!(
+            get_old_metro_variant(410.0),
+            OldMetroVariant::VentilationShaft
+        );
+        assert_eq!(
+            get_old_metro_variant(450.0),
+            OldMetroVariant::MaintenanceCart
+        );
 
         // Power Substation
-        assert_eq!(get_old_metro_variant(490.0), OldMetroVariant::SubstationFeeders);
-        assert_eq!(get_old_metro_variant(535.0), OldMetroVariant::TransformerArcZone);
-        assert_eq!(get_old_metro_variant(580.0), OldMetroVariant::EchoContaminatedGen);
+        assert_eq!(
+            get_old_metro_variant(490.0),
+            OldMetroVariant::SubstationFeeders
+        );
+        assert_eq!(
+            get_old_metro_variant(535.0),
+            OldMetroVariant::TransformerArcZone
+        );
+        assert_eq!(
+            get_old_metro_variant(580.0),
+            OldMetroVariant::EchoContaminatedGen
+        );
 
         // Collapsed Section
-        assert_eq!(get_old_metro_variant(620.0), OldMetroVariant::ShoringWarning);
-        assert_eq!(get_old_metro_variant(660.0), OldMetroVariant::DeepCollapseRubble);
-        assert_eq!(get_old_metro_variant(685.0), OldMetroVariant::EmergencyBreach);
+        assert_eq!(
+            get_old_metro_variant(620.0),
+            OldMetroVariant::ShoringWarning
+        );
+        assert_eq!(
+            get_old_metro_variant(660.0),
+            OldMetroVariant::DeepCollapseRubble
+        );
+        assert_eq!(
+            get_old_metro_variant(685.0),
+            OldMetroVariant::EmergencyBreach
+        );
 
         // Veyron Checkpoint
-        assert_eq!(get_old_metro_variant(720.0), OldMetroVariant::SecurityPerimeter);
-        assert_eq!(get_old_metro_variant(760.0), OldMetroVariant::CheckpointGantry);
-        assert_eq!(get_old_metro_variant(790.0), OldMetroVariant::NeonExitPortal);
+        assert_eq!(
+            get_old_metro_variant(720.0),
+            OldMetroVariant::SecurityPerimeter
+        );
+        assert_eq!(
+            get_old_metro_variant(760.0),
+            OldMetroVariant::CheckpointGantry
+        );
+        assert_eq!(
+            get_old_metro_variant(790.0),
+            OldMetroVariant::NeonExitPortal
+        );
     }
 
     #[test]

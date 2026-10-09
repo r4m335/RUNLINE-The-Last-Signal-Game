@@ -69,7 +69,9 @@ fn update_emergency_beacons(
 ) {
     let t = time.elapsed_seconds();
     for (beacon, mut light) in query.iter_mut() {
-        let pulse = ((t * beacon.frequency * std::f32::consts::TAU + beacon.phase).sin() * 0.5 + 0.5).powi(3);
+        let pulse = ((t * beacon.frequency * std::f32::consts::TAU + beacon.phase).sin() * 0.5
+            + 0.5)
+            .powi(3);
         light.intensity = beacon.base_intensity * pulse;
     }
 }

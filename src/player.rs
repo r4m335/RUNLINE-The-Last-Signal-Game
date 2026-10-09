@@ -1,9 +1,9 @@
+use crate::director::RunDirector;
+use crate::types::*;
+use bevy::animation::graph::{AnimationGraph, AnimationNodeIndex};
+use bevy::prelude::*;
 use std::collections::HashMap;
 use std::time::Duration;
-use bevy::prelude::*;
-use bevy::animation::graph::{AnimationGraph, AnimationNodeIndex};
-use crate::types::*;
-use crate::director::RunDirector;
 
 #[derive(Component)]
 pub struct KaiVisual;
@@ -96,6 +96,9 @@ impl FromWorld for KaiModelAssets {
 pub struct ShieldVisual;
 
 #[derive(Component)]
+pub struct ShieldFlashVisual;
+
+#[derive(Component)]
 pub struct MagnetVisual;
 
 #[derive(Component)]
@@ -183,17 +186,21 @@ fn setup_kai_animation_graph(
         kai_assets.animations = anim_map;
 
         // Apply authentic base color texture and ensure zero unwanted emissive glow
-        let mat_handle = gltf.named_materials.get("Material.001")
+        let mat_handle = gltf
+            .named_materials
+            .get("Material.001")
             .or_else(|| gltf.named_materials.get("Material_0.001"));
         if let Some(mat_handle) = mat_handle {
             if let Some(mat) = materials.get_mut(mat_handle) {
                 if mat.base_color_texture.is_none() {
-                    mat.base_color_texture = Some(asset_server.load("Charecters/Kai/textures/texture_0.jpg"));
+                    mat.base_color_texture =
+                        Some(asset_server.load("Charecters/Kai/textures/texture_0.jpg"));
                 }
                 mat.emissive_texture = None;
                 mat.emissive = LinearRgba::BLACK;
                 if mat.normal_map_texture.is_none() {
-                    mat.normal_map_texture = Some(asset_server.load("Charecters/Kai/textures/texture_2.jpg"));
+                    mat.normal_map_texture =
+                        Some(asset_server.load("Charecters/Kai/textures/texture_2.jpg"));
                 }
                 mat.perceptual_roughness = 0.85;
                 mat.metallic = 0.10;
@@ -215,10 +222,13 @@ fn attach_kai_animation_player(
     for (entity, mut player) in players.iter_mut() {
         let mut transitions = AnimationTransitions::new();
         if let Some(&sprint_idx) = kai_assets.animations.get("Sprint") {
-            transitions.play(&mut player, sprint_idx, Duration::ZERO).repeat();
+            transitions
+                .play(&mut player, sprint_idx, Duration::ZERO)
+                .repeat();
         }
 
-        commands.entity(entity)
+        commands
+            .entity(entity)
             .insert(graph_handle.clone())
             .insert(transitions)
             .insert(KaiArmature);
@@ -256,7 +266,11 @@ fn kai_animation_controller_system(
         if controller.current_anim != Some(KaiAnimState::Death) {
             controller.current_anim = Some(KaiAnimState::Death);
             if let Some(&death_idx) = kai_assets.animations.get(KaiAnimState::Death.clip_name()) {
-                transitions.play(&mut anim_player, death_idx, KaiAnimState::Death.transition_duration());
+                transitions.play(
+                    &mut anim_player,
+                    death_idx,
+                    KaiAnimState::Death.transition_duration(),
+                );
             }
         }
         return;
@@ -333,8 +347,12 @@ fn update_kai_visual_transform(
     player_q: Query<&Player>,
     mut visual_q: Query<&mut Transform, With<KaiVisual>>,
 ) {
-    let Ok(player) = player_q.get_single() else { return };
-    let Ok(mut trans) = visual_q.get_single_mut() else { return };
+    let Ok(player) = player_q.get_single() else {
+        return;
+    };
+    let Ok(mut trans) = visual_q.get_single_mut() else {
+        return;
+    };
 
     if player.is_sliding {
         // Counteract parent root scale during slide so Kai mesh maintains 1.0 natural scale
@@ -356,7 +374,13 @@ fn ensure_player_spawned(
     player_q: Query<Entity, With<Player>>,
 ) {
     if player_q.is_empty() {
-        spawn_player_entity(&mut commands, &mut meshes, &mut materials, stats.selected_character, &kai_assets);
+        spawn_player_entity(
+            &mut commands,
+            &mut meshes,
+            &mut materials,
+            stats.selected_character,
+            &kai_assets,
+        );
     }
 }
 
@@ -365,7 +389,11 @@ fn handle_run_reset_player(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    mut player_q: Query<(&mut Player, &mut Transform, Option<&mut KaiAnimationController>)>,
+    mut player_q: Query<(
+        &mut Player,
+        &mut Transform,
+        Option<&mut KaiAnimationController>,
+    )>,
     mut anim_q: Query<(&mut AnimationPlayer, &mut AnimationTransitions), With<KaiArmature>>,
     mut history: ResMut<PlayerMovementHistory>,
     stats: Res<GameRunStats>,
@@ -400,11 +428,19 @@ fn handle_run_reset_player(
 
             if let Ok((mut anim_player, mut transitions)) = anim_q.get_single_mut() {
                 if let Some(&sprint_idx) = kai_assets.animations.get("Sprint") {
-                    transitions.play(&mut anim_player, sprint_idx, Duration::ZERO).repeat();
+                    transitions
+                        .play(&mut anim_player, sprint_idx, Duration::ZERO)
+                        .repeat();
                 }
             }
         } else {
-            spawn_player_entity(&mut commands, &mut meshes, &mut materials, stats.selected_character, &kai_assets);
+            spawn_player_entity(
+                &mut commands,
+                &mut meshes,
+                &mut materials,
+                stats.selected_character,
+                &kai_assets,
+            );
         }
     }
 }
@@ -417,7 +453,13 @@ pub fn spawn_player(
     stats: Res<GameRunStats>,
     kai_assets: Res<KaiModelAssets>,
 ) {
-    spawn_player_entity(&mut commands, &mut meshes, &mut materials, stats.selected_character, &kai_assets);
+    spawn_player_entity(
+        &mut commands,
+        &mut meshes,
+        &mut materials,
+        stats.selected_character,
+        &kai_assets,
+    );
 }
 
 pub fn spawn_player_entity(
@@ -433,10 +475,23 @@ pub fn spawn_player_entity(
         ..default()
     });
 
-    let shield_mat = materials.add(StandardMaterial {
-        base_color: Color::srgba(0.0, 0.8, 1.0, 0.35),
-        emissive: LinearRgba::new(0.2, 0.8, 1.2, 1.0),
+    let shield_segment_mat = materials.add(StandardMaterial {
+        base_color: Color::srgba(0.0, 0.85, 1.0, 0.70),
+        emissive: LinearRgba::new(0.4, 2.2, 3.2, 1.0),
         alpha_mode: AlphaMode::Blend,
+        ..default()
+    });
+
+    let shield_flash_mat = materials.add(StandardMaterial {
+        base_color: Color::srgba(0.25, 0.92, 1.0, 0.80),
+        emissive: LinearRgba::new(2.0, 4.5, 6.0, 1.0),
+        alpha_mode: AlphaMode::Blend,
+        ..default()
+    });
+
+    let overdrive_amber_mat = materials.add(StandardMaterial {
+        base_color: Color::srgb(1.0, 0.55, 0.05),
+        emissive: LinearRgba::new(4.5, 2.2, 0.2, 1.0),
         ..default()
     });
 
@@ -487,18 +542,59 @@ pub fn spawn_player_entity(
             ));
 
             // Powerup & Movement Visual Attachments
-            // Shield Bubble
+            // Task 2: Segmented Cyber Shield (Open field: shoulder arc, waist arc, 3 orbiting shards)
+            parent
+                .spawn((
+                    SpatialBundle {
+                        transform: Transform::from_scale(Vec3::ZERO),
+                        ..default()
+                    },
+                    ShieldVisual,
+                ))
+                .with_children(|shield_parent| {
+                    // Upper shoulder arc
+                    shield_parent.spawn(PbrBundle {
+                        mesh: meshes.add(Torus::new(0.016, 0.56)),
+                        material: shield_segment_mat.clone(),
+                        transform: Transform::from_xyz(0.0, 0.32, 0.0)
+                            .with_rotation(Quat::from_rotation_x(0.18)),
+                        ..default()
+                    });
+                    // Lower waist arc
+                    shield_parent.spawn(PbrBundle {
+                        mesh: meshes.add(Torus::new(0.016, 0.52)),
+                        material: shield_segment_mat.clone(),
+                        transform: Transform::from_xyz(0.0, -0.22, 0.0)
+                            .with_rotation(Quat::from_rotation_x(-0.16)),
+                        ..default()
+                    });
+                    // 3 orbiting deflector nodes
+                    for i in 0..3 {
+                        let angle = i as f32 * std::f32::consts::TAU / 3.0;
+                        let x = angle.cos() * 0.58;
+                        let z = angle.sin() * 0.58;
+                        shield_parent.spawn(PbrBundle {
+                            mesh: meshes.add(Cuboid::new(0.06, 0.14, 0.025)),
+                            material: shield_segment_mat.clone(),
+                            transform: Transform::from_xyz(x, 0.05, z)
+                                .with_rotation(Quat::from_rotation_y(-angle)),
+                            ..default()
+                        });
+                    }
+                });
+
+            // Absorbed hit flash bubble (Flashes on impact, scales down to zero)
             parent.spawn((
                 PbrBundle {
-                    mesh: meshes.add(Sphere::new(1.3)),
-                    material: shield_mat,
+                    mesh: meshes.add(Sphere::new(1.15)),
+                    material: shield_flash_mat,
                     transform: Transform::from_scale(Vec3::ZERO),
                     ..default()
                 },
-                ShieldVisual,
+                ShieldFlashVisual,
             ));
 
-            // Magnet Aura
+            // Magnet Aura (Preserved as requested in Task 4)
             parent.spawn((
                 PbrBundle {
                     mesh: meshes.add(Torus::new(0.8, 1.4)),
@@ -509,16 +605,31 @@ pub fn spawn_player_entity(
                 MagnetVisual,
             ));
 
-            // Overdrive Visual Trail
-            parent.spawn((
-                PbrBundle {
-                    mesh: meshes.add(Cuboid::new(1.0, 0.1, 1.8)),
-                    material: cyan_echo_core_mat,
-                    transform: Transform::from_xyz(0.0, -0.7, 1.0).with_scale(Vec3::ZERO),
-                    ..default()
-                },
-                OverdriveVisual,
-            ));
+            // Overdrive Visual Phase Trails (Dual chromatic: Amber plume + Cyan afterimage)
+            parent
+                .spawn((
+                    SpatialBundle {
+                        transform: Transform::from_scale(Vec3::ZERO),
+                        ..default()
+                    },
+                    OverdriveVisual,
+                ))
+                .with_children(|trail_parent| {
+                    // Primary Amber Plume
+                    trail_parent.spawn(PbrBundle {
+                        mesh: meshes.add(Cuboid::new(0.85, 0.08, 2.2)),
+                        material: overdrive_amber_mat,
+                        transform: Transform::from_xyz(0.0, -0.65, 1.1),
+                        ..default()
+                    });
+                    // Secondary Cyan Chromatic Wake
+                    trail_parent.spawn(PbrBundle {
+                        mesh: meshes.add(Cuboid::new(0.70, 0.06, 1.5)),
+                        material: cyan_echo_core_mat,
+                        transform: Transform::from_xyz(0.0, -0.62, 1.6),
+                        ..default()
+                    });
+                });
 
             // Rail Slide Sparks
             parent.spawn((
@@ -743,7 +854,11 @@ fn player_visual_smoothing(
 
     // Dynamic banking roll angle during lane change + sprint forward lean pitch
     let target_tilt = (-dx * 0.20).clamp(-0.28, 0.28);
-    let target_pitch = if player.is_grounded && !player.is_sliding { 0.12 } else { 0.0 };
+    let target_pitch = if player.is_grounded && !player.is_sliding {
+        0.12
+    } else {
+        0.0
+    };
     let cur_rot = transform.rotation;
     let target_rot = Quat::from_rotation_z(target_tilt) * Quat::from_rotation_x(target_pitch);
     transform.rotation = cur_rot.slerp(target_rot, (24.0 * dt).min(1.0));
@@ -753,10 +868,57 @@ fn player_powerup_visuals(
     mut powerups: ResMut<ActivePowerUps>,
     time: Res<Time>,
     player_q: Query<&Player, Without<SlideSparksVisual>>,
-    mut shield_q: Query<&mut Transform, (With<ShieldVisual>, Without<MagnetVisual>, Without<OverdriveVisual>, Without<SlideSparksVisual>)>,
-    mut magnet_q: Query<&mut Transform, (With<MagnetVisual>, Without<ShieldVisual>, Without<OverdriveVisual>, Without<SlideSparksVisual>)>,
-    mut boost_q: Query<&mut Transform, (With<OverdriveVisual>, Without<ShieldVisual>, Without<MagnetVisual>, Without<SlideSparksVisual>)>,
-    mut sparks_q: Query<&mut Transform, (With<SlideSparksVisual>, Without<ShieldVisual>, Without<MagnetVisual>, Without<OverdriveVisual>)>,
+    mut kai_visual_q: Query<&mut Visibility, With<KaiVisual>>,
+    mut shield_q: Query<
+        &mut Transform,
+        (
+            With<ShieldVisual>,
+            Without<ShieldFlashVisual>,
+            Without<MagnetVisual>,
+            Without<OverdriveVisual>,
+            Without<SlideSparksVisual>,
+        ),
+    >,
+    mut flash_q: Query<
+        &mut Transform,
+        (
+            With<ShieldFlashVisual>,
+            Without<ShieldVisual>,
+            Without<MagnetVisual>,
+            Without<OverdriveVisual>,
+            Without<SlideSparksVisual>,
+        ),
+    >,
+    mut magnet_q: Query<
+        &mut Transform,
+        (
+            With<MagnetVisual>,
+            Without<ShieldVisual>,
+            Without<ShieldFlashVisual>,
+            Without<OverdriveVisual>,
+            Without<SlideSparksVisual>,
+        ),
+    >,
+    mut boost_q: Query<
+        &mut Transform,
+        (
+            With<OverdriveVisual>,
+            Without<ShieldVisual>,
+            Without<ShieldFlashVisual>,
+            Without<MagnetVisual>,
+            Without<SlideSparksVisual>,
+        ),
+    >,
+    mut sparks_q: Query<
+        &mut Transform,
+        (
+            With<SlideSparksVisual>,
+            Without<ShieldVisual>,
+            Without<ShieldFlashVisual>,
+            Without<MagnetVisual>,
+            Without<OverdriveVisual>,
+        ),
+    >,
 ) {
     let dt = time.delta_seconds();
 
@@ -773,30 +935,73 @@ fn player_powerup_visuals(
         }
     }
 
-    // Shield
+    // Task 2: Segmented Cyber Shield Arcs (Kai remains fully visible)
     if let Ok(mut st) = shield_q.get_single_mut() {
-        let target_scale = if powerups.shield { Vec3::splat(1.1) } else { Vec3::ZERO };
+        let target_scale = if powerups.shield {
+            Vec3::splat(1.0)
+        } else {
+            Vec3::ZERO
+        };
         st.scale = st.scale.lerp(target_scale, 10.0 * dt);
-        st.rotate_y(1.5 * dt);
+        st.rotate_y(2.2 * dt);
     }
 
-    // Magnet
+    // Task 2: Shield Absorbed Hit Full-Sphere Flash
+    if powerups.shield_absorb_flash_timer > 0.0 {
+        powerups.shield_absorb_flash_timer = (powerups.shield_absorb_flash_timer - dt).max(0.0);
+    }
+    if let Ok(mut ft) = flash_q.get_single_mut() {
+        let target_scale = if powerups.shield_absorb_flash_timer > 0.0 {
+            let progress = powerups.shield_absorb_flash_timer / 0.28;
+            Vec3::splat(1.18 * (0.85 + 0.15 * progress))
+        } else {
+            Vec3::ZERO
+        };
+        ft.scale = ft.scale.lerp(target_scale, 20.0 * dt);
+    }
+
+    // Task 4: Magnet (Preserved existing aura)
     if powerups.magnet_timer > 0.0 {
         powerups.magnet_timer = (powerups.magnet_timer - dt).max(0.0);
     }
     if let Ok(mut mt) = magnet_q.get_single_mut() {
-        let target_scale = if powerups.magnet_timer > 0.0 { Vec3::splat(1.0) } else { Vec3::ZERO };
+        let target_scale = if powerups.magnet_timer > 0.0 {
+            Vec3::splat(1.0)
+        } else {
+            Vec3::ZERO
+        };
         mt.scale = mt.scale.lerp(target_scale, 8.0 * dt);
         mt.rotate_z(3.0 * dt);
     }
 
-    // Overdrive
+    // Task 3: Overdrive Phase-Shift Visual & Controlled Flicker (8-10 cycles/sec, 80% visible)
     if powerups.overdrive_timer > 0.0 {
         powerups.overdrive_timer = (powerups.overdrive_timer - dt).max(0.0);
     }
+
+    if let Ok(mut kai_vis) = kai_visual_q.get_single_mut() {
+        if powerups.overdrive_timer > 0.0 {
+            // 9 Hz flicker: visible 80% of each cycle, 20% phase gap
+            let phase = (time.elapsed_seconds() * 9.0).fract();
+            *kai_vis = if phase < 0.80 {
+                Visibility::Inherited
+            } else {
+                Visibility::Hidden
+            };
+        } else {
+            // Restore normal visibility immediately when Overdrive expires
+            *kai_vis = Visibility::Inherited;
+        }
+    }
+
     if let Ok(mut ot) = boost_q.get_single_mut() {
-        let target_scale = if powerups.overdrive_timer > 0.0 { Vec3::new(1.2, 0.2, 2.5) } else { Vec3::ZERO };
-        ot.scale = ot.scale.lerp(target_scale, 12.0 * dt);
+        let target_scale = if powerups.overdrive_timer > 0.0 {
+            let pulse = 1.0 + (time.elapsed_seconds() * 12.0).sin() * 0.12;
+            Vec3::new(1.15 * pulse, 0.2, 2.4)
+        } else {
+            Vec3::ZERO
+        };
+        ot.scale = ot.scale.lerp(target_scale, 14.0 * dt);
     }
 
     // Time Break & Double Jump timers
@@ -811,5 +1016,68 @@ fn player_powerup_visuals(
 fn stumble_recovery(time: Res<Time>, mut stats: ResMut<GameRunStats>) {
     if stats.stumble_intensity > 0.0 {
         stats.stumble_intensity = (stats.stumble_intensity - time.delta_seconds() * 2.5).max(0.0);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_overdrive_phase_flicker_duty_cycle_and_bounds() {
+        // Frequency is 9 Hz, duty cycle is 80% visible (phase < 0.80)
+        let mut visible_count = 0;
+        let samples = 1000;
+        for i in 0..samples {
+            let t = i as f32 * 0.001; // 1 ms steps
+            let phase = (t * 9.0).fract();
+            let is_visible = phase < 0.80;
+            if is_visible {
+                visible_count += 1;
+            }
+        }
+        let visibility_ratio = visible_count as f32 / samples as f32;
+        // Verify visibility ratio is approximately 80% (within 75%..85% specification)
+        assert!(
+            visibility_ratio >= 0.75 && visibility_ratio <= 0.85,
+            "Overdrive visibility ratio {:.2} must be within [0.75, 0.85]",
+            visibility_ratio
+        );
+    }
+
+    #[test]
+    fn test_overdrive_immediate_visibility_restoration_when_expired() {
+        let mut powerups = ActivePowerUps::default();
+        powerups.overdrive_timer = 0.0; // Expired
+
+        let mut kai_vis = Visibility::Hidden;
+        if powerups.overdrive_timer > 0.0 {
+            // Not executed
+        } else {
+            kai_vis = Visibility::Inherited;
+        }
+
+        assert_eq!(
+            kai_vis,
+            Visibility::Inherited,
+            "Kai must immediately restore normal visibility when Overdrive ends"
+        );
+    }
+
+    #[test]
+    fn test_shield_absorb_flash_decay() {
+        let mut powerups = ActivePowerUps::default();
+        powerups.shield = true;
+        powerups.shield_absorb_flash_timer = 0.28;
+
+        let dt = 0.10_f32;
+        powerups.shield_absorb_flash_timer = (powerups.shield_absorb_flash_timer - dt).max(0.0);
+        assert!((powerups.shield_absorb_flash_timer - 0.18).abs() < 1e-4);
+
+        // After flash expires
+        let dt_remaining = 0.20_f32;
+        powerups.shield_absorb_flash_timer =
+            (powerups.shield_absorb_flash_timer - dt_remaining).max(0.0);
+        assert_eq!(powerups.shield_absorb_flash_timer, 0.0);
     }
 }

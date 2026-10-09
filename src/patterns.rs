@@ -7,9 +7,9 @@ pub struct LaneSet(pub u8);
 
 #[allow(dead_code)]
 impl LaneSet {
-    pub const LEFT: u8 = 1 << 0;   // 1
+    pub const LEFT: u8 = 1 << 0; // 1
     pub const CENTER: u8 = 1 << 1; // 2
-    pub const RIGHT: u8 = 1 << 2;  // 4
+    pub const RIGHT: u8 = 1 << 2; // 4
     pub const ALL: u8 = 7;
     pub const NONE: u8 = 0;
 
@@ -60,9 +60,15 @@ impl LaneSet {
 
     pub fn lanes(&self) -> Vec<Lane> {
         let mut list = Vec::new();
-        if (self.0 & Self::LEFT) != 0 { list.push(Lane::Left); }
-        if (self.0 & Self::CENTER) != 0 { list.push(Lane::Center); }
-        if (self.0 & Self::RIGHT) != 0 { list.push(Lane::Right); }
+        if (self.0 & Self::LEFT) != 0 {
+            list.push(Lane::Left);
+        }
+        if (self.0 & Self::CENTER) != 0 {
+            list.push(Lane::Center);
+        }
+        if (self.0 & Self::RIGHT) != 0 {
+            list.push(Lane::Right);
+        }
         list
     }
 }
@@ -111,7 +117,13 @@ impl PatternChunk {
         }
     }
 
-    pub fn with_obstacle(mut self, lane: Lane, rel_z: f32, obs_type: ObstacleType, size: bevy::prelude::Vec3) -> Self {
+    pub fn with_obstacle(
+        mut self,
+        lane: Lane,
+        rel_z: f32,
+        obs_type: ObstacleType,
+        size: bevy::prelude::Vec3,
+    ) -> Self {
         self.obstacles.push(ObstacleSpawnDef {
             lane,
             rel_z,
@@ -123,15 +135,18 @@ impl PatternChunk {
 
     #[allow(dead_code)]
     pub fn with_fragment(mut self, lane: Lane, rel_z: f32, y_pos: f32) -> Self {
-        self.fragments.push(FragmentSpawnDef {
-            lane,
-            rel_z,
-            y_pos,
-        });
+        self.fragments.push(FragmentSpawnDef { lane, rel_z, y_pos });
         self
     }
 
-    pub fn with_fragment_arc(mut self, lane: Lane, start_z: f32, count: usize, step_z: f32, peak_y: f32) -> Self {
+    pub fn with_fragment_arc(
+        mut self,
+        lane: Lane,
+        start_z: f32,
+        count: usize,
+        step_z: f32,
+        peak_y: f32,
+    ) -> Self {
         for i in 0..count {
             let t = i as f32 / (count - 1).max(1) as f32;
             let y = 0.85 + (1.0 - (2.0 * t - 1.0).powi(2)) * (peak_y - 0.85);
@@ -144,7 +159,14 @@ impl PatternChunk {
         self
     }
 
-    pub fn with_fragment_line(mut self, lane: Lane, start_z: f32, count: usize, step_z: f32, y: f32) -> Self {
+    pub fn with_fragment_line(
+        mut self,
+        lane: Lane,
+        start_z: f32,
+        count: usize,
+        step_z: f32,
+        y: f32,
+    ) -> Self {
         for i in 0..count {
             self.fragments.push(FragmentSpawnDef {
                 lane,
@@ -221,7 +243,11 @@ impl PatternChunk {
         self.obstacles
             .iter()
             .filter(|o| o.lane == lane)
-            .max_by(|a, b| a.rel_z.partial_cmp(&b.rel_z).unwrap_or(std::cmp::Ordering::Equal))
+            .max_by(|a, b| {
+                a.rel_z
+                    .partial_cmp(&b.rel_z)
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            })
     }
 
     /// Returns the last obstacle along a specific lane near the chunk exit
@@ -229,7 +255,11 @@ impl PatternChunk {
         self.obstacles
             .iter()
             .filter(|o| o.lane == lane)
-            .min_by(|a, b| a.rel_z.partial_cmp(&b.rel_z).unwrap_or(std::cmp::Ordering::Equal))
+            .min_by(|a, b| {
+                a.rel_z
+                    .partial_cmp(&b.rel_z)
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            })
     }
 }
 
@@ -259,8 +289,12 @@ pub fn verify_intra_chunk_solvability(chunk: &PatternChunk) -> Result<(), Solvab
             // Check if at least one lane has a jumpable hurdle or slideable cable
             let has_actionable_lane = chunk.obstacles.iter().any(|obs| {
                 let half_d = obs.size.z * 0.5;
-                let in_z = rel_z >= (obs.rel_z - half_d - 0.4) && rel_z <= (obs.rel_z + half_d + 0.4);
-                in_z && matches!(obs.obstacle_type, ObstacleType::LowBarrier | ObstacleType::HighHangingWire)
+                let in_z =
+                    rel_z >= (obs.rel_z - half_d - 0.4) && rel_z <= (obs.rel_z + half_d + 0.4);
+                in_z && matches!(
+                    obs.obstacle_type,
+                    ObstacleType::LowBarrier | ObstacleType::HighHangingWire
+                )
             });
 
             if !has_actionable_lane {
@@ -349,7 +383,8 @@ pub fn validate_chunk_transition(
             // Check if player just jumped near the exit of prev
             if let Some(last_obs) = prev.last_obstacle_in_lane(exit_lane) {
                 if last_obs.obstacle_type == ObstacleType::LowBarrier {
-                    let landing_dist_from_exit = prev.length - last_obs.rel_z.abs() + dist_to_obstacle;
+                    let landing_dist_from_exit =
+                        prev.length - last_obs.rel_z.abs() + dist_to_obstacle;
                     if landing_dist_from_exit < 8.0 {
                         return Err(SolvabilityError::ActionInterferenceLandingCollision {
                             lane: exit_lane,
@@ -362,7 +397,12 @@ pub fn validate_chunk_transition(
             // Kinematic evaluation: verify player can reach at least one open entry lane in time
             let mut can_reach_any = false;
             for target_lane in entry_lanes.lanes() {
-                if can_physically_change_lane(player_speed, exit_lane, target_lane, dist_to_obstacle) {
+                if can_physically_change_lane(
+                    player_speed,
+                    exit_lane,
+                    target_lane,
+                    dist_to_obstacle,
+                ) {
                     can_reach_any = true;
                     break;
                 }
@@ -391,189 +431,433 @@ pub fn get_pattern_catalog() -> Vec<PatternChunk> {
         // -------------------------------------------------------------
         // Tier 1 (0–150m): Basic Lane Switching & Diverts
         PatternChunk::new("Intro Divert Left", 1, 35.0)
-            .with_obstacle(Lane::Center, -15.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2))
+            .with_obstacle(
+                Lane::Center,
+                -15.0,
+                ObstacleType::TallPillar,
+                Vec3::new(1.8, 4.0, 1.2),
+            )
             .with_fragment_line(Lane::Left, -8.0, 5, 3.5, 0.85),
-
         PatternChunk::new("Intro Divert Right", 1, 35.0)
-            .with_obstacle(Lane::Center, -15.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2))
+            .with_obstacle(
+                Lane::Center,
+                -15.0,
+                ObstacleType::TallPillar,
+                Vec3::new(1.8, 4.0, 1.2),
+            )
             .with_fragment_line(Lane::Right, -8.0, 5, 3.5, 0.85),
-
         PatternChunk::new("Center Clear Trail", 1, 35.0)
-            .with_obstacle(Lane::Left, -15.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2))
-            .with_obstacle(Lane::Right, -15.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2))
+            .with_obstacle(
+                Lane::Left,
+                -15.0,
+                ObstacleType::TallPillar,
+                Vec3::new(1.8, 4.0, 1.2),
+            )
+            .with_obstacle(
+                Lane::Right,
+                -15.0,
+                ObstacleType::TallPillar,
+                Vec3::new(1.8, 4.0, 1.2),
+            )
             .with_fragment_line(Lane::Center, -8.0, 5, 3.5, 0.85),
-
         // Tier 2 (150–300m): Jump Obstacles (Vault & Arcs)
         PatternChunk::new("Vault Sequence", 1, 35.0)
-            .with_obstacle(Lane::Center, -14.0, ObstacleType::LowBarrier, Vec3::new(2.1, 0.85, 0.4))
+            .with_obstacle(
+                Lane::Center,
+                -14.0,
+                ObstacleType::LowBarrier,
+                Vec3::new(2.1, 0.85, 0.4),
+            )
             .with_fragment_arc(Lane::Center, -8.0, 5, 3.0, 2.2),
-
         PatternChunk::new("Side Hurdle Vault", 1, 35.0)
-            .with_obstacle(Lane::Left, -14.0, ObstacleType::LowBarrier, Vec3::new(2.1, 0.85, 0.4))
+            .with_obstacle(
+                Lane::Left,
+                -14.0,
+                ObstacleType::LowBarrier,
+                Vec3::new(2.1, 0.85, 0.4),
+            )
             .with_fragment_arc(Lane::Left, -8.0, 5, 3.0, 2.2)
             .with_fragment_line(Lane::Center, -8.0, 4, 3.5, 0.85),
-
         // Tier 3 (300–450m): Slide Obstacles (Ducking under wires)
         PatternChunk::new("Slide Under", 1, 35.0)
-            .with_obstacle(Lane::Center, -15.0, ObstacleType::HighHangingWire, Vec3::new(2.2, 0.5, 0.3))
+            .with_obstacle(
+                Lane::Center,
+                -15.0,
+                ObstacleType::HighHangingWire,
+                Vec3::new(2.2, 0.5, 0.3),
+            )
             .with_fragment_line(Lane::Center, -10.0, 4, 3.0, 0.45),
-
         PatternChunk::new("High Wire Duct", 1, 35.0)
-            .with_obstacle(Lane::Right, -15.0, ObstacleType::HighHangingWire, Vec3::new(2.2, 0.5, 0.3))
+            .with_obstacle(
+                Lane::Right,
+                -15.0,
+                ObstacleType::HighHangingWire,
+                Vec3::new(2.2, 0.5, 0.3),
+            )
             .with_fragment_line(Lane::Right, -10.0, 4, 3.0, 0.45)
             .with_fragment_line(Lane::Center, -10.0, 4, 3.5, 0.85),
-
         // Tier 4 (450–600m): Multi-Lane Choices & Split Gates
         PatternChunk::new("Split Gate", 1, 35.0)
-            .with_obstacle(Lane::Left, -14.0, ObstacleType::LowBarrier, Vec3::new(2.1, 0.85, 0.4))
-            .with_obstacle(Lane::Center, -14.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2))
+            .with_obstacle(
+                Lane::Left,
+                -14.0,
+                ObstacleType::LowBarrier,
+                Vec3::new(2.1, 0.85, 0.4),
+            )
+            .with_obstacle(
+                Lane::Center,
+                -14.0,
+                ObstacleType::TallPillar,
+                Vec3::new(1.8, 4.0, 1.2),
+            )
             .with_fragment_arc(Lane::Left, -8.0, 5, 3.0, 2.2)
             .with_fragment_line(Lane::Right, -8.0, 5, 3.5, 0.85),
-
         PatternChunk::new("Weave Gate", 1, 35.0)
-            .with_obstacle(Lane::Right, -14.0, ObstacleType::LowBarrier, Vec3::new(2.1, 0.85, 0.4))
-            .with_obstacle(Lane::Center, -14.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2))
+            .with_obstacle(
+                Lane::Right,
+                -14.0,
+                ObstacleType::LowBarrier,
+                Vec3::new(2.1, 0.85, 0.4),
+            )
+            .with_obstacle(
+                Lane::Center,
+                -14.0,
+                ObstacleType::TallPillar,
+                Vec3::new(1.8, 4.0, 1.2),
+            )
             .with_fragment_arc(Lane::Right, -8.0, 5, 3.0, 2.2)
             .with_fragment_line(Lane::Left, -8.0, 5, 3.5, 0.85),
-
         // Tier 5 (600–800m): Rhythm & Approaching Neon Transition
         PatternChunk::new("Old Metro Rhythm", 1, 35.0)
-            .with_obstacle(Lane::Left, -10.0, ObstacleType::LowBarrier, Vec3::new(2.1, 0.85, 0.4))
-            .with_obstacle(Lane::Center, -22.0, ObstacleType::HighHangingWire, Vec3::new(2.2, 0.5, 0.3))
+            .with_obstacle(
+                Lane::Left,
+                -10.0,
+                ObstacleType::LowBarrier,
+                Vec3::new(2.1, 0.85, 0.4),
+            )
+            .with_obstacle(
+                Lane::Center,
+                -22.0,
+                ObstacleType::HighHangingWire,
+                Vec3::new(2.2, 0.5, 0.3),
+            )
             .with_fragment_line(Lane::Right, -6.0, 6, 3.5, 0.85),
-
         // -------------------------------------------------------------
         // COMPLEXITY 2: NEON DISTRICT (800 - 1,800m) — REACT
         // -------------------------------------------------------------
         // Family 1: SLALOM (Rapid sequential lane shifts)
         PatternChunk::new("Neon Slalom", 2, 40.0)
-            .with_obstacle(Lane::Left, -8.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2))
-            .with_obstacle(Lane::Center, -18.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2))
-            .with_obstacle(Lane::Right, -28.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2))
+            .with_obstacle(
+                Lane::Left,
+                -8.0,
+                ObstacleType::TallPillar,
+                Vec3::new(1.8, 4.0, 1.2),
+            )
+            .with_obstacle(
+                Lane::Center,
+                -18.0,
+                ObstacleType::TallPillar,
+                Vec3::new(1.8, 4.0, 1.2),
+            )
+            .with_obstacle(
+                Lane::Right,
+                -28.0,
+                ObstacleType::TallPillar,
+                Vec3::new(1.8, 4.0, 1.2),
+            )
             .with_fragment_line(Lane::Right, -6.0, 3, 3.0, 0.85)
             .with_fragment_line(Lane::Left, -16.0, 3, 3.0, 0.85)
             .with_fragment_line(Lane::Center, -26.0, 3, 3.0, 0.85),
-
         PatternChunk::new("Rapid Slalom", 2, 40.0)
-            .with_obstacle(Lane::Right, -10.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2))
-            .with_obstacle(Lane::Center, -20.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2))
-            .with_obstacle(Lane::Left, -30.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2))
+            .with_obstacle(
+                Lane::Right,
+                -10.0,
+                ObstacleType::TallPillar,
+                Vec3::new(1.8, 4.0, 1.2),
+            )
+            .with_obstacle(
+                Lane::Center,
+                -20.0,
+                ObstacleType::TallPillar,
+                Vec3::new(1.8, 4.0, 1.2),
+            )
+            .with_obstacle(
+                Lane::Left,
+                -30.0,
+                ObstacleType::TallPillar,
+                Vec3::new(1.8, 4.0, 1.2),
+            )
             .with_fragment_line(Lane::Left, -8.0, 3, 3.0, 0.85)
             .with_fragment_line(Lane::Right, -18.0, 3, 3.0, 0.85)
             .with_fragment_line(Lane::Center, -28.0, 3, 3.0, 0.85),
-
         // Family 2: PULSE (Rhythmic double hurdles / wires with clean gaps)
         PatternChunk::new("Neon Pulse", 2, 40.0)
-            .with_obstacle(Lane::Center, -12.0, ObstacleType::LowBarrier, Vec3::new(2.1, 0.85, 0.4))
-            .with_obstacle(Lane::Center, -24.0, ObstacleType::LowBarrier, Vec3::new(2.1, 0.85, 0.4))
+            .with_obstacle(
+                Lane::Center,
+                -12.0,
+                ObstacleType::LowBarrier,
+                Vec3::new(2.1, 0.85, 0.4),
+            )
+            .with_obstacle(
+                Lane::Center,
+                -24.0,
+                ObstacleType::LowBarrier,
+                Vec3::new(2.1, 0.85, 0.4),
+            )
             .with_fragment_arc(Lane::Center, -8.0, 4, 2.5, 2.2)
             .with_fragment_arc(Lane::Center, -20.0, 4, 2.5, 2.2),
-
         PatternChunk::new("Wire Pulse", 2, 40.0)
-            .with_obstacle(Lane::Center, -12.0, ObstacleType::HighHangingWire, Vec3::new(2.2, 0.5, 0.3))
-            .with_obstacle(Lane::Center, -24.0, ObstacleType::HighHangingWire, Vec3::new(2.2, 0.5, 0.3))
+            .with_obstacle(
+                Lane::Center,
+                -12.0,
+                ObstacleType::HighHangingWire,
+                Vec3::new(2.2, 0.5, 0.3),
+            )
+            .with_obstacle(
+                Lane::Center,
+                -24.0,
+                ObstacleType::HighHangingWire,
+                Vec3::new(2.2, 0.5, 0.3),
+            )
             .with_fragment_line(Lane::Center, -8.0, 4, 2.5, 0.45)
             .with_fragment_line(Lane::Center, -20.0, 4, 2.5, 0.45),
-
         // Family 3: HUNTER SWEEP (Tactical telegraph evasion with 2 open lanes)
         PatternChunk::new("Hunter Flank Corridor", 2, 40.0)
-            .with_obstacle(Lane::Left, -16.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2))
+            .with_obstacle(
+                Lane::Left,
+                -16.0,
+                ObstacleType::TallPillar,
+                Vec3::new(1.8, 4.0, 1.2),
+            )
             .with_fragment_line(Lane::Center, -8.0, 5, 3.2, 0.85)
             .with_fragment_line(Lane::Right, -8.0, 5, 3.2, 0.85),
-
         PatternChunk::new("Hunter Gauntlet", 2, 40.0)
-            .with_obstacle(Lane::Center, -16.0, ObstacleType::LowBarrier, Vec3::new(2.1, 0.85, 0.4))
+            .with_obstacle(
+                Lane::Center,
+                -16.0,
+                ObstacleType::LowBarrier,
+                Vec3::new(2.1, 0.85, 0.4),
+            )
             .with_fragment_arc(Lane::Center, -10.0, 5, 2.5, 2.2)
             .with_fragment_line(Lane::Left, -10.0, 4, 3.2, 0.85)
             .with_fragment_line(Lane::Right, -10.0, 4, 3.2, 0.85),
-
         // Family 4: SPLIT (Safe / low-score vs dangerous / high-ECHO)
         PatternChunk::new("Neon Choice Split", 2, 40.0)
-            .with_obstacle(Lane::Center, -16.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2))
-            .with_obstacle(Lane::Left, -16.0, ObstacleType::LowBarrier, Vec3::new(2.1, 0.85, 0.4))
+            .with_obstacle(
+                Lane::Center,
+                -16.0,
+                ObstacleType::TallPillar,
+                Vec3::new(1.8, 4.0, 1.2),
+            )
+            .with_obstacle(
+                Lane::Left,
+                -16.0,
+                ObstacleType::LowBarrier,
+                Vec3::new(2.1, 0.85, 0.4),
+            )
             .with_fragment_arc(Lane::Left, -10.0, 5, 2.5, 2.4)
             .with_fragment_line(Lane::Right, -10.0, 5, 3.2, 0.85),
-
         PatternChunk::new("Rooftop Fork", 2, 40.0)
-            .with_obstacle(Lane::Center, -18.0, ObstacleType::StaticTrain, Vec3::new(2.2, 2.5, 12.0))
-            .with_obstacle(Lane::Left, -18.0, ObstacleType::LowBarrier, Vec3::new(2.1, 0.85, 0.4))
+            .with_obstacle(
+                Lane::Center,
+                -18.0,
+                ObstacleType::StaticTrain,
+                Vec3::new(2.2, 2.5, 12.0),
+            )
+            .with_obstacle(
+                Lane::Left,
+                -18.0,
+                ObstacleType::LowBarrier,
+                Vec3::new(2.1, 0.85, 0.4),
+            )
             .with_fragment_arc(Lane::Center, -10.0, 4, 2.5, 2.8)
             .with_fragment_line(Lane::Center, -18.0, 5, 2.2, 2.8)
             .with_fragment_line(Lane::Right, -10.0, 6, 3.2, 0.85),
-
         // Family 5: COMBO (Remixing learned verbs: Jump -> Lane Switch -> Slide)
         PatternChunk::new("Vault-and-Weave", 2, 40.0)
-            .with_obstacle(Lane::Center, -10.0, ObstacleType::LowBarrier, Vec3::new(2.1, 0.85, 0.4))
-            .with_obstacle(Lane::Center, -22.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2))
+            .with_obstacle(
+                Lane::Center,
+                -10.0,
+                ObstacleType::LowBarrier,
+                Vec3::new(2.1, 0.85, 0.4),
+            )
+            .with_obstacle(
+                Lane::Center,
+                -22.0,
+                ObstacleType::TallPillar,
+                Vec3::new(1.8, 4.0, 1.2),
+            )
             .with_fragment_arc(Lane::Center, -6.0, 4, 2.2, 2.2)
             .with_fragment_line(Lane::Left, -18.0, 4, 3.0, 0.85)
             .with_fragment_line(Lane::Right, -18.0, 4, 3.0, 0.85),
-
         PatternChunk::new("Neon Flow Combo", 2, 40.0)
-            .with_obstacle(Lane::Left, -10.0, ObstacleType::LowBarrier, Vec3::new(2.1, 0.85, 0.4))
-            .with_obstacle(Lane::Center, -18.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2))
-            .with_obstacle(Lane::Right, -26.0, ObstacleType::HighHangingWire, Vec3::new(2.2, 0.5, 0.3))
+            .with_obstacle(
+                Lane::Left,
+                -10.0,
+                ObstacleType::LowBarrier,
+                Vec3::new(2.1, 0.85, 0.4),
+            )
+            .with_obstacle(
+                Lane::Center,
+                -18.0,
+                ObstacleType::TallPillar,
+                Vec3::new(1.8, 4.0, 1.2),
+            )
+            .with_obstacle(
+                Lane::Right,
+                -26.0,
+                ObstacleType::HighHangingWire,
+                Vec3::new(2.2, 0.5, 0.3),
+            )
             .with_fragment_arc(Lane::Left, -6.0, 4, 2.2, 2.2)
             .with_fragment_line(Lane::Right, -14.0, 4, 2.5, 0.85)
             .with_fragment_line(Lane::Right, -22.0, 3, 2.2, 0.45),
-
         // -------------------------------------------------------------
         // COMPLEXITY 3: INDUSTRIAL FOUNDRY & FLOODED METRO (1,800 - 4,800m)
         // -------------------------------------------------------------
         // Pattern 8: The Squeeze (Left and Right blocked, Center requires slide under wire)
         PatternChunk::new("Foundry Needle", 3, 40.0)
-            .with_obstacle(Lane::Left, -16.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2))
-            .with_obstacle(Lane::Right, -16.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2))
-            .with_obstacle(Lane::Center, -16.0, ObstacleType::HighHangingWire, Vec3::new(2.2, 0.5, 0.3))
+            .with_obstacle(
+                Lane::Left,
+                -16.0,
+                ObstacleType::TallPillar,
+                Vec3::new(1.8, 4.0, 1.2),
+            )
+            .with_obstacle(
+                Lane::Right,
+                -16.0,
+                ObstacleType::TallPillar,
+                Vec3::new(1.8, 4.0, 1.2),
+            )
+            .with_obstacle(
+                Lane::Center,
+                -16.0,
+                ObstacleType::HighHangingWire,
+                Vec3::new(2.2, 0.5, 0.3),
+            )
             .with_fragment_line(Lane::Center, -10.0, 5, 2.8, 0.45),
-
         // Pattern 9: Jump into Slide Combo (Hurdle immediately followed by wire with safe clearance)
         PatternChunk::new("Vault-to-Slide Combo", 3, 40.0)
-            .with_obstacle(Lane::Center, -12.0, ObstacleType::LowBarrier, Vec3::new(2.1, 0.85, 0.4))
-            .with_obstacle(Lane::Center, -23.0, ObstacleType::HighHangingWire, Vec3::new(2.2, 0.5, 0.3))
+            .with_obstacle(
+                Lane::Center,
+                -12.0,
+                ObstacleType::LowBarrier,
+                Vec3::new(2.1, 0.85, 0.4),
+            )
+            .with_obstacle(
+                Lane::Center,
+                -23.0,
+                ObstacleType::HighHangingWire,
+                Vec3::new(2.2, 0.5, 0.3),
+            )
             .with_fragment_arc(Lane::Center, -7.0, 4, 2.5, 2.2)
             .with_fragment_line(Lane::Center, -20.0, 3, 2.2, 0.45),
-
         // Pattern 10: Dual Train Corridor (Center and Right trains moving, Left open)
         PatternChunk::new("Twin Rail Squeeze", 3, 40.0)
-            .with_obstacle(Lane::Center, -25.0, ObstacleType::MovingTrain { speed: 11.0 }, Vec3::new(2.2, 2.5, 14.0))
-            .with_obstacle(Lane::Right, -18.0, ObstacleType::StaticTrain, Vec3::new(2.2, 2.5, 12.0))
+            .with_obstacle(
+                Lane::Center,
+                -25.0,
+                ObstacleType::MovingTrain { speed: 11.0 },
+                Vec3::new(2.2, 2.5, 14.0),
+            )
+            .with_obstacle(
+                Lane::Right,
+                -18.0,
+                ObstacleType::StaticTrain,
+                Vec3::new(2.2, 2.5, 12.0),
+            )
             .with_fragment_line(Lane::Left, -8.0, 7, 3.2, 0.85),
-
         // -------------------------------------------------------------
         // COMPLEXITY 4: SKY RAIL (4,800 - 6,500m)
         // -------------------------------------------------------------
         // Pattern 11: Switchback Trap (Rapid left-right directional demand)
         PatternChunk::new("Skyline Switchback", 4, 40.0)
-            .with_obstacle(Lane::Left, -10.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2))
-            .with_obstacle(Lane::Center, -10.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2))
-            .with_obstacle(Lane::Right, -24.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2))
-            .with_obstacle(Lane::Center, -24.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2))
+            .with_obstacle(
+                Lane::Left,
+                -10.0,
+                ObstacleType::TallPillar,
+                Vec3::new(1.8, 4.0, 1.2),
+            )
+            .with_obstacle(
+                Lane::Center,
+                -10.0,
+                ObstacleType::TallPillar,
+                Vec3::new(1.8, 4.0, 1.2),
+            )
+            .with_obstacle(
+                Lane::Right,
+                -24.0,
+                ObstacleType::TallPillar,
+                Vec3::new(1.8, 4.0, 1.2),
+            )
+            .with_obstacle(
+                Lane::Center,
+                -24.0,
+                ObstacleType::TallPillar,
+                Vec3::new(1.8, 4.0, 1.2),
+            )
             .with_fragment_line(Lane::Right, -6.0, 3, 2.5, 0.85)
             .with_fragment_line(Lane::Left, -20.0, 3, 2.5, 0.85),
-
         // Pattern 12: Triple Hurdle Sprint (Three consecutive vault hurdles)
         PatternChunk::new("Triple Hurdle Sprint", 4, 40.0)
-            .with_obstacle(Lane::Center, -10.0, ObstacleType::LowBarrier, Vec3::new(2.1, 0.85, 0.4))
-            .with_obstacle(Lane::Center, -18.0, ObstacleType::LowBarrier, Vec3::new(2.1, 0.85, 0.4))
-            .with_obstacle(Lane::Center, -26.0, ObstacleType::LowBarrier, Vec3::new(2.1, 0.85, 0.4))
+            .with_obstacle(
+                Lane::Center,
+                -10.0,
+                ObstacleType::LowBarrier,
+                Vec3::new(2.1, 0.85, 0.4),
+            )
+            .with_obstacle(
+                Lane::Center,
+                -18.0,
+                ObstacleType::LowBarrier,
+                Vec3::new(2.1, 0.85, 0.4),
+            )
+            .with_obstacle(
+                Lane::Center,
+                -26.0,
+                ObstacleType::LowBarrier,
+                Vec3::new(2.1, 0.85, 0.4),
+            )
             .with_fragment_arc(Lane::Center, -6.0, 4, 2.0, 2.2)
             .with_fragment_arc(Lane::Center, -14.0, 4, 2.0, 2.2)
             .with_fragment_arc(Lane::Center, -22.0, 4, 2.0, 2.2),
-
         // -------------------------------------------------------------
         // COMPLEXITY 5: THE FORBIDDEN LINE & ECHO CORE (6,500m+)
         // -------------------------------------------------------------
         // Pattern 13: Core Singularity Gauntlet (High-speed express moving train + alternating hurdle slides)
         PatternChunk::new("Core Singularity Gauntlet", 5, 40.0)
-            .with_obstacle(Lane::Center, -22.0, ObstacleType::MovingTrain { speed: 13.0 }, Vec3::new(2.2, 2.5, 14.0))
-            .with_obstacle(Lane::Left, -12.0, ObstacleType::LowBarrier, Vec3::new(2.1, 0.85, 0.4))
-            .with_obstacle(Lane::Left, -24.0, ObstacleType::HighHangingWire, Vec3::new(2.2, 0.5, 0.3))
-            .with_obstacle(Lane::Right, -12.0, ObstacleType::HighHangingWire, Vec3::new(2.2, 0.5, 0.3))
-            .with_obstacle(Lane::Right, -24.0, ObstacleType::LowBarrier, Vec3::new(2.1, 0.85, 0.4))
+            .with_obstacle(
+                Lane::Center,
+                -22.0,
+                ObstacleType::MovingTrain { speed: 13.0 },
+                Vec3::new(2.2, 2.5, 14.0),
+            )
+            .with_obstacle(
+                Lane::Left,
+                -12.0,
+                ObstacleType::LowBarrier,
+                Vec3::new(2.1, 0.85, 0.4),
+            )
+            .with_obstacle(
+                Lane::Left,
+                -24.0,
+                ObstacleType::HighHangingWire,
+                Vec3::new(2.2, 0.5, 0.3),
+            )
+            .with_obstacle(
+                Lane::Right,
+                -12.0,
+                ObstacleType::HighHangingWire,
+                Vec3::new(2.2, 0.5, 0.3),
+            )
+            .with_obstacle(
+                Lane::Right,
+                -24.0,
+                ObstacleType::LowBarrier,
+                Vec3::new(2.1, 0.85, 0.4),
+            )
             .with_fragment_arc(Lane::Left, -7.0, 4, 2.2, 2.2)
             .with_fragment_line(Lane::Right, -7.0, 4, 2.2, 0.45),
-
         // Pattern 14: Pure Flow Crystal Stream (Universal buffer sequence)
         PatternChunk::new("Resonance Wave", 1, 35.0)
             .with_fragment_line(Lane::Center, -6.0, 3, 2.5, 0.85)
@@ -600,19 +884,42 @@ pub fn select_validated_pattern(
     // 600–800m: combinations + Scout pursuer pressure
     let mut candidates: Vec<PatternChunk> = if complexity == 1 && distance < 800.0 {
         let matching: Vec<PatternChunk> = if distance < 150.0 {
-            catalog.iter().filter(|p| p.name.starts_with("Intro") || p.name.contains("Clear")).cloned().collect()
+            catalog
+                .iter()
+                .filter(|p| p.name.starts_with("Intro") || p.name.contains("Clear"))
+                .cloned()
+                .collect()
         } else if distance < 300.0 {
-            catalog.iter().filter(|p| p.name.contains("Vault")).cloned().collect()
+            catalog
+                .iter()
+                .filter(|p| p.name.contains("Vault"))
+                .cloned()
+                .collect()
         } else if distance < 450.0 {
-            catalog.iter().filter(|p| p.name.contains("Slide") || p.name.contains("Wire")).cloned().collect()
+            catalog
+                .iter()
+                .filter(|p| p.name.contains("Slide") || p.name.contains("Wire"))
+                .cloned()
+                .collect()
         } else if distance < 600.0 {
-            catalog.iter().filter(|p| p.name.contains("Gate")).cloned().collect()
+            catalog
+                .iter()
+                .filter(|p| p.name.contains("Gate"))
+                .cloned()
+                .collect()
         } else {
-            catalog.iter().filter(|p| p.min_complexity == 1).cloned().collect()
+            catalog
+                .iter()
+                .filter(|p| p.min_complexity == 1)
+                .cloned()
+                .collect()
         };
 
         if matching.is_empty() {
-            catalog.into_iter().filter(|p| p.min_complexity <= complexity).collect()
+            catalog
+                .into_iter()
+                .filter(|p| p.min_complexity <= complexity)
+                .collect()
         } else {
             matching
         }
@@ -624,24 +931,57 @@ pub fn select_validated_pattern(
         // 1,300–1,500m: Hunter + choice splits (Neon Choice Split & Rooftop Fork)
         // 1,500–1,800m: Hunter + combinations (Vault-and-Weave & Neon Flow Combo)
         let matching: Vec<PatternChunk> = if distance < 950.0 {
-            catalog.iter().filter(|p| p.min_complexity == 2 && (p.name.contains("Slalom") || p.name.contains("Pulse"))).cloned().collect()
+            catalog
+                .iter()
+                .filter(|p| {
+                    p.min_complexity == 2 && (p.name.contains("Slalom") || p.name.contains("Pulse"))
+                })
+                .cloned()
+                .collect()
         } else if distance < 1100.0 {
-            catalog.iter().filter(|p| p.min_complexity == 2 && p.name.contains("Hunter")).cloned().collect()
+            catalog
+                .iter()
+                .filter(|p| p.min_complexity == 2 && p.name.contains("Hunter"))
+                .cloned()
+                .collect()
         } else if distance < 1300.0 {
-            catalog.iter().filter(|p| p.min_complexity == 2 && (p.name.contains("Pulse") || p.name.contains("Rooftop"))).cloned().collect()
+            catalog
+                .iter()
+                .filter(|p| {
+                    p.min_complexity == 2
+                        && (p.name.contains("Pulse") || p.name.contains("Rooftop"))
+                })
+                .cloned()
+                .collect()
         } else if distance < 1500.0 {
-            catalog.iter().filter(|p| p.min_complexity == 2 && (p.name.contains("Split") || p.name.contains("Fork"))).cloned().collect()
+            catalog
+                .iter()
+                .filter(|p| {
+                    p.min_complexity == 2 && (p.name.contains("Split") || p.name.contains("Fork"))
+                })
+                .cloned()
+                .collect()
         } else {
-            catalog.iter().filter(|p| p.min_complexity == 2).cloned().collect()
+            catalog
+                .iter()
+                .filter(|p| p.min_complexity == 2)
+                .cloned()
+                .collect()
         };
 
         if matching.is_empty() {
-            catalog.into_iter().filter(|p| p.min_complexity <= complexity).collect()
+            catalog
+                .into_iter()
+                .filter(|p| p.min_complexity <= complexity)
+                .collect()
         } else {
             matching
         }
     } else {
-        catalog.into_iter().filter(|p| p.min_complexity <= complexity).collect()
+        catalog
+            .into_iter()
+            .filter(|p| p.min_complexity <= complexity)
+            .collect()
     };
 
     if candidates.is_empty() {
@@ -700,9 +1040,24 @@ mod tests {
     #[test]
     fn test_detects_impossible_three_lane_block() {
         let bad_chunk = PatternChunk::new("Impossible Wall", 1, 40.0)
-            .with_obstacle(Lane::Left, -15.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2))
-            .with_obstacle(Lane::Center, -15.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2))
-            .with_obstacle(Lane::Right, -15.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2));
+            .with_obstacle(
+                Lane::Left,
+                -15.0,
+                ObstacleType::TallPillar,
+                Vec3::new(1.8, 4.0, 1.2),
+            )
+            .with_obstacle(
+                Lane::Center,
+                -15.0,
+                ObstacleType::TallPillar,
+                Vec3::new(1.8, 4.0, 1.2),
+            )
+            .with_obstacle(
+                Lane::Right,
+                -15.0,
+                ObstacleType::TallPillar,
+                Vec3::new(1.8, 4.0, 1.2),
+            );
 
         let res = verify_intra_chunk_solvability(&bad_chunk);
         assert_eq!(
@@ -715,13 +1070,33 @@ mod tests {
     fn test_detects_impossible_cross_chunk_transition() {
         // Chunk A forces player into Center at the very end
         let chunk_a = PatternChunk::new("Exit Left Right Blocked", 1, 40.0)
-            .with_obstacle(Lane::Left, -36.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2))
-            .with_obstacle(Lane::Right, -36.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2));
+            .with_obstacle(
+                Lane::Left,
+                -36.0,
+                ObstacleType::TallPillar,
+                Vec3::new(1.8, 4.0, 1.2),
+            )
+            .with_obstacle(
+                Lane::Right,
+                -36.0,
+                ObstacleType::TallPillar,
+                Vec3::new(1.8, 4.0, 1.2),
+            );
 
         // Chunk B immediately blocks Center within 2 meters (0.08 seconds reaction!)
         let chunk_b = PatternChunk::new("Immediate Center Block", 1, 40.0)
-            .with_obstacle(Lane::Center, -2.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2))
-            .with_obstacle(Lane::Left, -2.0, ObstacleType::TallPillar, Vec3::new(1.8, 4.0, 1.2));
+            .with_obstacle(
+                Lane::Center,
+                -2.0,
+                ObstacleType::TallPillar,
+                Vec3::new(1.8, 4.0, 1.2),
+            )
+            .with_obstacle(
+                Lane::Left,
+                -2.0,
+                ObstacleType::TallPillar,
+                Vec3::new(1.8, 4.0, 1.2),
+            );
 
         let validation = validate_chunk_transition(&chunk_a, &chunk_b, 20.0);
         assert!(
@@ -734,21 +1109,44 @@ mod tests {
     #[test]
     fn test_kinematic_speed_scaled_reaction() {
         // At 31.2 m/s (ECHO Core), a 6.0m obstacle gives only 0.19s (reaction impossible)
-        assert!(!can_physically_change_lane(31.2, Lane::Center, Lane::Left, 6.0));
+        assert!(!can_physically_change_lane(
+            31.2,
+            Lane::Center,
+            Lane::Left,
+            6.0
+        ));
 
         // At 31.2 m/s, a 16.0m obstacle gives 0.51s (reaction + 1-lane lateral transition valid)
-        assert!(can_physically_change_lane(31.2, Lane::Center, Lane::Left, 16.0));
+        assert!(can_physically_change_lane(
+            31.2,
+            Lane::Center,
+            Lane::Left,
+            16.0
+        ));
 
         // At 16.0 m/s (Old Metro), a 7.0m obstacle gives 0.43s (reaction + transition valid)
-        assert!(can_physically_change_lane(16.0, Lane::Center, Lane::Left, 7.0));
+        assert!(can_physically_change_lane(
+            16.0,
+            Lane::Center,
+            Lane::Left,
+            7.0
+        ));
     }
 
     #[test]
     fn test_valid_cross_chunk_transition_passes() {
-        let chunk_a = PatternChunk::new("Vault Sequence", 1, 35.0)
-            .with_obstacle(Lane::Center, -14.0, ObstacleType::LowBarrier, Vec3::new(2.1, 0.85, 0.4));
-        let chunk_b = PatternChunk::new("Slide Under", 1, 35.0)
-            .with_obstacle(Lane::Center, -15.0, ObstacleType::HighHangingWire, Vec3::new(2.2, 0.5, 0.3));
+        let chunk_a = PatternChunk::new("Vault Sequence", 1, 35.0).with_obstacle(
+            Lane::Center,
+            -14.0,
+            ObstacleType::LowBarrier,
+            Vec3::new(2.1, 0.85, 0.4),
+        );
+        let chunk_b = PatternChunk::new("Slide Under", 1, 35.0).with_obstacle(
+            Lane::Center,
+            -15.0,
+            ObstacleType::HighHangingWire,
+            Vec3::new(2.2, 0.5, 0.3),
+        );
 
         let validation = validate_chunk_transition(&chunk_a, &chunk_b, 20.0);
         assert!(validation.is_ok(), "Expected valid transition to pass!");
@@ -764,7 +1162,8 @@ mod tests {
         let mut x = 0.0_f32;
         let target_x = 2.4_f32;
         let mut elapsed_1_lane = 0.0_f32;
-        while (target_x - x).abs() > 0.12 { // 95% settlement threshold
+        while (target_x - x).abs() > 0.12 {
+            // 95% settlement threshold
             let dx = target_x - x;
             x += dx * (18.0 * dt).min(1.0);
             elapsed_1_lane += dt;
@@ -780,7 +1179,8 @@ mod tests {
         let mut x2 = -2.4_f32;
         let target_x2 = 2.4_f32;
         let mut elapsed_2_lanes = 0.0_f32;
-        while (target_x2 - x2).abs() > 0.12 { // 97.5% settlement threshold
+        while (target_x2 - x2).abs() > 0.12 {
+            // 97.5% settlement threshold
             let dx = target_x2 - x2;
             x2 += dx * (18.0 * dt).min(1.0);
             elapsed_2_lanes += dt;
@@ -893,8 +1293,14 @@ mod tests {
         );
 
         // 2. Both milestone boss encounters successfully triggered and survived
-        assert!(boss_1_triggered && boss_1_defeated, "Milestone 4 boss must trigger and retreat");
-        assert!(boss_2_triggered && boss_2_defeated, "Milestone 7 boss must trigger and retreat");
+        assert!(
+            boss_1_triggered && boss_1_defeated,
+            "Milestone 4 boss must trigger and retreat"
+        );
+        assert!(
+            boss_2_triggered && boss_2_defeated,
+            "Milestone 7 boss must trigger and retreat"
+        );
 
         // 3. Fragments and score successfully accrued
         assert!(fragments >= 100, "Boss rewards must grant >= 100 fragments");
@@ -910,9 +1316,15 @@ mod tests {
         let scout_trailing_dist = 6.5_f32;
         let stumble_duration = 0.8_f32;
         let scout_surge_dist = 2.0_f32 + (1.0 - stumble_duration) * 4.5;
-        assert!(scout_surge_dist > 1.8, "Scout must maintain buffer during initial stumble");
+        assert!(
+            scout_surge_dist > 1.8,
+            "Scout must maintain buffer during initial stumble"
+        );
         let grapple_grace_timer = 1.2_f32;
-        assert!(grapple_grace_timer >= 1.0, "Player must receive >= 1.0s grace window to recover balance");
+        assert!(
+            grapple_grace_timer >= 1.0,
+            "Player must receive >= 1.0s grace window to recover balance"
+        );
 
         // 2. Obstacle + Hunter:
         // Hurdle in Center; Hunter telegraphs Center for 0.65s.
@@ -929,11 +1341,27 @@ mod tests {
         // 3. Obstacle + Heavy:
         // Heavy in Center, Train in Left at same Z. Procedural generator confirms Right lane is open.
         let test_chunk = PatternChunk::new("Heavy Obstacle Combo", 1, 40.0)
-            .with_obstacle(Lane::Left, -20.0, ObstacleType::StaticTrain, Vec3::new(2.2, 3.2, 10.0))
-            .with_obstacle(Lane::Center, -20.0, ObstacleType::TallPillar, Vec3::new(2.2, 3.0, 1.5));
+            .with_obstacle(
+                Lane::Left,
+                -20.0,
+                ObstacleType::StaticTrain,
+                Vec3::new(2.2, 3.2, 10.0),
+            )
+            .with_obstacle(
+                Lane::Center,
+                -20.0,
+                ObstacleType::TallPillar,
+                Vec3::new(2.2, 3.0, 1.5),
+            );
         let open_lanes = test_chunk.get_navigable_lanes_at(-20.0, 0.5);
-        assert!(open_lanes.contains(Lane::Right), "Right lane must remain completely open and navigable");
-        assert!(!open_lanes.is_empty(), "Heavy + Obstacle must leave at least 1 open lane");
+        assert!(
+            open_lanes.contains(Lane::Right),
+            "Right lane must remain completely open and navigable"
+        );
+        assert!(
+            !open_lanes.is_empty(),
+            "Heavy + Obstacle must leave at least 1 open lane"
+        );
 
         // 4. Obstacle + Hunter + Scout (Death Spiral Prevention):
         // When player stumbles on obstacle, threat concurrency rule forces Hunter to HOLD FIRE for >= 1.5s
@@ -955,7 +1383,10 @@ mod tests {
         // 6. Heavy + Scout:
         // Heavy in Center forces lane change to Left/Right. Scout trails at 6.5m.
         // Scout distance (6.5m) is far behind player (0.0m), allowing unhindered lateral transition.
-        assert!(scout_trailing_dist >= 5.0, "Scout trailing distance must permit lateral dodging");
+        assert!(
+            scout_trailing_dist >= 5.0,
+            "Scout trailing distance must permit lateral dodging"
+        );
 
         // 7. Heavy + Hunter:
         // When Heavy denies Center, Hunter is forbidden from sweeping remaining open escape lane.
@@ -963,13 +1394,19 @@ mod tests {
         let hunter_predicted_lane = Lane::Right;
         // With heavy corridor protection active, hunter telegraph is suppressed.
         let hunter_sweep_allowed = !is_heavy_corridor_active;
-        assert!(!hunter_sweep_allowed, "Hunter sweep must be blocked while Heavy is active ahead");
+        assert!(
+            !hunter_sweep_allowed,
+            "Hunter sweep must be blocked while Heavy is active ahead"
+        );
         let _ = (heavy_blocked_lane, hunter_predicted_lane);
 
         // 8. Boss + Environmental Obstacles:
         // ECHO Hunter 25-second gauntlet: catalog chunks provide alternating jump/slide routes throughout.
         let boss_gauntlet_duration = 25.0_f32;
-        assert_eq!(boss_gauntlet_duration, 25.0, "Boss gauntlet must run for exactly 25.0s");
+        assert_eq!(
+            boss_gauntlet_duration, 25.0,
+            "Boss gauntlet must run for exactly 25.0s"
+        );
     }
 
     #[test]
@@ -1003,7 +1440,10 @@ mod tests {
                 d,
                 pattern.name
             );
-            let has_jump_hurdle = pattern.obstacles.iter().any(|o| o.obstacle_type == ObstacleType::LowBarrier);
+            let has_jump_hurdle = pattern
+                .obstacles
+                .iter()
+                .any(|o| o.obstacle_type == ObstacleType::LowBarrier);
             assert!(has_jump_hurdle, "Tier 2 at {}m must teach jump hurdle", d);
         }
 
@@ -1016,8 +1456,15 @@ mod tests {
                 d,
                 pattern.name
             );
-            let has_slide_obstacle = pattern.obstacles.iter().any(|o| o.obstacle_type == ObstacleType::HighHangingWire);
-            assert!(has_slide_obstacle, "Tier 3 at {}m must teach slide obstacle", d);
+            let has_slide_obstacle = pattern
+                .obstacles
+                .iter()
+                .any(|o| o.obstacle_type == ObstacleType::HighHangingWire);
+            assert!(
+                has_slide_obstacle,
+                "Tier 3 at {}m must teach slide obstacle",
+                d
+            );
         }
 
         // Tier 4: 450–600m (Multi-lane choice gates)
@@ -1034,8 +1481,16 @@ mod tests {
         // Tier 5: 600–800m (Combinations + Scout pressure rhythm)
         for d in [600.0, 650.0, 700.0, 799.0] {
             let pattern = select_validated_pattern(1, None, 16.0, d);
-            assert_eq!(pattern.min_complexity, 1, "Tier 5 at {}m must remain complexity 1", d);
-            assert!(verify_intra_chunk_solvability(&pattern).is_ok(), "Tier 5 at {}m must be solvable", d);
+            assert_eq!(
+                pattern.min_complexity, 1,
+                "Tier 5 at {}m must remain complexity 1",
+                d
+            );
+            assert!(
+                verify_intra_chunk_solvability(&pattern).is_ok(),
+                "Tier 5 at {}m must be solvable",
+                d
+            );
         }
     }
 
@@ -1045,14 +1500,22 @@ mod tests {
         // Phase 1: 800–950m (Speed transition adaptation: 18.4 m/s, Slalom & Pulse rhythm, no Hunter)
         for d in [800.0, 850.0, 900.0, 949.0] {
             let pattern = select_validated_pattern(2, None, 18.4, d);
-            assert_eq!(pattern.min_complexity, 2, "Phase 1 at {}m must be complexity 2", d);
+            assert_eq!(
+                pattern.min_complexity, 2,
+                "Phase 1 at {}m must be complexity 2",
+                d
+            );
             assert!(
                 pattern.name.contains("Slalom") || pattern.name.contains("Pulse"),
                 "Phase 1 (800-950m) at {}m must feature Slalom or Pulse rhythm: {}",
                 d,
                 pattern.name
             );
-            assert!(verify_intra_chunk_solvability(&pattern).is_ok(), "Phase 1 at {}m must be solvable", d);
+            assert!(
+                verify_intra_chunk_solvability(&pattern).is_ok(),
+                "Phase 1 at {}m must be solvable",
+                d
+            );
         }
 
         // Phase 2: 950–1,100m (Hunter introduction: Flank corridor & Gauntlet with 2 open lanes)
@@ -1064,7 +1527,11 @@ mod tests {
                 d,
                 pattern.name
             );
-            assert!(verify_intra_chunk_solvability(&pattern).is_ok(), "Phase 2 at {}m must be solvable", d);
+            assert!(
+                verify_intra_chunk_solvability(&pattern).is_ok(),
+                "Phase 2 at {}m must be solvable",
+                d
+            );
         }
 
         // Phase 3: 1,100–1,300m (Hunter + normal obstacles: Pulse & Rooftop)
@@ -1076,7 +1543,11 @@ mod tests {
                 d,
                 pattern.name
             );
-            assert!(verify_intra_chunk_solvability(&pattern).is_ok(), "Phase 3 at {}m must be solvable", d);
+            assert!(
+                verify_intra_chunk_solvability(&pattern).is_ok(),
+                "Phase 3 at {}m must be solvable",
+                d
+            );
         }
 
         // Phase 4: 1,300–1,500m (Hunter + tactical choice split gates)
@@ -1088,14 +1559,26 @@ mod tests {
                 d,
                 pattern.name
             );
-            assert!(verify_intra_chunk_solvability(&pattern).is_ok(), "Phase 4 at {}m must be solvable", d);
+            assert!(
+                verify_intra_chunk_solvability(&pattern).is_ok(),
+                "Phase 4 at {}m must be solvable",
+                d
+            );
         }
 
         // Phase 5: 1,500–1,800m (Hunter + multi-verb combinations)
         for d in [1500.0, 1600.0, 1700.0, 1799.0] {
             let pattern = select_validated_pattern(2, None, 18.4, d);
-            assert_eq!(pattern.min_complexity, 2, "Phase 5 at {}m must be complexity 2", d);
-            assert!(verify_intra_chunk_solvability(&pattern).is_ok(), "Phase 5 at {}m must be solvable", d);
+            assert_eq!(
+                pattern.min_complexity, 2,
+                "Phase 5 at {}m must be complexity 2",
+                d
+            );
+            assert!(
+                verify_intra_chunk_solvability(&pattern).is_ok(),
+                "Phase 5 at {}m must be solvable",
+                d
+            );
         }
     }
 }

@@ -1,11 +1,11 @@
-use bevy::prelude::*;
 use crate::environment::{EnvironmentAssets, EnvironmentFan, EnvironmentalSign};
+use crate::environment_lighting::{
+    ElectricalArc, EmergencyBeacon, FlickeringLight, RotatingCameraMount, SteamVent,
+};
 use crate::environment_props::PropAssets;
 use crate::environment_signage::SignageAssets;
-use crate::environment_lighting::{
-    FlickeringLight, EmergencyBeacon, SteamVent, ElectricalArc, RotatingCameraMount,
-};
 use crate::old_metro::OldMetroVariant;
+use bevy::prelude::*;
 
 // -----------------------------------------------------------------------------
 // 1. ENTRANCE SUB-SECTIONS (0–100m)
@@ -68,7 +68,8 @@ pub fn spawn_entrance_sub_section(
                 PbrBundle {
                     mesh: props.mesh_steam_plume.clone(),
                     material: props.mat_steam.clone(),
-                    transform: Transform::from_xyz(-2.2, 4.2, -8.0).with_rotation(Quat::from_rotation_x(std::f32::consts::PI)),
+                    transform: Transform::from_xyz(-2.2, 4.2, -8.0)
+                        .with_rotation(Quat::from_rotation_x(std::f32::consts::PI)),
                     ..default()
                 },
                 SteamVent {
@@ -81,7 +82,8 @@ pub fn spawn_entrance_sub_section(
             seg.spawn(PbrBundle {
                 mesh: props.mesh_pipe_small.clone(),
                 material: props.mat_pipe_dark.clone(),
-                transform: Transform::from_xyz(-1.8, 4.1, 0.0).with_rotation(Quat::from_rotation_z(0.12)),
+                transform: Transform::from_xyz(-1.8, 4.1, 0.0)
+                    .with_rotation(Quat::from_rotation_z(0.12)),
                 ..default()
             });
         }
@@ -129,7 +131,8 @@ pub fn spawn_service_tunnel_sub_section(
                 seg.spawn(PbrBundle {
                     mesh: props.mesh_pipe_medium.clone(),
                     material: props.mat_pipe_dark.clone(),
-                    transform: Transform::from_xyz(side_x, y, 0.0).with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
+                    transform: Transform::from_xyz(side_x, y, 0.0)
+                        .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
                     ..default()
                 });
             }
@@ -153,7 +156,11 @@ pub fn spawn_service_tunnel_sub_section(
                         shadows_enabled: false,
                         ..default()
                     },
-                    transform: Transform::from_xyz(side_x + if is_even { 0.25 } else { -0.25 }, 1.8, 4.0),
+                    transform: Transform::from_xyz(
+                        side_x + if is_even { 0.25 } else { -0.25 },
+                        1.8,
+                        4.0,
+                    ),
                     ..default()
                 },
                 FlickeringLight {
@@ -169,7 +176,11 @@ pub fn spawn_service_tunnel_sub_section(
                 PbrBundle {
                     mesh: props.mesh_steam_plume.clone(),
                     material: props.mat_steam.clone(),
-                    transform: Transform::from_xyz(side_x + if is_even { 0.4 } else { -0.4 }, 0.8, -10.0),
+                    transform: Transform::from_xyz(
+                        side_x + if is_even { 0.4 } else { -0.4 },
+                        0.8,
+                        -10.0,
+                    ),
                     ..default()
                 },
                 SteamVent {
@@ -183,7 +194,8 @@ pub fn spawn_service_tunnel_sub_section(
             seg.spawn(PbrBundle {
                 mesh: env.mesh_arch_top.clone(),
                 material: env.mat_steel_truss.clone(),
-                transform: Transform::from_xyz(side_tunnel_x, 3.6, 0.0).with_rotation(Quat::from_rotation_y(std::f32::consts::FRAC_PI_2)),
+                transform: Transform::from_xyz(side_tunnel_x, 3.6, 0.0)
+                    .with_rotation(Quat::from_rotation_y(std::f32::consts::FRAC_PI_2)),
                 ..default()
             });
             seg.spawn(PointLightBundle {
@@ -287,7 +299,11 @@ pub fn spawn_platform_sub_section(
                 PbrBundle {
                     mesh: props.mesh_station_nameplate.clone(),
                     material: signage.mat_station_placard.clone(),
-                    transform: Transform::from_xyz(wall_x - if is_even { 0.2 } else { -0.2 }, 3.2, 4.0),
+                    transform: Transform::from_xyz(
+                        wall_x - if is_even { 0.2 } else { -0.2 },
+                        3.2,
+                        4.0,
+                    ),
                     ..default()
                 },
                 EnvironmentalSign,
@@ -295,7 +311,11 @@ pub fn spawn_platform_sub_section(
             seg.spawn(PbrBundle {
                 mesh: props.mesh_ticket_machine.clone(),
                 material: props.mat_transformer_metal.clone(),
-                transform: Transform::from_xyz(wall_x - if is_even { 0.5 } else { -0.5 }, 2.2, -6.0),
+                transform: Transform::from_xyz(
+                    wall_x - if is_even { 0.5 } else { -0.5 },
+                    2.2,
+                    -6.0,
+                ),
                 ..default()
             });
         }
@@ -304,7 +324,11 @@ pub fn spawn_platform_sub_section(
             seg.spawn(PbrBundle {
                 mesh: props.mesh_timetable_board.clone(),
                 material: signage.mat_station_placard.clone(),
-                transform: Transform::from_xyz(wall_x - if is_even { 0.22 } else { -0.22 }, 2.5, -2.0),
+                transform: Transform::from_xyz(
+                    wall_x - if is_even { 0.22 } else { -0.22 },
+                    2.5,
+                    -2.0,
+                ),
                 ..default()
             });
             seg.spawn(PbrBundle {
@@ -316,7 +340,11 @@ pub fn spawn_platform_sub_section(
             seg.spawn(PbrBundle {
                 mesh: props.mesh_emergency_phone.clone(),
                 material: props.mat_pipe_red.clone(),
-                transform: Transform::from_xyz(wall_x - if is_even { 0.22 } else { -0.22 }, 2.2, 8.5),
+                transform: Transform::from_xyz(
+                    wall_x - if is_even { 0.22 } else { -0.22 },
+                    2.2,
+                    8.5,
+                ),
                 ..default()
             });
         }
@@ -345,7 +373,11 @@ pub fn spawn_platform_sub_section(
             seg.spawn(PbrBundle {
                 mesh: props.mesh_poster_board.clone(),
                 material: signage.mat_poster_veyron.clone(),
-                transform: Transform::from_xyz(wall_x - if is_even { 0.22 } else { -0.22 }, 2.8, -8.0),
+                transform: Transform::from_xyz(
+                    wall_x - if is_even { 0.22 } else { -0.22 },
+                    2.8,
+                    -8.0,
+                ),
                 ..default()
             });
 
@@ -353,7 +385,11 @@ pub fn spawn_platform_sub_section(
             seg.spawn(PbrBundle {
                 mesh: props.mesh_graffiti_panel.clone(),
                 material: signage.mat_graffiti_echo.clone(),
-                transform: Transform::from_xyz(wall_x - if is_even { 0.23 } else { -0.23 }, 2.2, 8.0),
+                transform: Transform::from_xyz(
+                    wall_x - if is_even { 0.23 } else { -0.23 },
+                    2.2,
+                    8.0,
+                ),
                 ..default()
             });
             seg.spawn(PointLightBundle {
@@ -406,13 +442,15 @@ pub fn spawn_junction_sub_section(
             seg.spawn(PbrBundle {
                 mesh: props.mesh_pipe_medium.clone(),
                 material: props.mat_pipe_red.clone(),
-                transform: Transform::from_xyz(0.0, 4.6, 2.0).with_rotation(Quat::from_rotation_z(std::f32::consts::FRAC_PI_2)),
+                transform: Transform::from_xyz(0.0, 4.6, 2.0)
+                    .with_rotation(Quat::from_rotation_z(std::f32::consts::FRAC_PI_2)),
                 ..default()
             });
             seg.spawn(PbrBundle {
                 mesh: props.mesh_pipe_large.clone(),
                 material: props.mat_pipe_yellow.clone(),
-                transform: Transform::from_xyz(0.0, 4.9, -6.0).with_rotation(Quat::from_rotation_z(std::f32::consts::FRAC_PI_2)),
+                transform: Transform::from_xyz(0.0, 4.9, -6.0)
+                    .with_rotation(Quat::from_rotation_z(std::f32::consts::FRAC_PI_2)),
                 ..default()
             });
         }
@@ -428,7 +466,11 @@ pub fn spawn_junction_sub_section(
                 PbrBundle {
                     mesh: env.mesh_vent_fan.clone(),
                     material: env.mat_vent_blades.clone(),
-                    transform: Transform::from_xyz(side_x + if is_even { 0.15 } else { -0.15 }, 2.8, -4.0),
+                    transform: Transform::from_xyz(
+                        side_x + if is_even { 0.15 } else { -0.15 },
+                        2.8,
+                        -4.0,
+                    ),
                     ..default()
                 },
                 EnvironmentFan,
@@ -447,13 +489,15 @@ pub fn spawn_junction_sub_section(
                 seg.spawn(PbrBundle {
                     mesh: props.mesh_cart_wheel.clone(),
                     material: env.mat_steel_truss.clone(),
-                    transform: Transform::from_xyz(cart_x - 0.7, 0.24, wz).with_rotation(Quat::from_rotation_z(std::f32::consts::FRAC_PI_2)),
+                    transform: Transform::from_xyz(cart_x - 0.7, 0.24, wz)
+                        .with_rotation(Quat::from_rotation_z(std::f32::consts::FRAC_PI_2)),
                     ..default()
                 });
                 seg.spawn(PbrBundle {
                     mesh: props.mesh_cart_wheel.clone(),
                     material: env.mat_steel_truss.clone(),
-                    transform: Transform::from_xyz(cart_x + 0.7, 0.24, wz).with_rotation(Quat::from_rotation_z(std::f32::consts::FRAC_PI_2)),
+                    transform: Transform::from_xyz(cart_x + 0.7, 0.24, wz)
+                        .with_rotation(Quat::from_rotation_z(std::f32::consts::FRAC_PI_2)),
                     ..default()
                 });
             }
@@ -466,7 +510,8 @@ pub fn spawn_junction_sub_section(
             seg.spawn(PbrBundle {
                 mesh: props.mesh_cable_spool.clone(),
                 material: props.mat_bench_wood.clone(),
-                transform: Transform::from_xyz(cart_x + 0.3, 0.65, 4.6).with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
+                transform: Transform::from_xyz(cart_x + 0.3, 0.65, 4.6)
+                    .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
                 ..default()
             });
         }
@@ -513,7 +558,11 @@ pub fn spawn_substation_sub_section(
                 seg.spawn(PbrBundle {
                     mesh: props.mesh_transformer_fin.clone(),
                     material: props.mat_transformer_metal.clone(),
-                    transform: Transform::from_xyz(sub_x + if is_even { 0.85 } else { -0.85 }, 1.4, fz),
+                    transform: Transform::from_xyz(
+                        sub_x + if is_even { 0.85 } else { -0.85 },
+                        1.4,
+                        fz,
+                    ),
                     ..default()
                 });
             }
@@ -531,7 +580,12 @@ pub fn spawn_substation_sub_section(
                 PbrBundle {
                     mesh: props.mesh_electric_arc.clone(),
                     material: props.mat_arc_spark.clone(),
-                    transform: Transform::from_xyz(sub_x + if is_even { 0.4 } else { -0.4 }, 2.9, 0.0).with_rotation(Quat::from_rotation_y(0.4)),
+                    transform: Transform::from_xyz(
+                        sub_x + if is_even { 0.4 } else { -0.4 },
+                        2.9,
+                        0.0,
+                    )
+                    .with_rotation(Quat::from_rotation_y(0.4)),
                     visibility: Visibility::Hidden,
                     ..default()
                 },
@@ -566,7 +620,8 @@ pub fn spawn_substation_sub_section(
             seg.spawn(PbrBundle {
                 mesh: props.mesh_graffiti_panel.clone(),
                 material: props.mat_graffiti_cyan.clone(),
-                transform: Transform::from_xyz(sub_x + if is_even { 0.9 } else { -0.9 }, 0.2, 0.0).with_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2)),
+                transform: Transform::from_xyz(sub_x + if is_even { 0.9 } else { -0.9 }, 0.2, 0.0)
+                    .with_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2)),
                 ..default()
             });
             seg.spawn(PointLightBundle {
@@ -616,19 +671,33 @@ pub fn spawn_collapse_sub_section(
             seg.spawn(PbrBundle {
                 mesh: props.mesh_rubble_chunk_large.clone(),
                 material: props.mat_rubble_concrete.clone(),
-                transform: Transform::from_xyz(pile_x, 0.35, -2.0).with_rotation(Quat::from_euler(EulerRot::XYZ, 0.2, 0.5, -0.3)),
+                transform: Transform::from_xyz(pile_x, 0.35, -2.0).with_rotation(Quat::from_euler(
+                    EulerRot::XYZ,
+                    0.2,
+                    0.5,
+                    -0.3,
+                )),
                 ..default()
             });
             seg.spawn(PbrBundle {
                 mesh: props.mesh_rubble_chunk_med.clone(),
                 material: props.mat_rubble_concrete.clone(),
-                transform: Transform::from_xyz(pile_x + if is_even { 0.4 } else { -0.4 }, 0.25, 0.5).with_rotation(Quat::from_euler(EulerRot::XYZ, -0.3, 0.1, 0.4)),
+                transform: Transform::from_xyz(
+                    pile_x + if is_even { 0.4 } else { -0.4 },
+                    0.25,
+                    0.5,
+                )
+                .with_rotation(Quat::from_euler(EulerRot::XYZ, -0.3, 0.1, 0.4)),
                 ..default()
             });
             seg.spawn(PbrBundle {
                 mesh: props.mesh_rubble_chunk_small.clone(),
                 material: props.mat_rubble_concrete.clone(),
-                transform: Transform::from_xyz(pile_x - if is_even { 0.3 } else { -0.3 }, 0.15, -4.0),
+                transform: Transform::from_xyz(
+                    pile_x - if is_even { 0.3 } else { -0.3 },
+                    0.15,
+                    -4.0,
+                ),
                 ..default()
             });
 
@@ -636,7 +705,8 @@ pub fn spawn_collapse_sub_section(
             seg.spawn(PbrBundle {
                 mesh: props.mesh_bent_rebar.clone(),
                 material: props.mat_bent_rebar.clone(),
-                transform: Transform::from_xyz(if is_even { -3.8 } else { 3.8 }, 4.2, 2.0).with_rotation(Quat::from_euler(EulerRot::XYZ, 0.6, 0.3, 0.8)),
+                transform: Transform::from_xyz(if is_even { -3.8 } else { 3.8 }, 4.2, 2.0)
+                    .with_rotation(Quat::from_euler(EulerRot::XYZ, 0.6, 0.3, 0.8)),
                 ..default()
             });
 
@@ -685,7 +755,8 @@ pub fn spawn_collapse_sub_section(
             seg.spawn(PbrBundle {
                 mesh: props.mesh_bent_rebar.clone(),
                 material: props.mat_bent_rebar.clone(),
-                transform: Transform::from_xyz(0.0, 4.6, 0.0).with_rotation(Quat::from_rotation_z(0.35)),
+                transform: Transform::from_xyz(0.0, 4.6, 0.0)
+                    .with_rotation(Quat::from_rotation_z(0.35)),
                 ..default()
             });
         }

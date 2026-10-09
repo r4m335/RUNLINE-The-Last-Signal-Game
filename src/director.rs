@@ -1,7 +1,7 @@
-use bevy::prelude::*;
+use crate::story::DISTANCE_MILESTONES;
 use crate::types::*;
 use crate::zones::get_zone_for_distance;
-use crate::story::DISTANCE_MILESTONES;
+use bevy::prelude::*;
 
 #[derive(Clone, Copy, Debug)]
 #[allow(dead_code)]
@@ -227,12 +227,21 @@ mod tests {
 
             let director = app.world().resource::<RunDirector>();
             assert_eq!(director.active_zone_id, 1, "Director zone must reset to 1");
-            assert_eq!(director.milestone_index, 0, "Milestone index must reset to 0");
-            assert_eq!(director.profile.pattern_complexity, 1, "Complexity must reset to 1");
+            assert_eq!(
+                director.milestone_index, 0,
+                "Milestone index must reset to 0"
+            );
+            assert_eq!(
+                director.profile.pattern_complexity, 1,
+                "Complexity must reset to 1"
+            );
 
             let powerups = app.world().resource::<ActivePowerUps>();
             assert!(!powerups.shield, "Shield must not survive restart");
-            assert_eq!(powerups.overdrive_timer, 0.0, "Overdrive must not survive restart");
+            assert_eq!(
+                powerups.overdrive_timer, 0.0,
+                "Overdrive must not survive restart"
+            );
         }
 
         // 3. ADVANCE -> PAUSE -> RESUME

@@ -1,5 +1,5 @@
-use bevy::prelude::*;
 use crate::zones::ZoneConfig;
+use bevy::prelude::*;
 
 #[derive(States, Default, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum AppState {
@@ -61,11 +61,11 @@ impl Lane {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
 pub enum CharacterType {
     #[default]
-    Kai,   // Courier: Quick recovery & agile
-    Mira,  // Engineer: Energy Dash ability
-    Jax,   // Street Racer: Higher base speed & fragment gain
-    Nyx,   // Hacker: Drone Magnet boost
-    Arin,  // Ex-Security: Shield durability +
+    Kai, // Courier: Quick recovery & agile
+    Mira, // Engineer: Energy Dash ability
+    Jax,  // Street Racer: Higher base speed & fragment gain
+    Nyx,  // Hacker: Drone Magnet boost
+    Arin, // Ex-Security: Shield durability +
 }
 
 impl CharacterType {
@@ -176,6 +176,7 @@ impl Default for Player {
 pub struct ActivePowerUps {
     pub shield: bool,
     pub shield_hits: u32,
+    pub shield_absorb_flash_timer: f32,
     pub overdrive_timer: f32,
     pub magnet_timer: f32,
     pub time_break_timer: f32,
@@ -269,10 +270,10 @@ pub struct TrackSegmentMarker;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum ObstacleType {
-    LowBarrier,         // Vault over (Jump)
-    HighHangingWire,    // Duck under (Slide)
-    TallPillar,         // Lane switch block
-    StaticTrain,        // Large obstacle, climbable roof
+    LowBarrier,      // Vault over (Jump)
+    HighHangingWire, // Duck under (Slide)
+    TallPillar,      // Lane switch block
+    StaticTrain,     // Large obstacle, climbable roof
     MovingTrain { speed: f32 },
 }
 
@@ -365,10 +366,10 @@ pub struct MilestoneReachedEvent {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum EnemyType {
-    Scout,       // Level 1: Predictable pursuit follower
-    Hunter,      // Level 2: Predictive interceptor (reads lateral player velocity)
-    Heavy,       // Level 3: Tactical route blocker (suppression zone ahead)
-    EchoHunter,  // Elite: Environmental anomaly manipulator
+    Scout,      // Level 1: Predictable pursuit follower
+    Hunter,     // Level 2: Predictive interceptor (reads lateral player velocity)
+    Heavy,      // Level 3: Tactical route blocker (suppression zone ahead)
+    EchoHunter, // Elite: Environmental anomaly manipulator
 }
 
 #[derive(Component, Debug, Clone)]

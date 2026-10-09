@@ -1,5 +1,5 @@
-use bevy::prelude::*;
 use crate::types::*;
+use bevy::prelude::*;
 
 #[derive(Resource)]
 pub struct BenchmarkRunner {
@@ -48,13 +48,7 @@ impl Plugin for BenchmarkPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<BenchmarkRunner>()
             .add_systems(Startup, check_cli_benchmark_start)
-            .add_systems(
-                Update,
-                (
-                    handle_benchmark_hotkey,
-                    run_benchmark_step,
-                ),
-            );
+            .add_systems(Update, (handle_benchmark_hotkey, run_benchmark_step));
     }
 }
 
@@ -214,7 +208,9 @@ fn run_benchmark_step(
 
 fn print_and_save_benchmark_report(results: &[BenchmarkRow]) {
     println!("\n==========================================================================================");
-    println!("                          RUNLINE ENGINE PROFILING RESULTS                               ");
+    println!(
+        "                          RUNLINE ENGINE PROFILING RESULTS                               "
+    );
     println!("==========================================================================================");
 
     let mut markdown = String::new();

@@ -1,58 +1,53 @@
-mod types;
-mod zones;
-mod director;
-mod story;
 mod audio;
-mod player;
-mod obstacles;
-mod collectibles;
-mod enemies;
-mod track;
-mod ui;
-mod patterns;
-mod pooling;
 mod benchmark;
+mod collectibles;
+mod director;
+mod enemies;
 mod environment;
-mod environment_props;
 mod environment_lighting;
+mod environment_props;
 mod environment_signage;
+mod obstacles;
 mod old_metro;
 mod old_metro_landmarks;
+mod patterns;
+mod player;
+mod pooling;
+mod story;
+mod track;
+mod types;
+mod ui;
+mod zones;
 
-use bevy::prelude::*;
-use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, EntityCountDiagnosticsPlugin};
-use types::*;
-use director::DirectorPlugin;
 use audio::AudioSystemPlugin;
-use player::PlayerPlugin;
-use track::TrackPlugin;
-use obstacles::ObstaclePlugin;
-use collectibles::CollectiblePlugin;
-use enemies::EnemyPlugin;
-use ui::UiPlugin;
-use pooling::PoolingPlugin;
 use benchmark::BenchmarkPlugin;
+use bevy::diagnostic::{EntityCountDiagnosticsPlugin, FrameTimeDiagnosticsPlugin};
+use bevy::prelude::*;
+use collectibles::CollectiblePlugin;
+use director::DirectorPlugin;
+use enemies::EnemyPlugin;
 use environment::EnvironmentPlugin;
 use environment_lighting::EnvironmentLightingPlugin;
+use obstacles::ObstaclePlugin;
+use player::PlayerPlugin;
+use pooling::PoolingPlugin;
+use track::TrackPlugin;
+use types::*;
+use ui::UiPlugin;
 
 fn main() {
     App::new()
-        .add_plugins(
-            DefaultPlugins.set(WindowPlugin {
-                primary_window: Some(Window {
-                    title: "RUNLINE — The Last Signal (Aurelia 2097)".to_string(),
-                    resolution: (1280.0_f32, 720.0_f32).into(),
-                    resizable: true,
-                    ..default()
-                }),
+        .add_plugins(DefaultPlugins.set(WindowPlugin {
+            primary_window: Some(Window {
+                title: "RUNLINE — The Last Signal (Aurelia 2097)".to_string(),
+                resolution: (1280.0_f32, 720.0_f32).into(),
+                resizable: true,
                 ..default()
             }),
-        )
+            ..default()
+        }))
         // Performance instrumentation diagnostics
-        .add_plugins((
-            FrameTimeDiagnosticsPlugin,
-            EntityCountDiagnosticsPlugin,
-        ))
+        .add_plugins((FrameTimeDiagnosticsPlugin, EntityCountDiagnosticsPlugin))
         // Game States & Core Resources
         .init_state::<AppState>()
         .init_resource::<GameRunStats>()
@@ -93,7 +88,8 @@ fn setup_scene(mut commands: Commands) {
     // 3D Third-Person Follow Camera
     commands.spawn((
         Camera3dBundle {
-            transform: Transform::from_xyz(0.0, 3.8, 6.8).looking_at(Vec3::new(0.0, 1.4, -6.0), Vec3::Y),
+            transform: Transform::from_xyz(0.0, 3.8, 6.8)
+                .looking_at(Vec3::new(0.0, 1.4, -6.0), Vec3::Y),
             ..default()
         },
         MainCamera,
@@ -146,7 +142,11 @@ fn camera_follow_player(
     let target_z = p_trans.translation.z + 6.8 + speed_factor * 0.9;
 
     // Stumble & Boss encounter tension screen-shake
-    let boss_shake = if boss_state.is_active { (t * 24.0).sin() * 0.06 } else { 0.0 };
+    let boss_shake = if boss_state.is_active {
+        (t * 24.0).sin() * 0.06
+    } else {
+        0.0
+    };
     let shake_x = if stats.stumble_intensity > 0.0 {
         (t * 35.0).sin() * stats.stumble_intensity * 0.30 + boss_shake
     } else {
@@ -186,7 +186,8 @@ fn handle_run_reset_camera(
 ) {
     for _ in events.read() {
         if let Ok(mut c_trans) = cam_q.get_single_mut() {
-            *c_trans = Transform::from_xyz(0.0, 3.8, 6.8).looking_at(Vec3::new(0.0, 1.4, -6.0), Vec3::Y);
+            *c_trans =
+                Transform::from_xyz(0.0, 3.8, 6.8).looking_at(Vec3::new(0.0, 1.4, -6.0), Vec3::Y);
         }
     }
 }

@@ -1,8 +1,10 @@
-use bevy::prelude::*;
-use bevy::diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin, EntityCountDiagnosticsPlugin};
+use crate::story::DATA_CHIP_LOGS;
 use crate::types::*;
 use crate::zones::get_zone_for_distance;
-use crate::story::DATA_CHIP_LOGS;
+use bevy::diagnostic::{
+    DiagnosticsStore, EntityCountDiagnosticsPlugin, FrameTimeDiagnosticsPlugin,
+};
+use bevy::prelude::*;
 
 #[derive(Component)]
 pub struct HudRoot;
@@ -113,13 +115,7 @@ impl Plugin for UiPlugin {
                 Update,
                 handle_pause_shortcuts.run_if(in_state(AppState::Paused)),
             )
-            .add_systems(
-                Update,
-                (
-                    button_interaction_system,
-                    menu_actions_system,
-                ),
-            );
+            .add_systems(Update, (button_interaction_system, menu_actions_system));
     }
 }
 
@@ -635,23 +631,91 @@ fn setup_hud(mut commands: Commands) {
 fn update_hud_display(
     stats: Res<GameRunStats>,
     powerups: Res<ActivePowerUps>,
-    mut dist_q: Query<&mut Text, (With<HudDistanceText>, Without<HudFragmentsText>, Without<HudDataChipsText>, Without<HudScoreText>, Without<HudZoneText>, Without<HudPowerupText>)>,
-    mut frag_q: Query<&mut Text, (With<HudFragmentsText>, Without<HudDistanceText>, Without<HudDataChipsText>, Without<HudScoreText>, Without<HudZoneText>, Without<HudPowerupText>)>,
-    mut chip_q: Query<&mut Text, (With<HudDataChipsText>, Without<HudDistanceText>, Without<HudFragmentsText>, Without<HudScoreText>, Without<HudZoneText>, Without<HudPowerupText>)>,
-    mut score_q: Query<&mut Text, (With<HudScoreText>, Without<HudDistanceText>, Without<HudFragmentsText>, Without<HudDataChipsText>, Without<HudZoneText>, Without<HudPowerupText>)>,
-    mut zone_q: Query<&mut Text, (With<HudZoneText>, Without<HudDistanceText>, Without<HudFragmentsText>, Without<HudDataChipsText>, Without<HudScoreText>, Without<HudPowerupText>)>,
-    mut pow_q: Query<&mut Text, (With<HudPowerupText>, Without<HudDistanceText>, Without<HudFragmentsText>, Without<HudDataChipsText>, Without<HudScoreText>, Without<HudZoneText>)>,
+    mut dist_q: Query<
+        &mut Text,
+        (
+            With<HudDistanceText>,
+            Without<HudFragmentsText>,
+            Without<HudDataChipsText>,
+            Without<HudScoreText>,
+            Without<HudZoneText>,
+            Without<HudPowerupText>,
+        ),
+    >,
+    mut frag_q: Query<
+        &mut Text,
+        (
+            With<HudFragmentsText>,
+            Without<HudDistanceText>,
+            Without<HudDataChipsText>,
+            Without<HudScoreText>,
+            Without<HudZoneText>,
+            Without<HudPowerupText>,
+        ),
+    >,
+    mut chip_q: Query<
+        &mut Text,
+        (
+            With<HudDataChipsText>,
+            Without<HudDistanceText>,
+            Without<HudFragmentsText>,
+            Without<HudScoreText>,
+            Without<HudZoneText>,
+            Without<HudPowerupText>,
+        ),
+    >,
+    mut score_q: Query<
+        &mut Text,
+        (
+            With<HudScoreText>,
+            Without<HudDistanceText>,
+            Without<HudFragmentsText>,
+            Without<HudDataChipsText>,
+            Without<HudZoneText>,
+            Without<HudPowerupText>,
+        ),
+    >,
+    mut zone_q: Query<
+        &mut Text,
+        (
+            With<HudZoneText>,
+            Without<HudDistanceText>,
+            Without<HudFragmentsText>,
+            Without<HudDataChipsText>,
+            Without<HudScoreText>,
+            Without<HudPowerupText>,
+        ),
+    >,
+    mut pow_q: Query<
+        &mut Text,
+        (
+            With<HudPowerupText>,
+            Without<HudDistanceText>,
+            Without<HudFragmentsText>,
+            Without<HudDataChipsText>,
+            Without<HudScoreText>,
+            Without<HudZoneText>,
+        ),
+    >,
 ) {
     if let Ok(mut t) = dist_q.get_single_mut() {
-        t.sections[0].value = format!("DIST: {:05.0} M  //  VEL: {:.1} M/S", stats.distance, stats.speed);
+        t.sections[0].value = format!(
+            "DIST: {:05.0} M  //  VEL: {:.1} M/S",
+            stats.distance, stats.speed
+        );
     }
     if let Ok(mut t) = frag_q.get_single_mut() {
         let pip_count = ((stats.fragments % 10) as usize).max(1);
-        let bar: String = (0..10).map(|i| if i < pip_count { '■' } else { '□' }).collect();
+        let bar: String = (0..10)
+            .map(|i| if i < pip_count { '■' } else { '□' })
+            .collect();
         t.sections[0].value = format!("ECHO RESONANCE [{}] {:03}", bar, stats.fragments);
     }
     if let Ok(mut t) = chip_q.get_single_mut() {
-        t.sections[0].value = format!("DATA CHIPS: [{:02}/05]  //  COMBO: ×{:.1}", stats.data_chips, stats.multiplier);
+        t.sections[0].value = format!(
+            "DATA CHIPS: [{:02}/05]  //  COMBO: ×{:.1}",
+            stats.data_chips, stats.multiplier
+        );
     }
     if let Ok(mut t) = score_q.get_single_mut() {
         t.sections[0].value = format!("SCORE: {:07}", stats.score);
@@ -724,12 +788,24 @@ fn update_perf_overlay(
         let variant = crate::old_metro::get_old_metro_variant(stats.distance);
         text.sections[0].value = format!(
             "{:.1} FPS | {:.2}ms | Ent: {} | Lights: {} | Pool: {} | Metro: {:?} | [{}]",
-            fps, frame_time, entity_count, light_count, pooled_count, variant, quality.tier.label()
+            fps,
+            frame_time,
+            entity_count,
+            light_count,
+            pooled_count,
+            variant,
+            quality.tier.label()
         );
     } else {
         text.sections[0].value = format!(
             "{:.1} FPS | {:.2}ms | Ent: {} | Obs: {} | Lights: {} | Pool: {} | [{}]",
-            fps, frame_time, entity_count, active_obstacles, light_count, pooled_count, quality.tier.label()
+            fps,
+            frame_time,
+            entity_count,
+            active_obstacles,
+            light_count,
+            pooled_count,
+            quality.tier.label()
         );
     }
 }
@@ -805,7 +881,10 @@ fn update_boss_ui(
         *border = BorderColor(Color::srgb(0.0, 0.9, 0.6));
         title.sections[0].value = "✔ ELITE THREAT NEUTRALIZED ✔".to_string();
         title.sections[0].style.color = Color::srgb(0.0, 0.9, 0.6);
-        status.sections[0].value = format!("+{} ECHO FRAGMENTS ACQUIRED // RESUMING RUN", ev.reward_fragments);
+        status.sections[0].value = format!(
+            "+{} ECHO FRAGMENTS ACQUIRED // RESUMING RUN",
+            ev.reward_fragments
+        );
     }
 
     // 3. Update active countdown and display
@@ -813,8 +892,7 @@ fn update_boss_ui(
         style.display = Display::Flex;
         status.sections[0].value = format!(
             "SURVIVE GAUNTLET // {:.1}s REMAINING // INTEGRITY: {:.0}%",
-            boss_state.time_remaining,
-            boss_state.boss_health
+            boss_state.time_remaining, boss_state.boss_health
         );
     } else if boss_state.victory_banner_timer > 0.0 {
         boss_state.victory_banner_timer -= dt;
@@ -826,7 +904,10 @@ fn update_boss_ui(
 
 fn update_threat_alert_ui(
     threat_alerts: Res<ThreatAlertState>,
-    mut box_q: Query<(&mut Style, &mut BackgroundColor, &mut BorderColor), With<HudThreatBannerBox>>,
+    mut box_q: Query<
+        (&mut Style, &mut BackgroundColor, &mut BorderColor),
+        With<HudThreatBannerBox>,
+    >,
     mut text_q: Query<&mut Text, With<HudThreatBannerText>>,
 ) {
     let (mut style, mut bg, mut border) = match box_q.get_single_mut() {
@@ -842,26 +923,33 @@ fn update_threat_alert_ui(
         style.display = Display::Flex;
         *bg = BackgroundColor(Color::srgba(0.28, 0.02, 0.05, 0.95));
         *border = BorderColor(Color::srgb(1.0, 0.1, 0.2));
-        text.sections[0].value = "⚠ SCOUT PURSUIT LOCK // REAR 2.0M // RECOVER BALANCE! ⚠".to_string();
+        text.sections[0].value =
+            "⚠ SCOUT PURSUIT LOCK // REAR 2.0M // RECOVER BALANCE! ⚠".to_string();
         text.sections[0].style.color = Color::srgb(1.0, 0.2, 0.3);
     } else if let Some(lane) = threat_alerts.hunter_telegraph_lane {
         style.display = Display::Flex;
         *bg = BackgroundColor(Color::srgba(0.28, 0.04, 0.04, 0.95));
         *border = BorderColor(Color::srgb(1.0, 0.15, 0.25));
-        text.sections[0].value = format!("⚠ THREAT LOCK: HUNTER LASER // {:?} LANE // EVADE NOW! ⚠", lane).to_uppercase();
+        text.sections[0].value = format!(
+            "⚠ THREAT LOCK: HUNTER LASER // {:?} LANE // EVADE NOW! ⚠",
+            lane
+        )
+        .to_uppercase();
         text.sections[0].style.color = Color::srgb(1.0, 0.25, 0.35);
     } else if let Some(lane) = threat_alerts.heavy_warning_lane {
         style.display = Display::Flex;
         *bg = BackgroundColor(Color::srgba(0.04, 0.12, 0.22, 0.95));
         *border = BorderColor(Color::srgb(0.0, 0.85, 1.0));
-        text.sections[0].value = format!("⚠ HEAVY ROUTE BLOCKER // {:?} LANE DENIED // TRANSITION REQUIRED ⚠", lane).to_uppercase();
+        text.sections[0].value = format!(
+            "⚠ HEAVY ROUTE BLOCKER // {:?} LANE DENIED // TRANSITION REQUIRED ⚠",
+            lane
+        )
+        .to_uppercase();
         text.sections[0].style.color = Color::srgb(0.2, 0.95, 1.0);
     } else {
         style.display = Display::None;
     }
 }
-
-
 
 fn handle_global_shortcuts(
     keyboard: Res<ButtonInput<KeyCode>>,
@@ -938,7 +1026,11 @@ fn setup_pause_menu(mut commands: Commands) {
             .with_children(|btn| {
                 btn.spawn(TextBundle::from_section(
                     "RESUME RUN [ESC]",
-                    TextStyle { font_size: 18.0, color: Color::WHITE, ..default() },
+                    TextStyle {
+                        font_size: 18.0,
+                        color: Color::WHITE,
+                        ..default()
+                    },
                 ));
             });
 
@@ -958,7 +1050,11 @@ fn setup_pause_menu(mut commands: Commands) {
             .with_children(|btn| {
                 btn.spawn(TextBundle::from_section(
                     "RESTART",
-                    TextStyle { font_size: 18.0, color: Color::WHITE, ..default() },
+                    TextStyle {
+                        font_size: 18.0,
+                        color: Color::WHITE,
+                        ..default()
+                    },
                 ));
             });
 
@@ -978,7 +1074,11 @@ fn setup_pause_menu(mut commands: Commands) {
             .with_children(|btn| {
                 btn.spawn(TextBundle::from_section(
                     "QUIT TO MAIN MENU",
-                    TextStyle { font_size: 18.0, color: Color::WHITE, ..default() },
+                    TextStyle {
+                        font_size: 18.0,
+                        color: Color::WHITE,
+                        ..default()
+                    },
                 ));
             });
         });
@@ -987,10 +1087,7 @@ fn setup_pause_menu(mut commands: Commands) {
 // -------------------------------------------------------------
 // 4. GAME OVER SCREEN
 // -------------------------------------------------------------
-fn setup_game_over(
-    mut commands: Commands,
-    stats: Res<GameRunStats>,
-) {
+fn setup_game_over(mut commands: Commands, stats: Res<GameRunStats>) {
     let zone = get_zone_for_distance(stats.distance);
 
     commands
@@ -1047,27 +1144,51 @@ fn setup_game_over(
             .with_children(|box_node| {
                 box_node.spawn(TextBundle::from_section(
                     format!("DISTANCE SURVIVED:    {:.0} M", stats.distance),
-                    TextStyle { font_size: 18.0, color: Color::WHITE, ..default() },
+                    TextStyle {
+                        font_size: 18.0,
+                        color: Color::WHITE,
+                        ..default()
+                    },
                 ));
                 box_node.spawn(TextBundle::from_section(
                     format!("ECHO FRAGMENTS:       {}", stats.fragments),
-                    TextStyle { font_size: 18.0, color: Color::srgb(0.0, 0.9, 1.0), ..default() },
+                    TextStyle {
+                        font_size: 18.0,
+                        color: Color::srgb(0.0, 0.9, 1.0),
+                        ..default()
+                    },
                 ));
                 box_node.spawn(TextBundle::from_section(
                     format!("DATA CHIPS RECOVERED: {}", stats.data_chips),
-                    TextStyle { font_size: 18.0, color: Color::srgb(1.0, 0.85, 0.2), ..default() },
+                    TextStyle {
+                        font_size: 18.0,
+                        color: Color::srgb(1.0, 0.85, 0.2),
+                        ..default()
+                    },
                 ));
                 box_node.spawn(TextBundle::from_section(
                     format!("ZONE REACHED:         {}", zone.name),
-                    TextStyle { font_size: 18.0, color: Color::srgb(1.0, 0.6, 0.1), ..default() },
+                    TextStyle {
+                        font_size: 18.0,
+                        color: Color::srgb(1.0, 0.6, 0.1),
+                        ..default()
+                    },
                 ));
                 box_node.spawn(TextBundle::from_section(
                     format!("TOTAL SCORE:          {}", stats.score),
-                    TextStyle { font_size: 20.0, color: Color::srgb(0.2, 1.0, 0.5), ..default() },
+                    TextStyle {
+                        font_size: 20.0,
+                        color: Color::srgb(0.2, 1.0, 0.5),
+                        ..default()
+                    },
                 ));
                 box_node.spawn(TextBundle::from_section(
                     format!("ALL-TIME BEST:        {:.0} M", stats.best_distance),
-                    TextStyle { font_size: 16.0, color: Color::srgb(0.7, 0.8, 0.9), ..default() },
+                    TextStyle {
+                        font_size: 16.0,
+                        color: Color::srgb(0.7, 0.8, 0.9),
+                        ..default()
+                    },
                 ));
             });
 
@@ -1097,7 +1218,11 @@ fn setup_game_over(
                 .with_children(|btn| {
                     btn.spawn(TextBundle::from_section(
                         "RUN AGAIN [ENTER]",
-                        TextStyle { font_size: 18.0, color: Color::WHITE, ..default() },
+                        TextStyle {
+                            font_size: 18.0,
+                            color: Color::WHITE,
+                            ..default()
+                        },
                     ));
                 });
 
@@ -1117,7 +1242,11 @@ fn setup_game_over(
                 .with_children(|btn| {
                     btn.spawn(TextBundle::from_section(
                         "MAIN MENU",
-                        TextStyle { font_size: 18.0, color: Color::WHITE, ..default() },
+                        TextStyle {
+                            font_size: 18.0,
+                            color: Color::WHITE,
+                            ..default()
+                        },
                     ));
                 });
             });
@@ -1215,7 +1344,11 @@ fn setup_story_log_menu(mut commands: Commands) {
             .with_children(|btn| {
                 btn.spawn(TextBundle::from_section(
                     "BACK TO MENU",
-                    TextStyle { font_size: 16.0, color: Color::WHITE, ..default() },
+                    TextStyle {
+                        font_size: 16.0,
+                        color: Color::WHITE,
+                        ..default()
+                    },
                 ));
             });
         });
@@ -1265,22 +1398,34 @@ fn menu_actions_system(
     let mut do_next_char = false;
 
     for i in start_q.iter() {
-        if *i == Interaction::Pressed { do_start = true; }
+        if *i == Interaction::Pressed {
+            do_start = true;
+        }
     }
     for i in restart_q.iter() {
-        if *i == Interaction::Pressed { do_restart = true; }
+        if *i == Interaction::Pressed {
+            do_restart = true;
+        }
     }
     for i in resume_q.iter() {
-        if *i == Interaction::Pressed { do_resume = true; }
+        if *i == Interaction::Pressed {
+            do_resume = true;
+        }
     }
     for i in archive_q.iter() {
-        if *i == Interaction::Pressed { do_archive = true; }
+        if *i == Interaction::Pressed {
+            do_archive = true;
+        }
     }
     for i in back_q.iter() {
-        if *i == Interaction::Pressed { do_back = true; }
+        if *i == Interaction::Pressed {
+            do_back = true;
+        }
     }
     for i in next_char_q.iter() {
-        if *i == Interaction::Pressed { do_next_char = true; }
+        if *i == Interaction::Pressed {
+            do_next_char = true;
+        }
     }
 
     if keyboard.just_pressed(KeyCode::Enter) {

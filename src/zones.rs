@@ -176,8 +176,14 @@ mod tests {
 
     #[test]
     fn test_boss_milestones_align_with_zones() {
-        assert_eq!(BOSS_MILESTONE_4_DISTANCE, ZONES[3].start_distance, "Milestone 4 boss must trigger at Zone 4 start");
-        assert_eq!(BOSS_MILESTONE_7_DISTANCE, ZONES[6].start_distance, "Milestone 7 boss must trigger at Zone 7 start");
+        assert_eq!(
+            BOSS_MILESTONE_4_DISTANCE, ZONES[3].start_distance,
+            "Milestone 4 boss must trigger at Zone 4 start"
+        );
+        assert_eq!(
+            BOSS_MILESTONE_7_DISTANCE, ZONES[6].start_distance,
+            "Milestone 7 boss must trigger at Zone 7 start"
+        );
     }
 
     #[test]

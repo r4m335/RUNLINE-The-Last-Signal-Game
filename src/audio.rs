@@ -1,8 +1,8 @@
+use crate::types::{BossDefeatedEvent, BossStartedEvent, SoundEffect};
 use bevy::prelude::*;
 use std::fs::{self, File};
 use std::io::Write;
 use std::path::Path;
-use crate::types::{SoundEffect, BossStartedEvent, BossDefeatedEvent};
 
 #[derive(Resource)]
 pub struct SoundHandles {
@@ -52,12 +52,12 @@ fn write_wav_file(path: &Path, samples: &[i16], sample_rate: u32) {
     // "fmt " sub-chunk
     let _ = file.write_all(b"fmt ");
     let _ = file.write_all(&16u32.to_le_bytes()); // subchunk1 size (16 for PCM)
-    let _ = file.write_all(&1u16.to_le_bytes());  // audio format (1 = PCM)
-    let _ = file.write_all(&1u16.to_le_bytes());  // num channels (1 = mono)
+    let _ = file.write_all(&1u16.to_le_bytes()); // audio format (1 = PCM)
+    let _ = file.write_all(&1u16.to_le_bytes()); // num channels (1 = mono)
     let _ = file.write_all(&sample_rate.to_le_bytes()); // sample rate
     let byte_rate = sample_rate * 2;
     let _ = file.write_all(&byte_rate.to_le_bytes()); // byte rate
-    let _ = file.write_all(&2u16.to_le_bytes());  // block align (num channels * bits/8)
+    let _ = file.write_all(&2u16.to_le_bytes()); // block align (num channels * bits/8)
     let _ = file.write_all(&16u16.to_le_bytes()); // bits per sample
 
     // "data" sub-chunk
@@ -101,7 +101,11 @@ pub fn generate_sound_assets() {
 
     // 7. Shield Break: Harmonic crack and frequency drop (0.4s)
     let shield_samples = generate_pitch_sweep(sample_rate, 0.35, 880.0, 120.0, 0.8);
-    write_wav_file(&base_dir.join("shield_break.wav"), &shield_samples, sample_rate);
+    write_wav_file(
+        &base_dir.join("shield_break.wav"),
+        &shield_samples,
+        sample_rate,
+    );
 
     // 8. Crash: Low rumble and impact (0.5s)
     let crash_samples = generate_crash(sample_rate, 0.55, 0.9);
@@ -112,8 +116,13 @@ pub fn generate_sound_assets() {
     write_wav_file(&base_dir.join("dash.wav"), &dash_samples, sample_rate);
 
     // 10. Transition: Dramatic synth milestone chime (0.6s)
-    let trans_samples = generate_arpeggio(sample_rate, &[523.25, 659.25, 783.99, 1046.50], 0.15, 0.8);
-    write_wav_file(&base_dir.join("transition.wav"), &trans_samples, sample_rate);
+    let trans_samples =
+        generate_arpeggio(sample_rate, &[523.25, 659.25, 783.99, 1046.50], 0.15, 0.8);
+    write_wav_file(
+        &base_dir.join("transition.wav"),
+        &trans_samples,
+        sample_rate,
+    );
 }
 
 fn generate_tone(sample_rate: u32, duration: f32, freq: f32, volume: f32) -> Vec<i16> {
@@ -128,7 +137,13 @@ fn generate_tone(sample_rate: u32, duration: f32, freq: f32, volume: f32) -> Vec
     out
 }
 
-fn generate_pitch_sweep(sample_rate: u32, duration: f32, start_f: f32, end_f: f32, volume: f32) -> Vec<i16> {
+fn generate_pitch_sweep(
+    sample_rate: u32,
+    duration: f32,
+    start_f: f32,
+    end_f: f32,
+    volume: f32,
+) -> Vec<i16> {
     let count = (sample_rate as f32 * duration) as usize;
     let mut out = Vec::with_capacity(count);
     let mut phase = 0.0f32;
@@ -267,4 +282,3 @@ fn handle_boss_audio_events(
         sfx.send(SoundEffect::PowerupPickup);
     }
 }
-

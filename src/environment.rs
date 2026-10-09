@@ -1,6 +1,6 @@
-use bevy::prelude::*;
 use crate::types::*;
 use crate::zones::get_zone_for_distance;
+use bevy::prelude::*;
 
 #[derive(Component)]
 pub struct EnvironmentFan;
@@ -79,10 +79,7 @@ impl Plugin for EnvironmentPlugin {
         app.add_systems(Startup, init_environment_assets)
             .add_systems(
                 Update,
-                (
-                    animate_environment_fans,
-                )
-                    .run_if(in_state(AppState::InGame)),
+                (animate_environment_fans,).run_if(in_state(AppState::InGame)),
             );
     }
 }
@@ -388,7 +385,8 @@ pub fn spawn_modular_environment_slice(
             seg.spawn(PbrBundle {
                 mesh: env.mesh_cable_bundle.clone(),
                 material: env.mat_cables.clone(),
-                transform: Transform::from_xyz(-4.5, 0.28, 0.0).with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
+                transform: Transform::from_xyz(-4.5, 0.28, 0.0)
+                    .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
                 ..default()
             });
             seg.spawn(PbrBundle {
@@ -400,7 +398,8 @@ pub fn spawn_modular_environment_slice(
             seg.spawn(PbrBundle {
                 mesh: env.mesh_cable_bundle.clone(),
                 material: env.mat_cables.clone(),
-                transform: Transform::from_xyz(4.5, 0.28, 0.0).with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
+                transform: Transform::from_xyz(4.5, 0.28, 0.0)
+                    .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
                 ..default()
             });
 
@@ -504,13 +503,15 @@ pub fn spawn_modular_environment_slice(
             seg.spawn(PbrBundle {
                 mesh: env.mesh_catenary_wire.clone(),
                 material: env.mat_catenary_wire.clone(),
-                transform: Transform::from_xyz(-1.2, 4.4, 0.0).with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
+                transform: Transform::from_xyz(-1.2, 4.4, 0.0)
+                    .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
                 ..default()
             });
             seg.spawn(PbrBundle {
                 mesh: env.mesh_catenary_wire.clone(),
                 material: env.mat_catenary_wire.clone(),
-                transform: Transform::from_xyz(1.2, 4.4, 0.0).with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
+                transform: Transform::from_xyz(1.2, 4.4, 0.0)
+                    .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
                 ..default()
             });
 
@@ -577,14 +578,22 @@ pub fn spawn_modular_environment_slice(
             seg.spawn(PbrBundle {
                 mesh: env.mesh_vent_housing.clone(),
                 material: env.mat_vent_housing.clone(),
-                transform: Transform::from_xyz(wall_x - if is_even_segment { 0.15 } else { -0.15 }, 2.8, -6.0),
+                transform: Transform::from_xyz(
+                    wall_x - if is_even_segment { 0.15 } else { -0.15 },
+                    2.8,
+                    -6.0,
+                ),
                 ..default()
             });
             seg.spawn((
                 PbrBundle {
                     mesh: env.mesh_vent_fan.clone(),
                     material: env.mat_vent_blades.clone(),
-                    transform: Transform::from_xyz(wall_x - if is_even_segment { 0.18 } else { -0.18 }, 2.8, -6.0),
+                    transform: Transform::from_xyz(
+                        wall_x - if is_even_segment { 0.18 } else { -0.18 },
+                        2.8,
+                        -6.0,
+                    ),
                     ..default()
                 },
                 EnvironmentFan,
@@ -595,7 +604,11 @@ pub fn spawn_modular_environment_slice(
                 PbrBundle {
                     mesh: env.mesh_station_sign.clone(),
                     material: env.mat_station_sign_glow.clone(),
-                    transform: Transform::from_xyz(curb_edge_x + if is_even_segment { 0.6 } else { -0.6 }, 3.4, 4.0),
+                    transform: Transform::from_xyz(
+                        curb_edge_x + if is_even_segment { 0.6 } else { -0.6 },
+                        3.4,
+                        4.0,
+                    ),
                     ..default()
                 },
                 EnvironmentalSign,

@@ -1,6 +1,6 @@
-use bevy::prelude::*;
-use crate::types::*;
 use crate::director::RunDirector;
+use crate::types::*;
+use bevy::prelude::*;
 use rand::Rng;
 
 // ----------------------------------------------------------------------------
@@ -16,12 +16,29 @@ pub struct ScoutDrone {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum HunterState {
-    Infiltrating { approach_timer: f32 },
-    IntimidationWait { hover_timer: f32 },
-    LockingTarget { target_lane: Lane, lock_timer: f32 },
-    Telegraphing { target_lane: Lane, timer: f32, total_time: f32 },
-    Firing { target_lane: Lane, burst_timer: f32, has_resolved_hit: bool },
-    Retreating { retreat_timer: f32 },
+    Infiltrating {
+        approach_timer: f32,
+    },
+    IntimidationWait {
+        hover_timer: f32,
+    },
+    LockingTarget {
+        target_lane: Lane,
+        lock_timer: f32,
+    },
+    Telegraphing {
+        target_lane: Lane,
+        timer: f32,
+        total_time: f32,
+    },
+    Firing {
+        target_lane: Lane,
+        burst_timer: f32,
+        has_resolved_hit: bool,
+    },
+    Retreating {
+        retreat_timer: f32,
+    },
 }
 
 #[derive(Component)]
@@ -379,12 +396,7 @@ fn spawn_scout_drone(
         });
 }
 
-fn spawn_hunter_drone(
-    commands: &mut Commands,
-    assets: &EnemyAssets,
-    lane: Lane,
-    spawn_z: f32,
-) {
+fn spawn_hunter_drone(commands: &mut Commands, assets: &EnemyAssets, lane: Lane, spawn_z: f32) {
     commands
         .spawn((
             SpatialBundle {
@@ -402,7 +414,9 @@ fn spawn_hunter_drone(
             },
             HunterDrone {
                 tracking_lane: lane,
-                state: HunterState::Infiltrating { approach_timer: 0.7 },
+                state: HunterState::Infiltrating {
+                    approach_timer: 0.7,
+                },
                 eval_timer: 0.8,
                 confidence: 0.5,
             },
@@ -444,12 +458,7 @@ fn spawn_hunter_drone(
         });
 }
 
-fn spawn_heavy_blocker(
-    commands: &mut Commands,
-    assets: &EnemyAssets,
-    lane: Lane,
-    spawn_z: f32,
-) {
+fn spawn_heavy_blocker(commands: &mut Commands, assets: &EnemyAssets, lane: Lane, spawn_z: f32) {
     commands
         .spawn((
             PbrBundle {
@@ -616,7 +625,10 @@ fn update_enemy_spawning_and_pacing(
 
     let has_scout = enemies_q.iter().any(|e| e.enemy_type == EnemyType::Scout);
     let has_hunter = enemies_q.iter().any(|e| e.enemy_type == EnemyType::Hunter);
-    let heavy_count = enemies_q.iter().filter(|e| e.enemy_type == EnemyType::Heavy).count();
+    let heavy_count = enemies_q
+        .iter()
+        .filter(|e| e.enemy_type == EnemyType::Heavy)
+        .count();
 
     // 1. Level 1 Scout persistence: introduced at 600m in Zone 1 (Old Metro) for pedagogical pacing
     if (stats.distance >= 600.0 || director.active_zone_id >= 2) && !has_scout {
@@ -695,9 +707,10 @@ fn update_enemy_spawning_and_pacing(
 
             for (idx, &lane) in all_lanes.iter().enumerate() {
                 if !lane_has_obstacle[idx] {
-                    let other_route_open = all_lanes.iter().enumerate().any(|(other_idx, _)| {
-                        other_idx != idx && !lane_has_obstacle[other_idx]
-                    });
+                    let other_route_open = all_lanes
+                        .iter()
+                        .enumerate()
+                        .any(|(other_idx, _)| other_idx != idx && !lane_has_obstacle[other_idx]);
                     if other_route_open {
                         valid_lanes.push(lane);
                     }
@@ -720,7 +733,10 @@ fn update_enemy_spawning_and_pacing(
     }
 
     // 4. Milestone Boss Encounters: Zone 4 & Zone 7
-    if stats.distance >= crate::zones::BOSS_MILESTONE_4_DISTANCE && !squad_mgr.boss_spawned_milestone_4 && !squad_mgr.active_boss {
+    if stats.distance >= crate::zones::BOSS_MILESTONE_4_DISTANCE
+        && !squad_mgr.boss_spawned_milestone_4
+        && !squad_mgr.active_boss
+    {
         squad_mgr.boss_spawned_milestone_4 = true;
         squad_mgr.active_boss = true;
         let spawn_z = p_trans.translation.z - 30.0;
@@ -732,7 +748,10 @@ fn update_enemy_spawning_and_pacing(
             &mut boss_start_events,
             &mut boss_state,
         );
-    } else if stats.distance >= crate::zones::BOSS_MILESTONE_7_DISTANCE && !squad_mgr.boss_spawned_milestone_7 && !squad_mgr.active_boss {
+    } else if stats.distance >= crate::zones::BOSS_MILESTONE_7_DISTANCE
+        && !squad_mgr.boss_spawned_milestone_7
+        && !squad_mgr.active_boss
+    {
         squad_mgr.boss_spawned_milestone_7 = true;
         squad_mgr.active_boss = true;
         let spawn_z = p_trans.translation.z - 32.0;
@@ -753,7 +772,10 @@ fn update_enemy_spawning_and_pacing(
 fn update_scout_ai_fixed(
     time: Res<Time>,
     player_q: Query<(&Player, &Transform), Without<ScoutDrone>>,
-    mut scout_q: Query<(&mut Transform, &mut ActiveEnemy, &mut ScoutDrone), (With<ScoutDrone>, Without<Player>)>,
+    mut scout_q: Query<
+        (&mut Transform, &mut ActiveEnemy, &mut ScoutDrone),
+        (With<ScoutDrone>, Without<Player>),
+    >,
     stats: Res<GameRunStats>,
     powerups: Res<ActivePowerUps>,
 ) {
@@ -800,7 +822,10 @@ fn update_hunter_ai_fixed(
     mut threat_alerts: ResMut<ThreatAlertState>,
     mut squad_mgr: ResMut<EnemySquadManager>,
     mut next_state: ResMut<NextState<AppState>>,
-    mut hunter_q: Query<(Entity, &mut Transform, &mut ActiveEnemy, &mut HunterDrone), (With<HunterDrone>, Without<Player>, Without<HeavyBlocker>)>,
+    mut hunter_q: Query<
+        (Entity, &mut Transform, &mut ActiveEnemy, &mut HunterDrone),
+        (With<HunterDrone>, Without<Player>, Without<HeavyBlocker>),
+    >,
     mut sfx: EventWriter<SoundEffect>,
 ) {
     let (mut player, p_trans) = match player_q.get_single_mut() {
@@ -878,7 +903,10 @@ fn update_hunter_ai_fixed(
                     hunter.state = HunterState::IntimidationWait { hover_timer };
                 }
             }
-            HunterState::LockingTarget { target_lane, mut lock_timer } => {
+            HunterState::LockingTarget {
+                target_lane,
+                mut lock_timer,
+            } => {
                 // Target lane is LOCKED and red ground marker is spawned
                 threat_alerts.hunter_telegraph_lane = Some(target_lane);
                 enemy.target_lane = target_lane;
@@ -899,10 +927,17 @@ fn update_hunter_ai_fixed(
                         total_time: 1.5,
                     };
                 } else {
-                    hunter.state = HunterState::LockingTarget { target_lane, lock_timer };
+                    hunter.state = HunterState::LockingTarget {
+                        target_lane,
+                        lock_timer,
+                    };
                 }
             }
-            HunterState::Telegraphing { target_lane, mut timer, total_time } => {
+            HunterState::Telegraphing {
+                target_lane,
+                mut timer,
+                total_time,
+            } => {
                 timer -= dt;
                 // Red warning active: broadcast locked target lane to HUD
                 threat_alerts.hunter_telegraph_lane = Some(target_lane);
@@ -924,10 +959,18 @@ fn update_hunter_ai_fixed(
                         has_resolved_hit: false,
                     };
                 } else {
-                    hunter.state = HunterState::Telegraphing { target_lane, timer, total_time };
+                    hunter.state = HunterState::Telegraphing {
+                        target_lane,
+                        timer,
+                        total_time,
+                    };
                 }
             }
-            HunterState::Firing { target_lane, mut burst_timer, mut has_resolved_hit } => {
+            HunterState::Firing {
+                target_lane,
+                mut burst_timer,
+                mut has_resolved_hit,
+            } => {
                 threat_alerts.hunter_telegraph_lane = None;
                 burst_timer -= dt;
                 enemy.target_lane = target_lane;
@@ -959,6 +1002,7 @@ fn update_hunter_ai_fixed(
                             // Rule: Invulnerable - prevents GameOver
                         } else if powerups.shield {
                             // Rule: Shield absorbs laser strike instead of causing GameOver
+                            powerups.shield_absorb_flash_timer = 0.28;
                             if powerups.shield_hits > 1 {
                                 powerups.shield_hits -= 1;
                             } else {
@@ -983,7 +1027,11 @@ fn update_hunter_ai_fixed(
                 if burst_timer <= 0.0 {
                     hunter.state = HunterState::Retreating { retreat_timer: 1.2 };
                 } else {
-                    hunter.state = HunterState::Firing { target_lane, burst_timer, has_resolved_hit };
+                    hunter.state = HunterState::Firing {
+                        target_lane,
+                        burst_timer,
+                        has_resolved_hit,
+                    };
                 }
             }
             HunterState::Retreating { mut retreat_timer } => {
@@ -1025,10 +1073,13 @@ fn update_heavy_blockers_fixed(
     };
 
     // Update Heavy warning lane for HUD readability when within 38m ahead
-    threat_alerts.heavy_warning_lane = heavy_q.iter().find(|(_, h_trans, _)| {
-        let dz = p_trans.translation.z - h_trans.translation.z;
-        dz >= -5.0 && dz <= 38.0
-    }).map(|(_, _, h)| h.lane);
+    threat_alerts.heavy_warning_lane = heavy_q
+        .iter()
+        .find(|(_, h_trans, _)| {
+            let dz = p_trans.translation.z - h_trans.translation.z;
+            dz >= -5.0 && dz <= 38.0
+        })
+        .map(|(_, _, h)| h.lane);
 
     for (entity, h_trans, _heavy) in heavy_q.iter() {
         // When player successfully passes the Heavy blocker, trigger dissolution and despawn
@@ -1046,7 +1097,15 @@ fn update_echo_hunter_boss_fixed(
     mut commands: Commands,
     time: Res<Time>,
     player_q: Query<&Transform, With<Player>>,
-    mut boss_q: Query<(Entity, &mut Transform, &mut EchoHunterBoss, &mut ActiveEnemy), (With<EchoHunterBoss>, Without<Player>)>,
+    mut boss_q: Query<
+        (
+            Entity,
+            &mut Transform,
+            &mut EchoHunterBoss,
+            &mut ActiveEnemy,
+        ),
+        (With<EchoHunterBoss>, Without<Player>),
+    >,
     mut squad_mgr: ResMut<EnemySquadManager>,
     mut boss_state: ResMut<BossBattleState>,
     mut boss_defeated_events: EventWriter<BossDefeatedEvent>,
@@ -1111,7 +1170,16 @@ fn player_enemy_interaction_fixed(
     mut commands: Commands,
     time: Res<Time>,
     mut player_q: Query<(&mut Player, &Transform)>,
-    mut enemies_q: Query<(Entity, &Transform, &ActiveEnemy, Option<&mut ScoutDrone>, Option<&mut EchoHunterBoss>), Without<Player>>,
+    mut enemies_q: Query<
+        (
+            Entity,
+            &Transform,
+            &ActiveEnemy,
+            Option<&mut ScoutDrone>,
+            Option<&mut EchoHunterBoss>,
+        ),
+        Without<Player>,
+    >,
     mut powerups: ResMut<ActivePowerUps>,
     mut stats: ResMut<GameRunStats>,
     mut threat_alerts: ResMut<ThreatAlertState>,
@@ -1159,9 +1227,16 @@ fn player_enemy_interaction_fixed(
             }
             EnemyType::Heavy => {
                 // If player enters Heavy lane with fair collision margins:
-                if enemy.target_lane == p_lane && (p_pos.x - e_pos.x).abs() < 1.1 && z_dist < 1.4 && p_pos.y < 2.2 {
+                if enemy.target_lane == p_lane
+                    && (p_pos.x - e_pos.x).abs() < 1.1
+                    && z_dist < 1.4
+                    && p_pos.y < 2.2
+                {
                     // Rule 1: Dash / Overdrive smashes Heavy blocker!
-                    if powerups.overdrive_timer > 0.0 || (player.character == CharacterType::Mira && player.invulnerable_timer > 0.8) {
+                    if powerups.overdrive_timer > 0.0
+                        || (player.character == CharacterType::Mira
+                            && player.invulnerable_timer > 0.8)
+                    {
                         stats.fragments += 25;
                         stats.score += 500;
                         sfx.send(SoundEffect::ShieldBreak);
@@ -1175,6 +1250,7 @@ fn player_enemy_interaction_fixed(
 
                     // Rule 2: Shield absorbs hit
                     if powerups.shield {
+                        powerups.shield_absorb_flash_timer = 0.28;
                         if powerups.shield_hits > 1 {
                             powerups.shield_hits -= 1;
                         } else {
@@ -1287,10 +1363,47 @@ fn update_hunter_laser_visuals(
     time: Res<Time>,
     assets: Option<Res<EnemyAssets>>,
     player_q: Query<&Transform, With<Player>>,
-    hunter_q: Query<(&Transform, &HunterDrone, &Children), (With<HunterDrone>, Without<HunterModel>, Without<HunterLaserBeam>, Without<HunterImpactMarker>, Without<Player>)>,
-    mut model_q: Query<&mut Transform, (With<HunterModel>, Without<HunterLaserBeam>, Without<HunterImpactMarker>, Without<Player>)>,
-    mut beam_q: Query<(&mut Transform, &mut Visibility, &mut Handle<StandardMaterial>), (With<HunterLaserBeam>, Without<HunterModel>, Without<HunterImpactMarker>, Without<Player>)>,
-    mut marker_q: Query<(&mut Transform, &mut Visibility), (With<HunterImpactMarker>, Without<HunterModel>, Without<HunterLaserBeam>, Without<Player>)>,
+    hunter_q: Query<
+        (&Transform, &HunterDrone, &Children),
+        (
+            With<HunterDrone>,
+            Without<HunterModel>,
+            Without<HunterLaserBeam>,
+            Without<HunterImpactMarker>,
+            Without<Player>,
+        ),
+    >,
+    mut model_q: Query<
+        &mut Transform,
+        (
+            With<HunterModel>,
+            Without<HunterLaserBeam>,
+            Without<HunterImpactMarker>,
+            Without<Player>,
+        ),
+    >,
+    mut beam_q: Query<
+        (
+            &mut Transform,
+            &mut Visibility,
+            &mut Handle<StandardMaterial>,
+        ),
+        (
+            With<HunterLaserBeam>,
+            Without<HunterModel>,
+            Without<HunterImpactMarker>,
+            Without<Player>,
+        ),
+    >,
+    mut marker_q: Query<
+        (&mut Transform, &mut Visibility),
+        (
+            With<HunterImpactMarker>,
+            Without<HunterModel>,
+            Without<HunterLaserBeam>,
+            Without<Player>,
+        ),
+    >,
 ) {
     let assets = match assets {
         Some(a) => a,
@@ -1312,14 +1425,16 @@ fn update_hunter_laser_visuals(
             if let Ok(mut m_trans) = model_q.get_mut(child) {
                 match hunter.state {
                     HunterState::Infiltrating { .. } | HunterState::IntimidationWait { .. } => {
-                        let look_target = p_trans.translation - h_trans.translation + Vec3::new(0.0, 0.9, 0.0);
+                        let look_target =
+                            p_trans.translation - h_trans.translation + Vec3::new(0.0, 0.9, 0.0);
                         m_trans.look_at(look_target, Vec3::Y);
                         model_rot = m_trans.rotation;
                     }
                     HunterState::LockingTarget { target_lane, .. }
                     | HunterState::Telegraphing { target_lane, .. }
                     | HunterState::Firing { target_lane, .. } => {
-                        let target_world = Vec3::new(target_lane.x_pos(), 0.04, p_trans.translation.z);
+                        let target_world =
+                            Vec3::new(target_lane.x_pos(), 0.04, p_trans.translation.z);
                         let look_target = target_world - h_trans.translation;
                         m_trans.look_at(look_target, Vec3::Y);
                         model_rot = m_trans.rotation;
@@ -1393,7 +1508,9 @@ fn update_hunter_laser_visuals(
                         m_trans.rotation = Quat::IDENTITY;
                         m_trans.scale = Vec3::new(1.0, 1.0, 1.0);
                     }
-                    HunterState::Telegraphing { target_lane, timer, .. } => {
+                    HunterState::Telegraphing {
+                        target_lane, timer, ..
+                    } => {
                         // Human-readable 5-phase timing progression across 1.5s telegraph:
                         // 1.50s to 1.00s: slow, clearly visible red pulse (2.5 Hz)
                         // 1.00s to 0.65s: medium pulse (5.0 Hz)
@@ -1446,10 +1563,7 @@ fn update_hunter_laser_visuals(
     }
 }
 
-fn animate_enemy_thrusters(
-    time: Res<Time>,
-    mut query: Query<&mut Transform, With<HeavyBlocker>>,
-) {
+fn animate_enemy_thrusters(time: Res<Time>, mut query: Query<&mut Transform, With<HeavyBlocker>>) {
     let dt = time.delta_seconds();
     for mut trans in query.iter_mut() {
         trans.rotate_z((time.elapsed_seconds() * 4.0).sin() * 0.02 * dt);
@@ -1504,7 +1618,9 @@ mod tests {
     fn test_hunter_entrance_lasts_configured_duration() {
         // 1. Hunter entrance lasts the configured duration (0.5–0.8s, configured to 0.7s)
         let entrance_duration = 0.7_f32;
-        let mut state = HunterState::Infiltrating { approach_timer: entrance_duration };
+        let mut state = HunterState::Infiltrating {
+            approach_timer: entrance_duration,
+        };
 
         // Simulate 0.3s passing
         let dt = 0.3_f32;
@@ -1528,7 +1644,9 @@ mod tests {
     fn test_hunter_remains_in_visible_hover_state_for_approximately_2_seconds() {
         // 2. Hunter remains in its visible-hover state for approximately 2 seconds.
         let hover_duration = 2.0_f32;
-        let mut state = HunterState::IntimidationWait { hover_timer: hover_duration };
+        let mut state = HunterState::IntimidationWait {
+            hover_timer: hover_duration,
+        };
 
         // Simulate 1.0s passing
         let dt1 = 1.0_f32;
@@ -1549,16 +1667,27 @@ mod tests {
         if let HunterState::IntimidationWait { hover_timer } = &mut state {
             *hover_timer -= 0.1;
             if *hover_timer <= 0.0001 {
-                state = HunterState::LockingTarget { target_lane: Lane::Center, lock_timer: 0.3 };
+                state = HunterState::LockingTarget {
+                    target_lane: Lane::Center,
+                    lock_timer: 0.3,
+                };
             }
         }
-        assert_eq!(state, HunterState::LockingTarget { target_lane: Lane::Center, lock_timer: 0.3 });
+        assert_eq!(
+            state,
+            HunterState::LockingTarget {
+                target_lane: Lane::Center,
+                lock_timer: 0.3
+            }
+        );
     }
 
     #[test]
     fn test_no_marker_appears_during_entrance_or_hover() {
         // 3. No marker appears during entrance or hover.
-        let state_entrance = HunterState::Infiltrating { approach_timer: 0.7 };
+        let state_entrance = HunterState::Infiltrating {
+            approach_timer: 0.7,
+        };
         let state_hover = HunterState::IntimidationWait { hover_timer: 2.0 };
 
         fn marker_visibility(state: HunterState) -> Visibility {
@@ -1572,8 +1701,9 @@ mod tests {
 
         fn laser_visibility(state: HunterState) -> Visibility {
             match state {
-                HunterState::Telegraphing { .. }
-                | HunterState::Firing { .. } => Visibility::Visible,
+                HunterState::Telegraphing { .. } | HunterState::Firing { .. } => {
+                    Visibility::Visible
+                }
                 _ => Visibility::Hidden,
             }
         }
@@ -1597,12 +1727,21 @@ mod tests {
         hover_timer -= dt;
         if hover_timer <= 0.0 {
             let target_lane = player_lane;
-            state = HunterState::LockingTarget { target_lane, lock_timer: 0.3 };
+            state = HunterState::LockingTarget {
+                target_lane,
+                lock_timer: 0.3,
+            };
             active_marker = true;
         }
 
         assert!(active_marker, "Marker must appear when target lock begins");
-        assert_eq!(state, HunterState::LockingTarget { target_lane: Lane::Center, lock_timer: 0.3 });
+        assert_eq!(
+            state,
+            HunterState::LockingTarget {
+                target_lane: Lane::Center,
+                lock_timer: 0.3
+            }
+        );
     }
 
     #[test]
@@ -1619,7 +1758,11 @@ mod tests {
         let up = right.cross(forward);
 
         // Relative Hunter positions during hover, lock, and telegraph across all lanes
-        let lanes = [Lane::Left.x_pos(), Lane::Center.x_pos(), Lane::Right.x_pos()];
+        let lanes = [
+            Lane::Left.x_pos(),
+            Lane::Center.x_pos(),
+            Lane::Right.x_pos(),
+        ];
         for lane_x in lanes {
             let hunter_pos = Vec3::new(lane_x, 3.2, -6.5);
             let d = hunter_pos - cam_pos;
@@ -1696,11 +1839,20 @@ mod tests {
 
         // Player switches lanes during telegraph window
         let player_new_lane = Lane::Left;
-        if let HunterState::Telegraphing { target_lane, timer, total_time } = state {
+        if let HunterState::Telegraphing {
+            target_lane,
+            timer,
+            total_time,
+        } = state
+        {
             // target_lane must remain the locked lane, ignoring player's new lane
             assert_eq!(target_lane, locked_target);
             assert_ne!(target_lane, player_new_lane);
-            state = HunterState::Telegraphing { target_lane, timer: timer - 0.5, total_time };
+            state = HunterState::Telegraphing {
+                target_lane,
+                timer: timer - 0.5,
+                total_time,
+            };
         }
 
         if let HunterState::Telegraphing { target_lane, .. } = state {
@@ -1751,8 +1903,15 @@ mod tests {
             app_state = AppState::GameOver;
         }
 
-        assert!(!hit, "Player must successfully dodge Hunter laser strike when switching lanes");
-        assert_eq!(app_state, AppState::InGame, "Clean dodge must preserve InGame state without damage");
+        assert!(
+            !hit,
+            "Player must successfully dodge Hunter laser strike when switching lanes"
+        );
+        assert_eq!(
+            app_state,
+            AppState::InGame,
+            "Clean dodge must preserve InGame state without damage"
+        );
     }
 
     #[test]
@@ -1782,7 +1941,10 @@ mod tests {
             AppState::InGame,
             "Shield must absorb Hunter laser and prevent GameOver"
         );
-        assert!(!shield, "Single-hit shield must be depleted after absorbing laser");
+        assert!(
+            !shield,
+            "Single-hit shield must be depleted after absorbing laser"
+        );
         assert_eq!(shield_hits, 0, "Shield hits must be decremented to 0");
     }
 
@@ -1803,8 +1965,15 @@ mod tests {
             }
         }
 
-        assert!(hunter_destroyed, "Overdrive must destroy the attacking Hunter drone");
-        assert_eq!(app_state, AppState::InGame, "Overdrive must prevent GameOver");
+        assert!(
+            hunter_destroyed,
+            "Overdrive must destroy the attacking Hunter drone"
+        );
+        assert_eq!(
+            app_state,
+            AppState::InGame,
+            "Overdrive must prevent GameOver"
+        );
     }
 
     #[test]
@@ -1813,7 +1982,10 @@ mod tests {
         for _ in 0..100 {
             let mut rng = rand::thread_rng();
             let cd = 4.0 + rng.gen_range(0.0..3.0);
-            assert!(cd >= 4.0 && cd <= 7.0, "Hunter cooldown must remain strictly within 4-7s range");
+            assert!(
+                cd >= 4.0 && cd <= 7.0,
+                "Hunter cooldown must remain strictly within 4-7s range"
+            );
         }
     }
 
@@ -1844,8 +2016,14 @@ mod tests {
 
         // Verify Hunter patterns guarantee at least 2 open lanes
         let catalog = crate::patterns::get_pattern_catalog();
-        let hunter_patterns: Vec<_> = catalog.iter().filter(|p| p.name.contains("Hunter")).collect();
-        assert!(!hunter_patterns.is_empty(), "Must have Hunter pattern family in catalog");
+        let hunter_patterns: Vec<_> = catalog
+            .iter()
+            .filter(|p| p.name.contains("Hunter"))
+            .collect();
+        assert!(
+            !hunter_patterns.is_empty(),
+            "Must have Hunter pattern family in catalog"
+        );
 
         for pattern in hunter_patterns {
             for &z in &[-10.0, -16.0, -20.0] {
@@ -1861,4 +2039,3 @@ mod tests {
         }
     }
 }
-

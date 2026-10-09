@@ -1,6 +1,6 @@
-use bevy::prelude::*;
-use crate::types::*;
 use crate::story::DATA_CHIP_LOGS;
+use crate::types::*;
+use bevy::prelude::*;
 use rand::Rng;
 
 pub struct CollectiblePlugin;
@@ -14,11 +14,7 @@ impl Plugin for CollectiblePlugin {
             )
             .add_systems(
                 FixedUpdate,
-                (
-                    magnet_attract_fragments,
-                    collect_items_fixed,
-                )
-                    .run_if(in_state(AppState::InGame)),
+                (magnet_attract_fragments, collect_items_fixed).run_if(in_state(AppState::InGame)),
             );
     }
 }
@@ -130,7 +126,9 @@ pub fn spawn_segment_collectibles(
                 ..default()
             },
             CollectibleItem {
-                item_type: CollectibleType::DataChip { index: rng.gen_range(0..DATA_CHIP_LOGS.len()) },
+                item_type: CollectibleType::DataChip {
+                    index: rng.gen_range(0..DATA_CHIP_LOGS.len()),
+                },
                 lane: chip_lane,
                 initial_y: 1.1,
                 rot_speed: 2.2,
@@ -167,141 +165,139 @@ pub fn spawn_segment_collectibles(
             Despawnable { z_center: z },
         ));
 
-        p_cmd.with_children(|parent| {
-            match p_type {
-                CollectibleType::EchoShield => {
-                    let hex = meshes.add(Cylinder::new(0.32, 0.14));
-                    let plate = meshes.add(Cuboid::new(0.10, 0.36, 0.05));
-                    let ring = meshes.add(Torus::new(0.04, 0.45));
-                    parent.spawn(PbrBundle {
-                        mesh: hex,
-                        material: powerup_shield_mat.clone(),
-                        ..default()
-                    });
-                    parent.spawn(PbrBundle {
-                        mesh: plate.clone(),
-                        material: powerup_shield_mat.clone(),
-                        transform: Transform::from_xyz(0.0, 0.0, 0.38),
-                        ..default()
-                    });
-                    parent.spawn(PbrBundle {
-                        mesh: plate.clone(),
-                        material: powerup_shield_mat.clone(),
-                        transform: Transform::from_xyz(-0.33, 0.0, -0.19).with_rotation(Quat::from_rotation_y(2.094)),
-                        ..default()
-                    });
-                    parent.spawn(PbrBundle {
-                        mesh: plate,
-                        material: powerup_shield_mat.clone(),
-                        transform: Transform::from_xyz(0.33, 0.0, -0.19).with_rotation(Quat::from_rotation_y(-2.094)),
-                        ..default()
-                    });
-                    parent.spawn(PbrBundle {
-                        mesh: ring,
-                        material: powerup_shield_mat.clone(),
-                        ..default()
-                    });
-                }
-                CollectibleType::Magnet => {
-                    let arch = meshes.add(Cuboid::new(0.50, 0.14, 0.14));
-                    let prong = meshes.add(Cuboid::new(0.14, 0.42, 0.14));
-                    let pole = meshes.add(Cuboid::new(0.15, 0.10, 0.15));
-                    let ring = meshes.add(Torus::new(0.03, 0.35));
-                    parent.spawn(PbrBundle {
-                        mesh: arch,
-                        material: powerup_magnet_mat.clone(),
-                        transform: Transform::from_xyz(0.0, 0.22, 0.0),
-                        ..default()
-                    });
-                    parent.spawn(PbrBundle {
-                        mesh: prong.clone(),
-                        material: powerup_magnet_mat.clone(),
-                        transform: Transform::from_xyz(-0.20, -0.06, 0.0),
-                        ..default()
-                    });
-                    parent.spawn(PbrBundle {
-                        mesh: prong,
-                        material: powerup_magnet_mat.clone(),
-                        transform: Transform::from_xyz(0.20, -0.06, 0.0),
-                        ..default()
-                    });
-                    parent.spawn(PbrBundle {
-                        mesh: pole.clone(),
-                        material: powerup_pole_mat.clone(),
-                        transform: Transform::from_xyz(-0.20, -0.32, 0.0),
-                        ..default()
-                    });
-                    parent.spawn(PbrBundle {
-                        mesh: pole,
-                        material: powerup_pole_mat.clone(),
-                        transform: Transform::from_xyz(0.20, -0.32, 0.0),
-                        ..default()
-                    });
-                    parent.spawn(PbrBundle {
-                        mesh: ring,
-                        material: powerup_magnet_mat.clone(),
-                        transform: Transform::from_xyz(0.0, -0.08, 0.0),
-                        ..default()
-                    });
-                }
-                CollectibleType::Overdrive => {
-                    let diamond = meshes.add(Cuboid::new(0.32, 0.65, 0.32));
-                    let ring = meshes.add(Torus::new(0.04, 0.42));
-                    parent.spawn(PbrBundle {
-                        mesh: diamond,
-                        material: powerup_overdrive_mat.clone(),
-                        ..default()
-                    });
-                    parent.spawn(PbrBundle {
-                        mesh: ring.clone(),
-                        material: powerup_overdrive_mat.clone(),
-                        transform: Transform::from_rotation(Quat::from_rotation_x(0.785)),
-                        ..default()
-                    });
-                    parent.spawn(PbrBundle {
-                        mesh: ring,
-                        material: powerup_overdrive_mat.clone(),
-                        transform: Transform::from_rotation(Quat::from_rotation_z(0.785)),
-                        ..default()
-                    });
-                }
-                _ => {
-                    let chevron = meshes.add(Cuboid::new(0.40, 0.12, 0.10));
-                    let ring = meshes.add(Torus::new(0.03, 0.36));
-                    parent.spawn(PbrBundle {
-                        mesh: chevron.clone(),
-                        material: powerup_jump_mat.clone(),
-                        transform: Transform::from_xyz(0.0, -0.08, 0.0),
-                        ..default()
-                    });
-                    parent.spawn(PbrBundle {
-                        mesh: chevron,
-                        material: powerup_jump_mat.clone(),
-                        transform: Transform::from_xyz(0.0, 0.12, 0.0),
-                        ..default()
-                    });
-                    parent.spawn(PbrBundle {
-                        mesh: ring,
-                        material: powerup_jump_mat.clone(),
-                        transform: Transform::from_xyz(0.0, -0.26, 0.0),
-                        ..default()
-                    });
-                }
+        p_cmd.with_children(|parent| match p_type {
+            CollectibleType::EchoShield => {
+                let hex = meshes.add(Cylinder::new(0.32, 0.14));
+                let plate = meshes.add(Cuboid::new(0.10, 0.36, 0.05));
+                let ring = meshes.add(Torus::new(0.04, 0.45));
+                parent.spawn(PbrBundle {
+                    mesh: hex,
+                    material: powerup_shield_mat.clone(),
+                    ..default()
+                });
+                parent.spawn(PbrBundle {
+                    mesh: plate.clone(),
+                    material: powerup_shield_mat.clone(),
+                    transform: Transform::from_xyz(0.0, 0.0, 0.38),
+                    ..default()
+                });
+                parent.spawn(PbrBundle {
+                    mesh: plate.clone(),
+                    material: powerup_shield_mat.clone(),
+                    transform: Transform::from_xyz(-0.33, 0.0, -0.19)
+                        .with_rotation(Quat::from_rotation_y(2.094)),
+                    ..default()
+                });
+                parent.spawn(PbrBundle {
+                    mesh: plate,
+                    material: powerup_shield_mat.clone(),
+                    transform: Transform::from_xyz(0.33, 0.0, -0.19)
+                        .with_rotation(Quat::from_rotation_y(-2.094)),
+                    ..default()
+                });
+                parent.spawn(PbrBundle {
+                    mesh: ring,
+                    material: powerup_shield_mat.clone(),
+                    ..default()
+                });
+            }
+            CollectibleType::Magnet => {
+                let arch = meshes.add(Cuboid::new(0.50, 0.14, 0.14));
+                let prong = meshes.add(Cuboid::new(0.14, 0.42, 0.14));
+                let pole = meshes.add(Cuboid::new(0.15, 0.10, 0.15));
+                let ring = meshes.add(Torus::new(0.03, 0.35));
+                parent.spawn(PbrBundle {
+                    mesh: arch,
+                    material: powerup_magnet_mat.clone(),
+                    transform: Transform::from_xyz(0.0, 0.22, 0.0),
+                    ..default()
+                });
+                parent.spawn(PbrBundle {
+                    mesh: prong.clone(),
+                    material: powerup_magnet_mat.clone(),
+                    transform: Transform::from_xyz(-0.20, -0.06, 0.0),
+                    ..default()
+                });
+                parent.spawn(PbrBundle {
+                    mesh: prong,
+                    material: powerup_magnet_mat.clone(),
+                    transform: Transform::from_xyz(0.20, -0.06, 0.0),
+                    ..default()
+                });
+                parent.spawn(PbrBundle {
+                    mesh: pole.clone(),
+                    material: powerup_pole_mat.clone(),
+                    transform: Transform::from_xyz(-0.20, -0.32, 0.0),
+                    ..default()
+                });
+                parent.spawn(PbrBundle {
+                    mesh: pole,
+                    material: powerup_pole_mat.clone(),
+                    transform: Transform::from_xyz(0.20, -0.32, 0.0),
+                    ..default()
+                });
+                parent.spawn(PbrBundle {
+                    mesh: ring,
+                    material: powerup_magnet_mat.clone(),
+                    transform: Transform::from_xyz(0.0, -0.08, 0.0),
+                    ..default()
+                });
+            }
+            CollectibleType::Overdrive => {
+                let diamond = meshes.add(Cuboid::new(0.32, 0.65, 0.32));
+                let ring = meshes.add(Torus::new(0.04, 0.42));
+                parent.spawn(PbrBundle {
+                    mesh: diamond,
+                    material: powerup_overdrive_mat.clone(),
+                    ..default()
+                });
+                parent.spawn(PbrBundle {
+                    mesh: ring.clone(),
+                    material: powerup_overdrive_mat.clone(),
+                    transform: Transform::from_rotation(Quat::from_rotation_x(0.785)),
+                    ..default()
+                });
+                parent.spawn(PbrBundle {
+                    mesh: ring,
+                    material: powerup_overdrive_mat.clone(),
+                    transform: Transform::from_rotation(Quat::from_rotation_z(0.785)),
+                    ..default()
+                });
+            }
+            _ => {
+                let chevron = meshes.add(Cuboid::new(0.40, 0.12, 0.10));
+                let ring = meshes.add(Torus::new(0.03, 0.36));
+                parent.spawn(PbrBundle {
+                    mesh: chevron.clone(),
+                    material: powerup_jump_mat.clone(),
+                    transform: Transform::from_xyz(0.0, -0.08, 0.0),
+                    ..default()
+                });
+                parent.spawn(PbrBundle {
+                    mesh: chevron,
+                    material: powerup_jump_mat.clone(),
+                    transform: Transform::from_xyz(0.0, 0.12, 0.0),
+                    ..default()
+                });
+                parent.spawn(PbrBundle {
+                    mesh: ring,
+                    material: powerup_jump_mat.clone(),
+                    transform: Transform::from_xyz(0.0, -0.26, 0.0),
+                    ..default()
+                });
             }
         });
     }
 }
 
-fn animate_collectibles(
-    time: Res<Time>,
-    mut query: Query<(&mut Transform, &CollectibleItem)>,
-) {
+fn animate_collectibles(time: Res<Time>, mut query: Query<(&mut Transform, &CollectibleItem)>) {
     let t = time.elapsed_seconds();
     let dt = time.delta_seconds();
 
     for (mut transform, item) in query.iter_mut() {
         // Floating / bobbing
-        transform.translation.y = item.initial_y + (t * 2.8 + transform.translation.z * 0.1).sin() * 0.14;
+        transform.translation.y =
+            item.initial_y + (t * 2.8 + transform.translation.z * 0.1).sin() * 0.14;
         // Slow continuous rotation
         transform.rotate_y(item.rot_speed * dt);
 
@@ -332,7 +328,11 @@ fn magnet_attract_fragments(
     };
 
     let p_pos = player_trans.translation;
-    let radius = if player.character == CharacterType::Nyx { 14.0 } else { 9.0 };
+    let radius = if player.character == CharacterType::Nyx {
+        14.0
+    } else {
+        9.0
+    };
     let dt = time.delta_seconds();
 
     for (mut f_trans, mut despawn, item) in frag_q.iter_mut() {
@@ -369,7 +369,11 @@ fn collect_items_fixed(
         if i_trans.translation.distance_squared(p_pos) < pickup_dist_sq {
             match item.item_type {
                 CollectibleType::EchoFragment { value } => {
-                    let mult = if player.character == CharacterType::Jax { 2 } else { 1 };
+                    let mult = if player.character == CharacterType::Jax {
+                        2
+                    } else {
+                        1
+                    };
                     stats.fragments += value * mult;
                     stats.score += value * 10 * mult;
                     sfx.send(SoundEffect::FragmentPickup);
@@ -389,12 +393,20 @@ fn collect_items_fixed(
                 }
                 CollectibleType::EchoShield => {
                     powerups.shield = true;
-                    powerups.shield_hits = if player.character == CharacterType::Arin { 2 } else { 1 };
+                    powerups.shield_hits = if player.character == CharacterType::Arin {
+                        2
+                    } else {
+                        1
+                    };
                     stats.score += 50;
                     sfx.send(SoundEffect::PowerupPickup);
                 }
                 CollectibleType::Magnet => {
-                    let dur = if player.character == CharacterType::Nyx { 12.0 } else { 8.0 };
+                    let dur = if player.character == CharacterType::Nyx {
+                        12.0
+                    } else {
+                        8.0
+                    };
                     powerups.magnet_timer = dur;
                     stats.score += 50;
                     sfx.send(SoundEffect::PowerupPickup);
@@ -470,7 +482,11 @@ mod tests {
         for step in 0..100 {
             let t = step as f32 * 0.1;
             let pulse = 1.0 + (t * 3.5).sin() * 0.06;
-            assert!(pulse >= 0.94 - 1e-5 && pulse <= 1.06 + 1e-5, "Pulse {:.3} must be within [0.94, 1.06]", pulse);
+            assert!(
+                pulse >= 0.94 - 1e-5 && pulse <= 1.06 + 1e-5,
+                "Pulse {:.3} must be within [0.94, 1.06]",
+                pulse
+            );
         }
     }
 
@@ -482,8 +498,11 @@ mod tests {
             let t = step as f32 * 0.1;
             let z = -step as f32 * 2.0;
             let y = initial_y + (t * 2.8 + z * 0.1).sin() * 0.14;
-            assert!(y >= initial_y - 0.141 && y <= initial_y + 0.141, "Bobbing height {:.3} must be within amplitude", y);
+            assert!(
+                y >= initial_y - 0.141 && y <= initial_y + 0.141,
+                "Bobbing height {:.3} must be within amplitude",
+                y
+            );
         }
     }
 }
-
