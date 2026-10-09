@@ -590,13 +590,13 @@ fn player_input(
         || keyboard.just_pressed(KeyCode::Space)
     {
         if player.is_grounded || player.is_sliding {
-            player.y_velocity = 13.5;
+            player.y_velocity = 9.0;
             player.is_grounded = false;
             player.is_sliding = false;
             player.slide_timer = 0.0;
             sfx.send(SoundEffect::Jump);
         } else if powerups.double_jump_timer > 0.0 && !player.has_double_jumped {
-            player.y_velocity = 12.0;
+            player.y_velocity = 8.5;
             player.has_double_jumped = true;
             sfx.send(SoundEffect::Jump);
         }

@@ -60,7 +60,8 @@ pub struct EnemyAssets {
     pub mat_scout_eye: Handle<StandardMaterial>,
     pub mat_scout_thruster: Handle<StandardMaterial>,
 
-    // Hunter Interceptor Silhouette
+    // Hunter Interceptor Silhouette & 3D GLB Model
+    pub hunter_scene: Handle<Scene>,
     pub mesh_hunter_body: Handle<Mesh>,
     pub mesh_hunter_wing: Handle<Mesh>,
     pub mesh_hunter_nacelle: Handle<Mesh>,
@@ -134,8 +135,12 @@ fn init_enemy_assets(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    asset_server: Res<AssetServer>,
 ) {
     let assets = EnemyAssets {
+        // Hunter Interceptor 3D Model
+        hunter_scene: asset_server.load("Charecters/Hunter/Hunter2.glb#Scene0"),
+
         // Scout Drone Silhouette (Needle dart with wide swept wings)
         mesh_scout_body: meshes.add(Cuboid::new(0.32, 0.18, 0.82)),
         mesh_scout_wing: meshes.add(Cuboid::new(0.52, 0.03, 0.45)),
@@ -337,9 +342,7 @@ fn spawn_hunter_drone(
 ) {
     commands
         .spawn((
-            PbrBundle {
-                mesh: assets.mesh_hunter_body.clone(),
-                material: assets.mat_hunter.clone(),
+            SpatialBundle {
                 transform: Transform::from_xyz(lane.x_pos(), 2.8, initial_distance_behind),
                 ..default()
             },
@@ -360,53 +363,14 @@ fn spawn_hunter_drone(
             },
         ))
         .with_children(|drone| {
-            // Dual Piercing Amber/Orange Targeting Optics
-            drone.spawn(PbrBundle {
-                mesh: assets.mesh_hunter_eye.clone(),
-                material: assets.mat_hunter_eye.clone(),
-                transform: Transform::from_xyz(-0.16, 0.0, -0.48),
+            // Real 3D Hunter Interceptor Drone Model (Facing forward along -Z toward Kai)
+            drone.spawn(SceneBundle {
+                scene: assets.hunter_scene.clone(),
+                transform: Transform::IDENTITY,
                 ..default()
             });
-            drone.spawn(PbrBundle {
-                mesh: assets.mesh_hunter_eye.clone(),
-                material: assets.mat_hunter_eye.clone(),
-                transform: Transform::from_xyz(0.16, 0.0, -0.48),
-                ..default()
-            });
-            // Left & Right Forward-Swept Combat Foils
-            drone.spawn(PbrBundle {
-                mesh: assets.mesh_hunter_wing.clone(),
-                material: assets.mat_hunter.clone(),
-                transform: Transform::from_xyz(-0.58, 0.04, -0.10),
-                ..default()
-            });
-            drone.spawn(PbrBundle {
-                mesh: assets.mesh_hunter_wing.clone(),
-                material: assets.mat_hunter.clone(),
-                transform: Transform::from_xyz(0.58, 0.04, -0.10),
-                ..default()
-            });
-            // Flanking Repulsor Nacelles
-            drone.spawn(PbrBundle {
-                mesh: assets.mesh_hunter_nacelle.clone(),
-                material: assets.mat_hunter.clone(),
-                transform: Transform::from_xyz(-0.48, -0.10, 0.15),
-                ..default()
-            });
-            drone.spawn(PbrBundle {
-                mesh: assets.mesh_hunter_nacelle.clone(),
-                material: assets.mat_hunter.clone(),
-                transform: Transform::from_xyz(0.48, -0.10, 0.15),
-                ..default()
-            });
-            // Underslung Pulse Interceptor Cannon
-            drone.spawn(PbrBundle {
-                mesh: assets.mesh_hunter_cannon.clone(),
-                material: assets.mat_hunter.clone(),
-                transform: Transform::from_xyz(0.0, -0.18, -0.25),
-                ..default()
-            });
-            // Targeting Laser Array Emitter
+
+            // Targeting Laser Array Emitter (Visual telegraph warning beam)
             drone.spawn(PbrBundle {
                 mesh: assets.mesh_sensor_eye.clone(),
                 material: assets.mat_hunter_beam.clone(),

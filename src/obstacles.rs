@@ -396,11 +396,11 @@ pub mod tests {
 
     #[test]
     fn test_low_barrier_jump_clears() {
-        // Jumping player at apex (Y=2.2m)
+        // Jumping player at realistic apex (Y=1.84m with v0=9.0m/s, ~1.19m vertical rise)
         let collided = check_obstacle_vertical_collision(
-            2.2, 1.0, false, ObstacleType::LowBarrier, 0.42, 0.85,
+            1.84, 1.0, false, ObstacleType::LowBarrier, 0.42, 0.85,
         );
-        assert!(!collided, "Jumping player at Y=2.2m must clear low barrier");
+        assert!(!collided, "Jumping player at Y=1.84m must clear low barrier");
     }
 
     #[test]

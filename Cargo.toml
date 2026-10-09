@@ -18,6 +18,7 @@ bevy = { version = "0.14.2", default-features = false, features = [
     "tonemapping_luts",
     "png",
     "jpeg",
+    "webp",
     "vorbis",
     "wav",
     "bevy_gltf",
