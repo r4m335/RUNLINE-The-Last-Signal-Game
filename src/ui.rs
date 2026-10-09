@@ -846,10 +846,10 @@ fn update_threat_alert_ui(
         text.sections[0].style.color = Color::srgb(1.0, 0.2, 0.3);
     } else if let Some(lane) = threat_alerts.hunter_telegraph_lane {
         style.display = Display::Flex;
-        *bg = BackgroundColor(Color::srgba(0.25, 0.08, 0.02, 0.95));
-        *border = BorderColor(Color::srgb(1.0, 0.55, 0.0));
-        text.sections[0].value = format!("⚠ THREAT LOCK: HUNTER SWEEP // {:?} LANE // EVADE FLANK → ⚠", lane).to_uppercase();
-        text.sections[0].style.color = Color::srgb(1.0, 0.80, 0.1);
+        *bg = BackgroundColor(Color::srgba(0.28, 0.04, 0.04, 0.95));
+        *border = BorderColor(Color::srgb(1.0, 0.15, 0.25));
+        text.sections[0].value = format!("⚠ THREAT LOCK: HUNTER LASER // {:?} LANE // EVADE NOW! ⚠", lane).to_uppercase();
+        text.sections[0].style.color = Color::srgb(1.0, 0.25, 0.35);
     } else if let Some(lane) = threat_alerts.heavy_warning_lane {
         style.display = Display::Flex;
         *bg = BackgroundColor(Color::srgba(0.04, 0.12, 0.22, 0.95));

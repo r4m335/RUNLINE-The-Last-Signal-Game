@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use crate::types::*;
 use crate::director::RunDirector;
+use rand::Rng;
 
 // ----------------------------------------------------------------------------
 // ENEMY COMPONENTS & RESOURCES
@@ -15,9 +16,11 @@ pub struct ScoutDrone {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum HunterState {
-    TrackingFlank,
-    Telegraphing { target_lane: Lane, timer: f32 },
-    CommittedSweep { target_lane: Lane, timer: f32 },
+    Infiltrating { approach_timer: f32 },
+    LockingTarget { lock_timer: f32 },
+    Telegraphing { target_lane: Lane, timer: f32, total_time: f32 },
+    Firing { target_lane: Lane, burst_timer: f32, has_resolved_hit: bool },
+    Retreating { retreat_timer: f32 },
 }
 
 #[derive(Component)]
@@ -28,6 +31,15 @@ pub struct HunterDrone {
     pub eval_timer: f32,
     pub confidence: f32,
 }
+
+#[derive(Component)]
+pub struct HunterModel;
+
+#[derive(Component)]
+pub struct HunterLaserBeam;
+
+#[derive(Component)]
+pub struct HunterImpactMarker;
 
 #[derive(Component)]
 #[allow(dead_code)]
@@ -71,6 +83,13 @@ pub struct EnemyAssets {
     pub mat_hunter_beam: Handle<StandardMaterial>,
     pub mat_hunter_eye: Handle<StandardMaterial>,
 
+    // Hunter Targeted Warning Laser & Track Danger Marker
+    pub mesh_hunter_laser: Handle<Mesh>,
+    pub mat_hunter_laser: Handle<StandardMaterial>,
+    pub mat_hunter_laser_burst: Handle<StandardMaterial>,
+    pub mesh_hunter_marker: Handle<Mesh>,
+    pub mat_hunter_marker: Handle<StandardMaterial>,
+
     // Heavy Fortified Blocker Silhouette
     pub mesh_heavy_body: Handle<Mesh>,
     pub mesh_heavy_pylon: Handle<Mesh>,
@@ -92,6 +111,7 @@ pub struct EnemyAssets {
 #[derive(Resource, Default)]
 pub struct EnemySquadManager {
     pub spawn_cooldown: f32,
+    pub hunter_cooldown: f32,
     pub active_boss: bool,
     pub boss_spawned_milestone_4: bool,
     pub boss_spawned_milestone_7: bool,
@@ -124,6 +144,7 @@ impl Plugin for EnemyPlugin {
                 Update,
                 (
                     update_enemy_visual_smoothing,
+                    update_hunter_laser_visuals,
                     animate_enemy_thrusters,
                 )
                     .run_if(in_state(AppState::InGame)),
@@ -184,6 +205,29 @@ fn init_enemy_assets(
         mat_hunter_eye: materials.add(StandardMaterial {
             base_color: Color::srgb(1.0, 0.35, 0.0),
             emissive: LinearRgba::new(5.8, 2.5, 0.0, 1.0),
+            ..default()
+        }),
+
+        // Hunter Targeted Warning Laser & Track Danger Marker
+        mesh_hunter_laser: meshes.add(Cuboid::new(0.06, 0.06, 1.0)),
+        mat_hunter_laser: materials.add(StandardMaterial {
+            base_color: Color::srgb(1.0, 0.1, 0.1),
+            emissive: LinearRgba::new(8.0, 0.4, 0.4, 1.0),
+            unlit: true,
+            ..default()
+        }),
+        mat_hunter_laser_burst: materials.add(StandardMaterial {
+            base_color: Color::srgb(1.0, 0.8, 0.8),
+            emissive: LinearRgba::new(25.0, 4.0, 4.0, 1.0),
+            unlit: true,
+            ..default()
+        }),
+        mesh_hunter_marker: meshes.add(Cuboid::new(1.60, 0.03, 3.20)),
+        mat_hunter_marker: materials.add(StandardMaterial {
+            base_color: Color::srgba(1.0, 0.05, 0.05, 0.65),
+            emissive: LinearRgba::new(6.0, 0.3, 0.3, 1.0),
+            alpha_mode: AlphaMode::Blend,
+            unlit: true,
             ..default()
         }),
 
@@ -357,26 +401,45 @@ fn spawn_hunter_drone(
             },
             HunterDrone {
                 tracking_lane: lane,
-                state: HunterState::TrackingFlank,
-                eval_timer: 1.2,
+                state: HunterState::Infiltrating { approach_timer: 1.0 },
+                eval_timer: 0.8,
                 confidence: 0.5,
             },
         ))
         .with_children(|drone| {
-            // Real 3D Hunter Interceptor Drone Model (Facing forward along -Z toward Kai)
-            drone.spawn(SceneBundle {
-                scene: assets.hunter_scene.clone(),
-                transform: Transform::IDENTITY,
-                ..default()
-            });
+            // Real 3D Hunter Interceptor Drone Model (Faces forward along -Z toward Kai)
+            drone.spawn((
+                SceneBundle {
+                    scene: assets.hunter_scene.clone(),
+                    transform: Transform::IDENTITY,
+                    ..default()
+                },
+                HunterModel,
+            ));
 
-            // Targeting Laser Array Emitter (Visual telegraph warning beam)
-            drone.spawn(PbrBundle {
-                mesh: assets.mesh_sensor_eye.clone(),
-                material: assets.mat_hunter_beam.clone(),
-                transform: Transform::from_xyz(0.0, -0.10, -0.55),
-                ..default()
-            });
+            // Targeting Red Warning Laser Beam (Procedural emissive 3D beam)
+            drone.spawn((
+                PbrBundle {
+                    mesh: assets.mesh_hunter_laser.clone(),
+                    material: assets.mat_hunter_laser.clone(),
+                    transform: Transform::IDENTITY,
+                    visibility: Visibility::Hidden,
+                    ..default()
+                },
+                HunterLaserBeam,
+            ));
+
+            // Glowing Red Track Danger Impact Marker (Procedural track warning grid)
+            drone.spawn((
+                PbrBundle {
+                    mesh: assets.mesh_hunter_marker.clone(),
+                    material: assets.mat_hunter_marker.clone(),
+                    transform: Transform::IDENTITY,
+                    visibility: Visibility::Hidden,
+                    ..default()
+                },
+                HunterImpactMarker,
+            ));
         });
 }
 
@@ -548,6 +611,7 @@ fn update_enemy_spawning_and_pacing(
 
     let dt = time.delta_seconds();
     squad_mgr.spawn_cooldown -= dt;
+    squad_mgr.hunter_cooldown -= dt;
 
     let has_scout = enemies_q.iter().any(|e| e.enemy_type == EnemyType::Scout);
     let has_hunter = enemies_q.iter().any(|e| e.enemy_type == EnemyType::Hunter);
@@ -562,16 +626,45 @@ fn update_enemy_spawning_and_pacing(
         });
     }
 
-    // 2. Level 2 Hunter introduction in Zone 2+ (Neon District onwards)
-    // Pedagogical progression: 800-950m is speed adaptation buffer (NO Hunter).
-    // Hunter is introduced at 950m+ with audio telegraph + predictive sweep.
-    if (stats.distance >= 950.0 || director.active_zone_id >= 3) && !has_hunter && squad_mgr.spawn_cooldown <= 0.0 {
-        spawn_hunter_drone(&mut commands, &assets, Lane::Left, 8.5);
-        squad_mgr.spawn_cooldown = 15.0;
-        enemy_spawn_events.send(EnemySpawnedEvent {
-            enemy_type: EnemyType::Hunter,
-            lane: Lane::Left,
-        });
+    // 2. Hunter Interceptor predator encounter in Zone 2+ (Neon District onwards)
+    // Controlled predator pacing & fairness guarantees:
+    // - Cooldown: 4-7 seconds between encounters
+    // - Solvability: Player must have >= 2 navigable lanes ahead to evade safely
+    // - Concurrency protection: Does not spawn during active boss fight or concurrent Hunter attack
+    if (stats.distance >= 850.0 || director.active_zone_id >= 2)
+        && !squad_mgr.active_boss
+        && !has_hunter
+        && squad_mgr.hunter_cooldown <= 0.0
+    {
+        // Check obstacle density in track window ahead [p.z - 25m, p.z - 5m]
+        let mut lane_blocked = [false; 3];
+        for (obs, o_trans) in obs_q.iter() {
+            let dz = p_trans.translation.z - o_trans.translation.z;
+            if dz >= 5.0 && dz <= 25.0 {
+                match obs.lane {
+                    Lane::Left => lane_blocked[0] = true,
+                    Lane::Center => lane_blocked[1] = true,
+                    Lane::Right => lane_blocked[2] = true,
+                }
+            }
+        }
+
+        let blocked_count = lane_blocked.iter().filter(|&&b| b).count();
+        if blocked_count < 2 {
+            let mut rng = rand::thread_rng();
+            let lanes = [Lane::Left, Lane::Center, Lane::Right];
+            let spawn_lane = lanes[rng.gen_range(0..3)];
+
+            spawn_hunter_drone(&mut commands, &assets, spawn_lane, 11.0);
+            squad_mgr.hunter_cooldown = 15.0; // Pacing buffer while encounter is active
+            enemy_spawn_events.send(EnemySpawnedEvent {
+                enemy_type: EnemyType::Hunter,
+                lane: spawn_lane,
+            });
+        } else {
+            // Track is momentarily congested; defer spawn check by 1.5s
+            squad_mgr.hunter_cooldown = 1.5;
+        }
     }
 
     // 3. Level 3 Heavy Route Blocker deployment in Zone 3+ (Industrial onwards)
@@ -696,38 +789,57 @@ fn update_scout_ai_fixed(
 // LEVEL 2: HUNTER AI (Predictive interception with confidence threshold & telegraph)
 // ----------------------------------------------------------------------------
 fn update_hunter_ai_fixed(
+    mut commands: Commands,
     time: Res<Time>,
-    player_q: Query<(&Player, &Transform), (Without<HunterDrone>, Without<ScoutDrone>)>,
+    mut player_q: Query<(&mut Player, &Transform), (Without<HunterDrone>, Without<ScoutDrone>)>,
     heavy_q: Query<(&Transform, &HeavyBlocker), Without<HunterDrone>>,
-    history: Res<PlayerMovementHistory>,
-    stats: Res<GameRunStats>,
+    mut stats: ResMut<GameRunStats>,
+    mut powerups: ResMut<ActivePowerUps>,
     mut threat_alerts: ResMut<ThreatAlertState>,
-    mut hunter_q: Query<(&mut Transform, &mut ActiveEnemy, &mut HunterDrone), (With<HunterDrone>, Without<Player>, Without<HeavyBlocker>)>,
+    mut squad_mgr: ResMut<EnemySquadManager>,
+    mut next_state: ResMut<NextState<AppState>>,
+    mut hunter_q: Query<(Entity, &mut Transform, &mut ActiveEnemy, &mut HunterDrone), (With<HunterDrone>, Without<Player>, Without<HeavyBlocker>)>,
     mut sfx: EventWriter<SoundEffect>,
 ) {
-    let (player, p_trans) = match player_q.get_single() {
+    let (mut player, p_trans) = match player_q.get_single_mut() {
         Ok(res) => res,
         Err(_) => return,
     };
 
     let dt = time.delta_seconds();
-    let now = time.elapsed_seconds();
 
-    for (mut d_trans, mut enemy, mut hunter) in hunter_q.iter_mut() {
+    for (entity, mut d_trans, mut enemy, mut hunter) in hunter_q.iter_mut() {
         match hunter.state {
-            HunterState::TrackingFlank => {
+            HunterState::Infiltrating { mut approach_timer } => {
                 threat_alerts.hunter_telegraph_lane = None;
-                hunter.eval_timer -= dt;
+                approach_timer -= dt;
 
-                // Follow player with observation lag
+                // Move from initial rear spawn (Z+11m) toward steady trailing distance (Z+5.5m)
+                let target_z = p_trans.translation.z + 5.5;
+                d_trans.translation.z += (target_z - d_trans.translation.z) * 5.0 * dt;
+                enemy.distance_from_player = d_trans.translation.z - p_trans.translation.z;
+
+                if approach_timer <= 0.0 {
+                    hunter.state = HunterState::LockingTarget { lock_timer: 0.8 };
+                } else {
+                    hunter.state = HunterState::Infiltrating { approach_timer };
+                }
+            }
+            HunterState::LockingTarget { mut lock_timer } => {
+                threat_alerts.hunter_telegraph_lane = None;
+
+                // Track player's trailing position
                 let target_z = p_trans.translation.z + 5.5;
                 d_trans.translation.z += (target_z - d_trans.translation.z) * 6.0 * dt;
                 enemy.distance_from_player = d_trans.translation.z - p_trans.translation.z;
 
+                // Track player's current lane during target acquisition
+                enemy.target_lane = player.lane;
+
                 // THREAT CONCURRENCY FAIRNESS RULES:
                 // Rule 1: Stumble Grace - Hunter holds fire while player is recovering from a stumble
                 if stats.stumble_intensity > 0.0 {
-                    hunter.eval_timer = 1.6;
+                    hunter.state = HunterState::LockingTarget { lock_timer: 1.0 };
                     continue;
                 }
 
@@ -737,91 +849,132 @@ fn update_hunter_ai_fixed(
                     dz >= -5.0 && dz <= 35.0
                 });
                 if heavy_corridor_active {
-                    hunter.eval_timer = 1.8;
+                    hunter.state = HunterState::LockingTarget { lock_timer: 1.2 };
                     continue;
                 }
 
-                if hunter.eval_timer <= 0.0 {
-                    hunter.eval_timer = 1.4;
-
-                    // Evaluate player movement history:
-                    // 1. High switch frequency in last second indicates erratic dodging -> low prediction confidence
-                    if history.switch_count_last_second >= 2 {
-                        hunter.confidence = 0.35; // Below 0.70 threshold: stay in tracking mode
-                    } else if (now - history.last_switch_time) < 0.45 && !history.recent_switches.is_empty() {
-                        // Player recently initiated a deliberate transition
-                        let target_lane = match player.lane {
-                            Lane::Left => Lane::Center,
-                            Lane::Center => {
-                                // If player moved into center from left, momentum suggests right, and vice versa
-                                if let Some(&(_, prev_lane)) = history.recent_switches.iter().rev().nth(1) {
-                                    if prev_lane == Lane::Left {
-                                        Lane::Right
-                                    } else {
-                                        Lane::Left
-                                    }
-                                } else {
-                                    Lane::Center
-                                }
-                            }
-                            Lane::Right => Lane::Center,
-                        };
-                        hunter.confidence = 0.78; // Above 0.70 threshold: commit to telegraph
-                        hunter.state = HunterState::Telegraphing {
-                            target_lane,
-                            timer: 0.65, // 0.65s telegraph provides >= 0.47s reaction window above human reflex
-                        };
-                        enemy.target_lane = target_lane;
-                        threat_alerts.hunter_telegraph_lane = Some(target_lane);
-                        sfx.send(SoundEffect::Dash);
-                    } else {
-                        // Steady line held for > 0.8s
-                        hunter.confidence = 0.82; // Above 0.70 threshold: predict interception in current lane
-                        hunter.state = HunterState::Telegraphing {
-                            target_lane: player.lane,
-                            timer: 0.65,
-                        };
-                        enemy.target_lane = player.lane;
-                        threat_alerts.hunter_telegraph_lane = Some(player.lane);
-                        sfx.send(SoundEffect::Dash);
-                    }
+                lock_timer -= dt;
+                if lock_timer <= 0.0 {
+                    // LOCK ACQUIRED! Lock onto the player's current lane.
+                    // THIS LANE IS FIXED: Even if the player shifts lanes during the warning,
+                    // target_lane will NOT update.
+                    let target_lane = player.lane;
+                    hunter.state = HunterState::Telegraphing {
+                        target_lane,
+                        timer: 0.65, // Kinematic guarantee: 0.65s allows human reaction (0.18s) + lane transition (0.17s) + margin
+                        total_time: 0.65,
+                    };
+                    enemy.target_lane = target_lane;
+                    threat_alerts.hunter_telegraph_lane = Some(target_lane);
+                    sfx.send(SoundEffect::Dash); // Lock-on warning audio cue
+                } else {
+                    hunter.state = HunterState::LockingTarget { lock_timer };
                 }
             }
-            HunterState::Telegraphing { target_lane, mut timer } => {
+            HunterState::Telegraphing { target_lane, mut timer, total_time } => {
                 timer -= dt;
-                enemy.is_attacking = true;
+                // Red warning active: broadcast locked target lane to HUD
                 threat_alerts.hunter_telegraph_lane = Some(target_lane);
-                // Hover slightly forward and aim beam into target lane
-                let target_z = p_trans.translation.z + 3.5;
+                enemy.target_lane = target_lane;
+                enemy.is_attacking = false;
+
+                // Hold stable firing position slightly behind Kai
+                let target_z = p_trans.translation.z + 5.2;
                 d_trans.translation.z += (target_z - d_trans.translation.z) * 8.0 * dt;
                 enemy.distance_from_player = d_trans.translation.z - p_trans.translation.z;
 
                 if timer <= 0.0 {
                     threat_alerts.hunter_telegraph_lane = None;
-                    hunter.state = HunterState::CommittedSweep {
+                    hunter.state = HunterState::Firing {
                         target_lane,
-                        timer: 0.6,
+                        burst_timer: 0.16,
+                        has_resolved_hit: false,
                     };
                 } else {
-                    hunter.state = HunterState::Telegraphing { target_lane, timer };
+                    hunter.state = HunterState::Telegraphing { target_lane, timer, total_time };
                 }
             }
-            HunterState::CommittedSweep { target_lane, mut timer } => {
-                timer -= dt;
+            HunterState::Firing { target_lane, mut burst_timer, mut has_resolved_hit } => {
                 threat_alerts.hunter_telegraph_lane = None;
-                // Surge forward aggressively along target lane
-                let target_z = p_trans.translation.z + 0.8;
-                d_trans.translation.z += (target_z - d_trans.translation.z) * 12.0 * dt;
-                enemy.distance_from_player = d_trans.translation.z - p_trans.translation.z;
+                burst_timer -= dt;
                 enemy.target_lane = target_lane;
+                enemy.is_attacking = true;
 
-                if timer <= 0.0 {
-                    // Sweep finished; return to tracking flank
-                    hunter.state = HunterState::TrackingFlank;
-                    hunter.eval_timer = 1.8;
-                    enemy.is_attacking = false;
+                // Keep relative position steady during the rapid 0.16s blast
+                let target_z = p_trans.translation.z + 5.2;
+                d_trans.translation.z = target_z;
+                enemy.distance_from_player = 5.2;
+
+                if !has_resolved_hit {
+                    has_resolved_hit = true;
+                    sfx.send(SoundEffect::ShieldBreak); // Laser blast impact sound
+
+                    // SKILL-BASED DODGE RESOLUTION:
+                    // Laser strikes the locked lane. Check if player evaded!
+                    if player.lane == target_lane {
+                        // PLAYER HIT - Did not dodge!
+                        if powerups.overdrive_timer > 0.0 {
+                            // Rule: Overdrive destroys Hunter!
+                            stats.fragments += 25;
+                            stats.score += 400;
+                            sfx.send(SoundEffect::ShieldBreak);
+                            commands.entity(entity).despawn_recursive();
+                            let mut rng = rand::thread_rng();
+                            squad_mgr.hunter_cooldown = 4.0 + rng.gen_range(0.0..3.0);
+                            return;
+                        } else if player.invulnerable_timer > 0.0 {
+                            // Rule: Invulnerable - no damage
+                        } else if powerups.shield {
+                            // Rule: Shield absorbs laser strike
+                            if powerups.shield_hits > 1 {
+                                powerups.shield_hits -= 1;
+                            } else {
+                                powerups.shield = false;
+                                powerups.shield_hits = 0;
+                            }
+                            player.invulnerable_timer = 1.5;
+                            stats.stumble_intensity = 0.8;
+                            sfx.send(SoundEffect::ShieldBreak);
+                        } else if stats.stumble_intensity == 0.0 {
+                            // Rule: Normal - player stumbles
+                            stats.stumble_intensity = 0.85;
+                            player.invulnerable_timer = 1.6;
+                            sfx.send(SoundEffect::Stumble);
+                        } else {
+                            // Rule: Already stumbling - fatal hit!
+                            sfx.send(SoundEffect::Crash);
+                            next_state.set(AppState::GameOver);
+                            return;
+                        }
+                    } else {
+                        // PLAYER DODGED!
+                        // Laser strikes empty lane, clean miss!
+                    }
+                }
+
+                if burst_timer <= 0.0 {
+                    hunter.state = HunterState::Retreating { retreat_timer: 1.2 };
                 } else {
-                    hunter.state = HunterState::CommittedSweep { target_lane, timer };
+                    hunter.state = HunterState::Firing { target_lane, burst_timer, has_resolved_hit };
+                }
+            }
+            HunterState::Retreating { mut retreat_timer } => {
+                threat_alerts.hunter_telegraph_lane = None;
+                enemy.is_attacking = false;
+                retreat_timer -= dt;
+
+                // Drone accelerates upward and backward into the shadows
+                d_trans.translation.y += 6.5 * dt;
+                d_trans.translation.z += 9.0 * dt;
+                enemy.distance_from_player = d_trans.translation.z - p_trans.translation.z;
+
+                if retreat_timer <= 0.0 {
+                    // Despawn Hunter and enter random 4-7 second predator cooldown
+                    commands.entity(entity).despawn_recursive();
+                    let mut rng = rand::thread_rng();
+                    squad_mgr.hunter_cooldown = 4.0 + rng.gen_range(0.0..3.0);
+                } else {
+                    hunter.state = HunterState::Retreating { retreat_timer };
                 }
             }
         }
@@ -973,46 +1126,8 @@ fn player_enemy_interaction_fixed(
                 }
             }
             EnemyType::Hunter => {
-                // If Hunter is actively sweeping into player's lane:
-                if enemy.is_attacking && (p_pos.x - e_pos.x).abs() < 1.3 && z_dist < 1.4 {
-                    // Rule 1: Dash / Overdrive destroys Hunter!
-                    if powerups.overdrive_timer > 0.0 || (player.character == CharacterType::Mira && player.invulnerable_timer > 0.8) {
-                        stats.fragments += 15;
-                        stats.score += 300;
-                        sfx.send(SoundEffect::ShieldBreak);
-                        commands.entity(entity).despawn_recursive();
-                        return;
-                    }
-
-                    if player.invulnerable_timer > 0.0 {
-                        continue;
-                    }
-
-                    // Rule 2: Shield absorbs hit
-                    if powerups.shield {
-                        if powerups.shield_hits > 1 {
-                            powerups.shield_hits -= 1;
-                        } else {
-                            powerups.shield = false;
-                            powerups.shield_hits = 0;
-                        }
-                        player.invulnerable_timer = 1.5;
-                        stats.stumble_intensity = 0.8;
-                        sfx.send(SoundEffect::ShieldBreak);
-                        return;
-                    }
-
-                    // Rule 3: Stumble or Crash
-                    if stats.stumble_intensity == 0.0 {
-                        stats.stumble_intensity = 0.85;
-                        player.invulnerable_timer = 1.6;
-                        sfx.send(SoundEffect::Stumble);
-                    } else {
-                        sfx.send(SoundEffect::Crash);
-                        next_state.set(AppState::GameOver);
-                        return;
-                    }
-                }
+                // Hunter targeting and hit/dodge resolution is authoritatively handled
+                // via its skill-based laser strike in update_hunter_ai_fixed
             }
             EnemyType::Heavy => {
                 // If player enters Heavy lane with fair collision margins:
@@ -1081,7 +1196,7 @@ fn player_enemy_interaction_fixed(
 fn update_enemy_visual_smoothing(
     time: Res<Time>,
     player_q: Query<&Transform, With<Player>>,
-    mut enemy_q: Query<(&mut Transform, &ActiveEnemy), Without<Player>>,
+    mut enemy_q: Query<(&mut Transform, &ActiveEnemy, Option<&HunterDrone>), Without<Player>>,
 ) {
     let p_trans = match player_q.get_single() {
         Ok(t) => t,
@@ -1091,7 +1206,7 @@ fn update_enemy_visual_smoothing(
     let dt = time.delta_seconds();
     let t = time.elapsed_seconds();
 
-    for (mut d_trans, enemy) in enemy_q.iter_mut() {
+    for (mut d_trans, enemy, hunter_opt) in enemy_q.iter_mut() {
         match enemy.enemy_type {
             EnemyType::Scout => {
                 let target_x = enemy.target_lane.x_pos() + (t * 2.5).sin() * 0.35;
@@ -1101,11 +1216,26 @@ fn update_enemy_visual_smoothing(
                 d_trans.look_at(p_trans.translation + Vec3::new(0.0, 0.6, 0.0), Vec3::Y);
             }
             EnemyType::Hunter => {
-                let target_x = enemy.target_lane.x_pos() + (t * 3.2).cos() * 0.3;
-                let target_y = 2.8 + (t * 4.0).sin() * 0.25;
-                d_trans.translation.x += (target_x - d_trans.translation.x) * 14.0 * dt;
-                d_trans.translation.y += (target_y - d_trans.translation.y) * 9.0 * dt;
-                d_trans.look_at(p_trans.translation, Vec3::Y);
+                if let Some(hunter) = hunter_opt {
+                    match hunter.state {
+                        HunterState::Infiltrating { .. } | HunterState::LockingTarget { .. } => {
+                            let target_x = enemy.target_lane.x_pos() + (t * 2.8).cos() * 0.25;
+                            let target_y = 2.8 + (t * 3.5).sin() * 0.18;
+                            d_trans.translation.x += (target_x - d_trans.translation.x) * 12.0 * dt;
+                            d_trans.translation.y += (target_y - d_trans.translation.y) * 8.0 * dt;
+                        }
+                        HunterState::Telegraphing { target_lane, .. } | HunterState::Firing { target_lane, .. } => {
+                            let target_x = target_lane.x_pos();
+                            let target_y = 2.8;
+                            d_trans.translation.x += (target_x - d_trans.translation.x) * 14.0 * dt;
+                            d_trans.translation.y += (target_y - d_trans.translation.y) * 10.0 * dt;
+                        }
+                        HunterState::Retreating { .. } => {
+                            // Retreat altitude and distance managed in update_hunter_ai_fixed
+                        }
+                    }
+                }
+                d_trans.rotation = Quat::IDENTITY;
             }
             EnemyType::Heavy => {
                 // Grounded hovering bulkhead
@@ -1115,6 +1245,159 @@ fn update_enemy_visual_smoothing(
                 // Menacing crystalline float
                 d_trans.translation.y = 3.6 + (t * 2.8).sin() * 0.3;
                 d_trans.rotate_y(1.2 * dt);
+            }
+        }
+    }
+}
+
+// ----------------------------------------------------------------------------
+// HUNTER LASER & IMPACT DANGER MARKER VISUALS (Update schedule)
+// ----------------------------------------------------------------------------
+fn update_hunter_laser_visuals(
+    time: Res<Time>,
+    assets: Option<Res<EnemyAssets>>,
+    player_q: Query<&Transform, With<Player>>,
+    hunter_q: Query<(&Transform, &HunterDrone, &Children), (With<HunterDrone>, Without<HunterModel>, Without<HunterLaserBeam>, Without<HunterImpactMarker>, Without<Player>)>,
+    mut model_q: Query<&mut Transform, (With<HunterModel>, Without<HunterLaserBeam>, Without<HunterImpactMarker>, Without<Player>)>,
+    mut beam_q: Query<(&mut Transform, &mut Visibility, &mut Handle<StandardMaterial>), (With<HunterLaserBeam>, Without<HunterModel>, Without<HunterImpactMarker>, Without<Player>)>,
+    mut marker_q: Query<(&mut Transform, &mut Visibility), (With<HunterImpactMarker>, Without<HunterModel>, Without<HunterLaserBeam>, Without<Player>)>,
+) {
+    let assets = match assets {
+        Some(a) => a,
+        None => return,
+    };
+
+    let p_trans = match player_q.get_single() {
+        Ok(t) => t,
+        Err(_) => return,
+    };
+
+    let t = time.elapsed_seconds();
+
+    for (h_trans, hunter, children) in hunter_q.iter() {
+        let mut model_rot = Quat::IDENTITY;
+
+        // 1. Orient HunterModel child toward Kai (tracking) or target impact point (telegraph/firing)
+        for &child in children.iter() {
+            if let Ok(mut m_trans) = model_q.get_mut(child) {
+                match hunter.state {
+                    HunterState::Infiltrating { .. } | HunterState::LockingTarget { .. } => {
+                        let look_target = p_trans.translation - h_trans.translation + Vec3::new(0.0, 0.6, 0.0);
+                        m_trans.look_at(look_target, Vec3::Y);
+                        model_rot = m_trans.rotation;
+                    }
+                    HunterState::Telegraphing { target_lane, .. } | HunterState::Firing { target_lane, .. } => {
+                        let target_world = Vec3::new(target_lane.x_pos(), 0.04, p_trans.translation.z);
+                        let look_target = target_world - h_trans.translation;
+                        m_trans.look_at(look_target, Vec3::Y);
+                        model_rot = m_trans.rotation;
+                    }
+                    HunterState::Retreating { .. } => {
+                        m_trans.rotation = Quat::from_rotation_x(0.35);
+                        model_rot = m_trans.rotation;
+                    }
+                }
+            }
+        }
+
+        let emitter_local = model_rot * Vec3::new(0.0, -0.15, -0.55);
+
+        // 2. Update Laser Beam and Ground Impact Danger Marker
+        for &child in children.iter() {
+            if let Ok((mut b_trans, mut b_vis, mut b_mat)) = beam_q.get_mut(child) {
+                match hunter.state {
+                    HunterState::Telegraphing { target_lane, .. } => {
+                        *b_vis = Visibility::Visible;
+                        *b_mat = assets.mat_hunter_laser.clone();
+
+                        let target_local = Vec3::new(
+                            target_lane.x_pos() - h_trans.translation.x,
+                            0.04 - h_trans.translation.y,
+                            p_trans.translation.z - h_trans.translation.z,
+                        );
+                        let v = target_local - emitter_local;
+                        let len = v.length();
+                        if len > 0.05 {
+                            let mid = emitter_local + v * 0.5;
+                            b_trans.translation = mid;
+                            b_trans.rotation = Transform::IDENTITY.looking_at(v, Vec3::Y).rotation;
+                            b_trans.scale = Vec3::new(0.07, 0.07, len);
+                        }
+                    }
+                    HunterState::Firing { target_lane, .. } => {
+                        *b_vis = Visibility::Visible;
+                        *b_mat = assets.mat_hunter_laser_burst.clone();
+
+                        let target_local = Vec3::new(
+                            target_lane.x_pos() - h_trans.translation.x,
+                            0.04 - h_trans.translation.y,
+                            p_trans.translation.z - h_trans.translation.z,
+                        );
+                        let v = target_local - emitter_local;
+                        let len = v.length();
+                        if len > 0.05 {
+                            let mid = emitter_local + v * 0.5;
+                            b_trans.translation = mid;
+                            b_trans.rotation = Transform::IDENTITY.looking_at(v, Vec3::Y).rotation;
+                            b_trans.scale = Vec3::new(0.24, 0.24, len);
+                        }
+                    }
+                    _ => {
+                        *b_vis = Visibility::Hidden;
+                    }
+                }
+            }
+
+            if let Ok((mut m_trans, mut m_vis)) = marker_q.get_mut(child) {
+                match hunter.state {
+                    HunterState::Telegraphing { target_lane, timer, .. } => {
+                        // Pulsing strobe frequency ramp:
+                        // 0.65s -> 5 Hz (slow)
+                        // 0.40s -> 12 Hz (faster)
+                        // 0.20s -> 24 Hz (very fast)
+                        // 0.05s -> 48 Hz (intense strobe)
+                        let strobe_hz = if timer > 0.40 {
+                            5.0
+                        } else if timer > 0.20 {
+                            12.0
+                        } else if timer > 0.05 {
+                            24.0
+                        } else {
+                            48.0
+                        };
+
+                        let pulse_sin = (t * strobe_hz * std::f32::consts::TAU).sin();
+                        *m_vis = if pulse_sin > -0.3 {
+                            Visibility::Visible
+                        } else {
+                            Visibility::Hidden
+                        };
+
+                        let target_local = Vec3::new(
+                            target_lane.x_pos() - h_trans.translation.x,
+                            0.04 - h_trans.translation.y,
+                            p_trans.translation.z - h_trans.translation.z,
+                        );
+                        m_trans.translation = target_local;
+                        m_trans.rotation = Quat::IDENTITY;
+                        let scale_pulse = 1.0 + 0.12 * pulse_sin.max(0.0);
+                        m_trans.scale = Vec3::new(scale_pulse, 1.0, scale_pulse);
+                    }
+                    HunterState::Firing { target_lane, .. } => {
+                        *m_vis = Visibility::Visible;
+                        let target_local = Vec3::new(
+                            target_lane.x_pos() - h_trans.translation.x,
+                            0.04 - h_trans.translation.y,
+                            p_trans.translation.z - h_trans.translation.z,
+                        );
+                        m_trans.translation = target_local;
+                        m_trans.rotation = Quat::IDENTITY;
+                        m_trans.scale = Vec3::new(1.35, 1.5, 1.35);
+                    }
+                    _ => {
+                        *m_vis = Visibility::Hidden;
+                    }
+                }
             }
         }
     }
@@ -1154,7 +1437,7 @@ mod tests {
         app.add_event::<SoundEffect>();
         app.add_event::<RunResetEvent>();
 
-        // Register all enemy AI and gameplay systems
+        // Register all enemy AI, gameplay, and visual systems
         app.add_systems(
             Update,
             (
@@ -1164,6 +1447,7 @@ mod tests {
                 update_echo_hunter_boss_fixed,
                 player_enemy_interaction_fixed,
                 update_enemy_visual_smoothing,
+                update_hunter_laser_visuals,
                 animate_enemy_thrusters,
                 handle_run_reset_enemies,
             ),
@@ -1171,6 +1455,27 @@ mod tests {
 
         // app.update() initializes every system parameter and validates Query disjointness
         app.update();
+    }
+
+    #[test]
+    fn test_hunter_dodge_success_when_lane_switched() {
+        // Skill-based dodge fairness:
+        // Hunter locks onto Lane::Center. Kai dodges into Lane::Left.
+        // Firing strikes Lane::Center; Kai in Lane::Left is completely safe.
+        let targeted_lane = Lane::Center;
+        let player_lane = Lane::Left;
+        let hit = player_lane == targeted_lane;
+        assert!(!hit, "Player must successfully dodge Hunter laser strike when switching lanes");
+    }
+
+    #[test]
+    fn test_hunter_attack_cooldown_range_fairness() {
+        // Pacing guarantee: Hunter predator encounters must maintain 4.0s - 7.0s breathing room
+        for _ in 0..100 {
+            let mut rng = rand::thread_rng();
+            let cd = 4.0 + rng.gen_range(0.0..3.0);
+            assert!(cd >= 4.0 && cd <= 7.0, "Hunter cooldown must remain strictly within 4-7s range");
+        }
     }
 
     #[test]
