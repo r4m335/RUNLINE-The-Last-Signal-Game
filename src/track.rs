@@ -34,7 +34,7 @@ impl Plugin for TrackPlugin {
                 (
                     maintain_rolling_track,
                     despawn_distant_entities,
-                    handle_zone_lighting_events,
+                    handle_zone_transition_events,
                 )
                     .run_if(in_state(AppState::InGame)),
             );
@@ -1045,39 +1045,13 @@ fn despawn_distant_entities(
 }
 
 // -------------------------------------------------------------
-// EVENT-DRIVEN ZONE LIGHTING
+// EVENT-DRIVEN ZONE TRANSITION SFX (UNIFIED GLOBAL LIGHTING)
 // -------------------------------------------------------------
-fn handle_zone_lighting_events(
+fn handle_zone_transition_events(
     mut zone_events: EventReader<ZoneChangedEvent>,
-    mut clear_color: ResMut<ClearColor>,
-    mut dir_light_q: Query<&mut DirectionalLight>,
-    mut fog_q: Query<&mut bevy::pbr::FogSettings>,
     mut sfx: EventWriter<SoundEffect>,
 ) {
-    for event in zone_events.read() {
-        clear_color.0 = event.config.ambient_color;
-        if let Ok(mut dl) = dir_light_q.get_single_mut() {
-            dl.color = event.config.directional_color;
-        }
-        if let Ok(mut fog) = fog_q.get_single_mut() {
-            if event.config.id == 2 {
-                // Zone 2: Neon District atmospheric violet smog
-                fog.color = Color::srgb(0.09, 0.04, 0.14);
-                fog.falloff = bevy::pbr::FogFalloff::Linear {
-                    start: 45.0,
-                    end: 240.0,
-                };
-            } else if event.config.id == 1 {
-                // Zone 1: Old Metro subterranean tunnel haze
-                fog.color = Color::srgb(0.03, 0.03, 0.04);
-                fog.falloff = bevy::pbr::FogFalloff::Linear {
-                    start: 25.0,
-                    end: 110.0,
-                };
-            } else {
-                fog.color = event.config.ambient_color;
-            }
-        }
+    for _event in zone_events.read() {
         sfx.send(SoundEffect::ZoneTransition);
     }
 }
@@ -1102,4 +1076,76 @@ fn spawn_segment(
         length,
         distance,
     );
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::zones::ZONES;
+
+    #[test]
+    fn test_zone_transition_preserves_unified_global_lighting() {
+        let mut app = App::new();
+        let neutral_dir_color = Color::srgb(0.90, 0.90, 0.92);
+        let neutral_clear_color = Color::srgb(0.04, 0.04, 0.05);
+
+        app.insert_resource(ClearColor(neutral_clear_color))
+            .add_event::<ZoneChangedEvent>()
+            .add_event::<SoundEffect>()
+            .add_systems(Update, handle_zone_transition_events);
+
+        let dl_entity = app
+            .world_mut()
+            .spawn(DirectionalLight {
+                color: neutral_dir_color,
+                illuminance: 3200.0,
+                ..default()
+            })
+            .id();
+
+        let mut total_sfx_count = 0;
+        let mut reader = app.world().resource::<Events<SoundEffect>>().get_reader();
+
+        // Transition through all 7 zones
+        for i in 0..ZONES.len() - 1 {
+            app.world_mut().send_event(ZoneChangedEvent {
+                from_zone: ZONES[i].id,
+                to_zone: ZONES[i + 1].id,
+                config: ZONES[i + 1],
+            });
+            app.update();
+
+            let sfx_events = app.world().resource::<Events<SoundEffect>>();
+            total_sfx_count += reader
+                .read(sfx_events)
+                .filter(|sfx| matches!(sfx, SoundEffect::ZoneTransition))
+                .count();
+
+            // Verify DirectionalLight color remains strictly neutral white across all zones
+            let dl = app.world().get::<DirectionalLight>(dl_entity).unwrap();
+            assert_eq!(
+                dl.color,
+                neutral_dir_color,
+                "Zone transition from {} to {} must not recolor DirectionalLight",
+                ZONES[i].id,
+                ZONES[i + 1].id
+            );
+
+            // Verify ClearColor remains strictly neutral dark across all zones
+            let clear = app.world().resource::<ClearColor>();
+            assert_eq!(
+                clear.0,
+                neutral_clear_color,
+                "Zone transition from {} to {} must not recolor ClearColor",
+                ZONES[i].id,
+                ZONES[i + 1].id
+            );
+        }
+
+        assert_eq!(
+            total_sfx_count,
+            ZONES.len() - 1,
+            "Every zone transition must emit a transition SFX without altering global lighting"
+        );
+    }
 }

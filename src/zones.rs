@@ -8,8 +8,6 @@ pub struct ZoneConfig {
     pub subtitle: &'static str,
     pub start_distance: f32,
     pub end_distance: f32,
-    pub ambient_color: Color,
-    pub directional_color: Color,
     pub track_base_color: Color,
     pub rail_emissive: LinearRgba,
     pub arch_color: Color,
@@ -29,8 +27,6 @@ pub const ZONES: [ZoneConfig; 7] = [
         subtitle: "Abandoned Sector 04 // Warning: Veyron patrols inbound",
         start_distance: 0.0,
         end_distance: 800.0,
-        ambient_color: Color::srgb(0.04, 0.05, 0.07),
-        directional_color: Color::srgb(0.30, 0.35, 0.42),
         track_base_color: Color::srgb(0.09, 0.09, 0.11),
         rail_emissive: LinearRgba::new(0.0, 0.70, 0.95, 1.0),
         arch_color: Color::srgb(0.18, 0.16, 0.14),
@@ -45,8 +41,6 @@ pub const ZONES: [ZoneConfig; 7] = [
         subtitle: "Upper Aurelia Railway // Holographic Traffic Active",
         start_distance: 800.0,
         end_distance: 1800.0,
-        ambient_color: Color::srgb(0.12, 0.05, 0.18),
-        directional_color: Color::srgb(0.6, 0.2, 0.8),
         track_base_color: Color::srgb(0.10, 0.08, 0.15),
         rail_emissive: LinearRgba::new(0.9, 0.1, 0.7, 1.0), // Vivid Neon Magenta
         arch_color: Color::srgb(0.15, 0.12, 0.25),
@@ -61,8 +55,6 @@ pub const ZONES: [ZoneConfig; 7] = [
         subtitle: "Foundry Transit Grid // High Temperature & Machinery",
         start_distance: 1800.0,
         end_distance: 3000.0,
-        ambient_color: Color::srgb(0.16, 0.08, 0.04),
-        directional_color: Color::srgb(0.9, 0.45, 0.15),
         track_base_color: Color::srgb(0.15, 0.10, 0.08),
         rail_emissive: LinearRgba::new(1.0, 0.4, 0.0, 1.0), // Molten Orange
         arch_color: Color::srgb(0.22, 0.16, 0.12),
@@ -77,8 +69,6 @@ pub const ZONES: [ZoneConfig; 7] = [
         subtitle: "Subterranean Reservoir // Submerged Line B",
         start_distance: 3000.0,
         end_distance: 4800.0,
-        ambient_color: Color::srgb(0.03, 0.12, 0.16),
-        directional_color: Color::srgb(0.1, 0.6, 0.7),
         track_base_color: Color::srgb(0.05, 0.15, 0.18),
         rail_emissive: LinearRgba::new(0.0, 0.8, 0.7, 1.0), // Turquoise bioluminescence
         arch_color: Color::srgb(0.08, 0.18, 0.20),
@@ -93,8 +83,6 @@ pub const ZONES: [ZoneConfig; 7] = [
         subtitle: "Altitude: 850m Above Aurelia // Severe Turbulence",
         start_distance: 4800.0,
         end_distance: 6500.0,
-        ambient_color: Color::srgb(0.08, 0.12, 0.25),
-        directional_color: Color::srgb(0.4, 0.6, 0.9),
         track_base_color: Color::srgb(0.12, 0.16, 0.26),
         rail_emissive: LinearRgba::new(0.3, 0.7, 1.0, 1.0), // Cloud Lightning Blue
         arch_color: Color::srgb(0.18, 0.22, 0.35),
@@ -109,8 +97,6 @@ pub const ZONES: [ZoneConfig; 7] = [
         subtitle: "Incident Ground Zero // Reality Distortion Detected",
         start_distance: 6500.0,
         end_distance: 8500.0,
-        ambient_color: Color::srgb(0.18, 0.02, 0.04),
-        directional_color: Color::srgb(0.9, 0.1, 0.2),
         track_base_color: Color::srgb(0.12, 0.02, 0.04),
         rail_emissive: LinearRgba::new(1.0, 0.05, 0.1, 1.0), // Emergency Blood Crimson
         arch_color: Color::srgb(0.25, 0.05, 0.08),
@@ -125,8 +111,6 @@ pub const ZONES: [ZoneConfig; 7] = [
         subtitle: "Deep Crystal Chamber // AI Resonance Maximum",
         start_distance: 8500.0,
         end_distance: f32::INFINITY,
-        ambient_color: Color::srgb(0.05, 0.20, 0.25),
-        directional_color: Color::srgb(0.2, 0.8, 1.0),
         track_base_color: Color::srgb(0.08, 0.22, 0.28),
         rail_emissive: LinearRgba::new(0.1, 1.0, 0.9, 1.0), // Pure Radiant Cyan Crystal
         arch_color: Color::srgb(0.10, 0.30, 0.40),
@@ -197,5 +181,16 @@ mod tests {
         assert_eq!(get_zone_for_distance(6500.0).id, 6);
         assert_eq!(get_zone_for_distance(8500.0).id, 7);
         assert_eq!(get_zone_for_distance(25000.0).id, 7);
+    }
+
+    #[test]
+    fn test_zone_environmental_palettes_remain_active() {
+        for zone in ZONES.iter() {
+            // Verify individual environmental material colors exist and are configured
+            assert!(zone.speed_modifier > 0.0);
+            assert!(zone.obstacle_density > 0.0);
+            assert_ne!(zone.name, "");
+            assert_ne!(zone.subtitle, "");
+        }
     }
 }

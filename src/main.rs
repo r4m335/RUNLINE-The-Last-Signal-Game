@@ -60,7 +60,7 @@ fn main() {
         .init_resource::<ThreatAlertState>()
         .init_resource::<QualitySettings>()
         .add_event::<RunResetEvent>()
-        .insert_resource(ClearColor(Color::srgb(0.04, 0.05, 0.07)))
+        .insert_resource(ClearColor(Color::srgb(0.04, 0.04, 0.05)))
         // Architectural Plugins
         .add_plugins((
             DirectorPlugin,
@@ -97,7 +97,7 @@ fn setup_scene(mut commands: Commands) {
             ..default()
         },
         bevy::pbr::FogSettings {
-            color: Color::srgb(0.04, 0.03, 0.06),
+            color: Color::srgb(0.04, 0.04, 0.05),
             falloff: bevy::pbr::FogFalloff::Linear {
                 start: 40.0,
                 end: 220.0,
@@ -107,10 +107,10 @@ fn setup_scene(mut commands: Commands) {
         MainCamera,
     ));
 
-    // Directional Lighting (Low-angle subterranean rake)
+    // Directional Lighting (Neutral white key illumination)
     commands.spawn(DirectionalLightBundle {
         directional_light: DirectionalLight {
-            color: Color::srgb(0.40, 0.45, 0.52),
+            color: Color::srgb(0.90, 0.90, 0.92),
             illuminance: 3200.0,
             shadows_enabled: false,
             ..default()
@@ -119,9 +119,9 @@ fn setup_scene(mut commands: Commands) {
         ..default()
     });
 
-    // Strategic Ambient Lighting (Dark subterranean envelope)
+    // Strategic Ambient Lighting (Neutral ambient fill envelope)
     commands.insert_resource(AmbientLight {
-        color: Color::srgb(0.08, 0.10, 0.14),
+        color: Color::srgb(0.10, 0.10, 0.11),
         brightness: 80.0,
     });
 }
