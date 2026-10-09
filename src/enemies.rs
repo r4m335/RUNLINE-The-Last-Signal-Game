@@ -607,17 +607,21 @@ fn update_enemy_spawning_and_pacing(
     stats: Res<GameRunStats>,
     assets: Res<EnemyAssets>,
     mut squad_mgr: ResMut<EnemySquadManager>,
-    player_q: Query<&Transform, With<Player>>,
+    player_q: Query<(&Player, &Transform)>,
     enemies_q: Query<&ActiveEnemy>,
     obs_q: Query<(&ActiveObstacle, &Transform)>,
     mut boss_start_events: EventWriter<BossStartedEvent>,
     mut enemy_spawn_events: EventWriter<EnemySpawnedEvent>,
     mut boss_state: ResMut<BossBattleState>,
 ) {
-    let p_trans = match player_q.get_single() {
-        Ok(t) => t,
+    let (player, p_trans) = match player_q.get_single() {
+        Ok(value) => value,
         Err(_) => return,
     };
+
+    if !player.death_state.is_alive() {
+        return;
+    }
 
     let dt = time.delta_seconds();
     squad_mgr.spawn_cooldown -= dt;
@@ -821,7 +825,6 @@ fn update_hunter_ai_fixed(
     mut powerups: ResMut<ActivePowerUps>,
     mut threat_alerts: ResMut<ThreatAlertState>,
     mut squad_mgr: ResMut<EnemySquadManager>,
-    mut next_state: ResMut<NextState<AppState>>,
     mut hunter_q: Query<
         (Entity, &mut Transform, &mut ActiveEnemy, &mut HunterDrone),
         (With<HunterDrone>, Without<Player>, Without<HeavyBlocker>),
@@ -832,6 +835,10 @@ fn update_hunter_ai_fixed(
         Ok(res) => res,
         Err(_) => return,
     };
+
+    if !player.death_state.is_alive() {
+        return;
+    }
 
     let dt = time.delta_seconds();
 
@@ -1013,9 +1020,9 @@ fn update_hunter_ai_fixed(
                             stats.stumble_intensity = 0.8;
                             sfx.send(SoundEffect::ShieldBreak);
                         } else {
-                            // DIRECT HIT = IMMEDIATE GAME OVER!
+                            // Direct laser hit starts the shared death presentation.
                             sfx.send(SoundEffect::Crash);
-                            next_state.set(AppState::GameOver);
+                            player.begin_death(PlayerDeathState::Dying);
                             return;
                         }
                     } else {
@@ -1183,13 +1190,16 @@ fn player_enemy_interaction_fixed(
     mut powerups: ResMut<ActivePowerUps>,
     mut stats: ResMut<GameRunStats>,
     mut threat_alerts: ResMut<ThreatAlertState>,
-    mut next_state: ResMut<NextState<AppState>>,
     mut sfx: EventWriter<SoundEffect>,
 ) {
     let (mut player, p_trans) = match player_q.get_single_mut() {
         Ok(res) => res,
         Err(_) => return,
     };
+
+    if !player.death_state.is_alive() {
+        return;
+    }
     let dt = time.delta_seconds();
 
     let p_pos = p_trans.translation;
@@ -1211,7 +1221,7 @@ fn player_enemy_interaction_fixed(
                             if scout.grapple_grace_timer <= 0.0 {
                                 // Failed to recover within the 1.2s grace window
                                 sfx.send(SoundEffect::Crash);
-                                next_state.set(AppState::GameOver);
+                                player.begin_death(PlayerDeathState::Dying);
                                 return;
                             }
                         }
@@ -1275,7 +1285,7 @@ fn player_enemy_interaction_fixed(
 
                     // Fatal crash into fortified bulkhead
                     sfx.send(SoundEffect::Crash);
-                    next_state.set(AppState::GameOver);
+                    player.begin_death(PlayerDeathState::Dying);
                     return;
                 }
             }
@@ -1863,15 +1873,16 @@ mod tests {
     }
 
     #[test]
-    fn test_hunter_direct_laser_hit_causes_immediate_game_over() {
-        // Direct laser hit without defensive powerups must trigger immediate GameOver
+    fn test_hunter_direct_laser_hit_starts_death_presentation() {
+        // Direct laser hit without defensive powerups starts the shared death flow.
         let targeted_lane = Lane::Center;
         let player_lane = Lane::Center;
         let shield = false;
         let overdrive_active = false;
         let invulnerable = false;
 
-        let mut app_state = AppState::InGame;
+        let mut player = Player::default();
+        let app_state = AppState::InGame;
         if player_lane == targeted_lane {
             if overdrive_active {
                 // Hunter destroyed
@@ -1880,15 +1891,13 @@ mod tests {
             } else if shield {
                 // Shield absorbs
             } else {
-                app_state = AppState::GameOver;
+                assert!(player.begin_death(PlayerDeathState::Dying));
             }
         }
 
-        assert_eq!(
-            app_state,
-            AppState::GameOver,
-            "Direct Hunter laser strike must result in immediate GameOver"
-        );
+        assert_eq!(app_state, AppState::InGame);
+        assert_eq!(player.death_state, PlayerDeathState::Dying);
+        assert!(player.death_presentation_timer > 0.0);
     }
 
     #[test]

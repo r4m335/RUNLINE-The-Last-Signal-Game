@@ -416,13 +416,16 @@ fn lane_aware_collision_check(
     obs_q: Query<(Entity, &ActiveObstacle, &Transform)>,
     mut powerups: ResMut<ActivePowerUps>,
     mut stats: ResMut<GameRunStats>,
-    mut next_state: ResMut<NextState<AppState>>,
     mut sfx: EventWriter<SoundEffect>,
 ) {
     let (mut player, p_trans) = match player_q.get_single_mut() {
         Ok(res) => res,
         Err(_) => return,
     };
+
+    if !player.death_state.is_alive() {
+        return;
+    }
 
     if player.invulnerable_timer > 0.0 || powerups.overdrive_timer > 0.0 {
         return;
@@ -491,7 +494,7 @@ fn lane_aware_collision_check(
 
             // Fatal crash
             sfx.send(SoundEffect::Crash);
-            next_state.set(AppState::GameOver);
+            player.begin_death(PlayerDeathState::Dying);
             return;
         }
     }

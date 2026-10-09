@@ -153,6 +153,45 @@ pub struct Player {
     pub has_double_jumped: bool,
     pub invulnerable_timer: f32,
     pub dash_cooldown: f32,
+    pub death_state: PlayerDeathState,
+    pub death_presentation_timer: f32,
+}
+
+pub const DEATH_PRESENTATION_DURATION: f32 = 1.5;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+#[allow(dead_code)]
+pub enum PlayerDeathState {
+    #[default]
+    Alive,
+    Dying,
+    Falling,
+}
+
+impl PlayerDeathState {
+    pub fn is_alive(self) -> bool {
+        matches!(self, Self::Alive)
+    }
+}
+
+impl Player {
+    /// Starts the single authoritative death presentation. Returns false when
+    /// another lethal system has already claimed the player.
+    pub fn begin_death(&mut self, state: PlayerDeathState) -> bool {
+        if !self.death_state.is_alive() {
+            return false;
+        }
+
+        self.death_state = state;
+        self.death_presentation_timer = DEATH_PRESENTATION_DURATION;
+        self.y_velocity = 0.0;
+        self.is_grounded = true;
+        self.is_sliding = false;
+        self.slide_timer = 0.0;
+        self.has_double_jumped = false;
+        self.target_x = self.lane.x_pos();
+        true
+    }
 }
 
 impl Default for Player {
@@ -168,7 +207,43 @@ impl Default for Player {
             has_double_jumped: false,
             invulnerable_timer: 0.0,
             dash_cooldown: 0.0,
+            death_state: PlayerDeathState::Alive,
+            death_presentation_timer: 0.0,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Player, PlayerDeathState, DEATH_PRESENTATION_DURATION};
+
+    #[test]
+    fn death_presentation_is_non_repeatable_and_stops_player_motion() {
+        let mut player = Player::default();
+        player.is_sliding = true;
+        player.slide_timer = 0.4;
+        player.y_velocity = -12.0;
+
+        assert!(player.begin_death(PlayerDeathState::Dying));
+        assert_eq!(player.death_state, PlayerDeathState::Dying);
+        assert_eq!(player.death_presentation_timer, DEATH_PRESENTATION_DURATION);
+        assert!(player.is_grounded);
+        assert!(!player.is_sliding);
+        assert_eq!(player.slide_timer, 0.0);
+        assert_eq!(player.y_velocity, 0.0);
+
+        let timer_before_duplicate = player.death_presentation_timer;
+        assert!(!player.begin_death(PlayerDeathState::Dying));
+        assert_eq!(player.death_presentation_timer, timer_before_duplicate);
+    }
+
+    #[test]
+    fn falling_uses_the_same_death_presentation_contract() {
+        let mut player = Player::default();
+
+        assert!(player.begin_death(PlayerDeathState::Falling));
+        assert_eq!(player.death_state, PlayerDeathState::Falling);
+        assert_eq!(player.death_presentation_timer, DEATH_PRESENTATION_DURATION);
     }
 }
 

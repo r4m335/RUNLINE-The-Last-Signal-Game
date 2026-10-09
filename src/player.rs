@@ -153,6 +153,7 @@ impl Plugin for PlayerPlugin {
                 )
                     .run_if(in_state(AppState::InGame)),
             )
+            .add_systems(Update, death_presentation_system)
             .add_systems(
                 FixedUpdate,
                 player_physics_fixed.run_if(in_state(AppState::InGame)),
@@ -261,8 +262,10 @@ fn kai_animation_controller_system(
 
     let dt = time.delta_seconds();
 
-    // Step 4: Death is a proper final state in GameOver. Once in Death, do not restart.
-    if *app_state.get() == AppState::GameOver {
+    // Death presentation has priority over every gameplay animation. The
+    // player remains in InGame during the delay so the camera can keep framing
+    // Kai before the GameOver UI is entered.
+    if !player.death_state.is_alive() || *app_state.get() == AppState::GameOver {
         if controller.current_anim != Some(KaiAnimState::Death) {
             controller.current_anim = Some(KaiAnimState::Death);
             if let Some(&death_idx) = kai_assets.animations.get(KaiAnimState::Death.clip_name()) {
@@ -417,6 +420,8 @@ fn handle_run_reset_player(
             player.has_double_jumped = false;
             player.invulnerable_timer = 0.0;
             player.dash_cooldown = 0.0;
+            player.death_state = PlayerDeathState::Alive;
+            player.death_presentation_timer = 0.0;
 
             if let Some(mut ctrl) = opt_ctrl {
                 ctrl.current_anim = None;
@@ -533,6 +538,8 @@ pub fn spawn_player_entity(
                 has_double_jumped: false,
                 invulnerable_timer: 0.0,
                 dash_cooldown: 0.0,
+                death_state: PlayerDeathState::Alive,
+                death_presentation_timer: 0.0,
             },
             KaiAnimationController::default(),
         ))
@@ -637,6 +644,10 @@ fn player_input(
         Err(_) => return,
     };
 
+    if !player.death_state.is_alive() {
+        return;
+    }
+
     let now = time.elapsed_seconds();
 
     // Lane switches
@@ -739,6 +750,10 @@ fn player_physics_fixed(
     };
     let dt = time.delta_seconds();
 
+    if !player.death_state.is_alive() {
+        return;
+    }
+
     // Cooldown timers
     if player.dash_cooldown > 0.0 {
         player.dash_cooldown = (player.dash_cooldown - dt).max(0.0);
@@ -810,6 +825,31 @@ fn player_physics_fixed(
     }
 }
 
+fn death_presentation_system(
+    time: Res<Time>,
+    app_state: Res<State<AppState>>,
+    mut next_state: ResMut<NextState<AppState>>,
+    mut player_q: Query<&mut Player>,
+) {
+    if *app_state.get() != AppState::InGame {
+        return;
+    }
+
+    let Ok(mut player) = player_q.get_single_mut() else {
+        return;
+    };
+
+    if player.death_state.is_alive() {
+        return;
+    }
+
+    player.death_presentation_timer =
+        (player.death_presentation_timer - time.delta_seconds()).max(0.0);
+    if player.death_presentation_timer <= 0.0 {
+        next_state.set(AppState::GameOver);
+    }
+}
+
 // -------------------------------------------------------------
 // VISUAL SMOOTHING (Runs in Update for high-framerate rendering)
 // -------------------------------------------------------------
@@ -823,6 +863,10 @@ fn player_visual_smoothing(
         Err(_) => return,
     };
     let dt = time.delta_seconds();
+
+    if !player.death_state.is_alive() {
+        return;
+    }
 
     // Smooth horizontal lane transition
     let dx = player.target_x - transform.translation.x;
@@ -956,8 +1000,16 @@ fn player_powerup_visuals(
         powerups.overdrive_timer = (powerups.overdrive_timer - dt).max(0.0);
     }
 
+    let player_is_dying = player_q
+        .get_single()
+        .map(|player| !player.death_state.is_alive())
+        .unwrap_or(false);
+
     if let Ok(mut kai_vis) = kai_visual_q.get_single_mut() {
-        if powerups.overdrive_timer > 0.0 {
+        if player_is_dying {
+            // Keep Kai visible long enough for the death animation to read.
+            *kai_vis = Visibility::Inherited;
+        } else if powerups.overdrive_timer > 0.0 {
             // 9 Hz flicker: visible 80% of each cycle, 20% phase gap
             let phase = (time.elapsed_seconds() * 9.0).fract();
             *kai_vis = if phase < 0.80 {
