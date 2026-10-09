@@ -1,12 +1,12 @@
 use crate::neon_district::NeonDistrictAssets;
 use bevy::prelude::*;
 
-/// Authored Landmark sub-sections for Zone 2 — Neon District (800m–1800m).
+/// Authored Landmark sub-sections for Zone 2 — Neon District (2,000m–4,000m).
 /// Every sub-section guarantees deterministic, non-repetitive architectural storytelling
 /// while strictly avoiding any obstruction of the playable running corridor.
 
 // -----------------------------------------------------------------------------
-// CHAPTER 1: NEON ENTRY (800m – 1000m)
+// CHAPTER 1: NEON ENTRY (first 20% of Zone 2)
 // -----------------------------------------------------------------------------
 
 pub fn spawn_tunnel_exit_portal(seg: &mut ChildBuilder, neon: &NeonDistrictAssets, _is_even: bool) {
@@ -456,7 +456,7 @@ pub fn spawn_comms_tower_array_sub_section(
 }
 
 // -----------------------------------------------------------------------------
-// CHAPTER 5: VEYRON / INDUSTRIAL TRANSITION (1600m – 1800m)
+// CHAPTER 5: VEYRON / INDUSTRIAL TRANSITION (final 20% of Zone 2)
 // -----------------------------------------------------------------------------
 
 pub fn spawn_security_grid_gantry_sub_section(

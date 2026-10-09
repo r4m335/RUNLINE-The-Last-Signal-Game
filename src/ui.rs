@@ -784,7 +784,7 @@ fn update_perf_overlay(
     let pooled_count = pool.total_dormant();
     let light_count = light_q.iter().count();
 
-    if stats.distance < 800.0 {
+    if get_zone_for_distance(stats.distance).id == 1 {
         let variant = crate::old_metro::get_old_metro_variant(stats.distance);
         text.sections[0].value = format!(
             "{:.1} FPS | {:.2}ms | Ent: {} | Lights: {} | Pool: {} | Metro: {:?} | [{}]",

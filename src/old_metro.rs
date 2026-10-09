@@ -4,79 +4,81 @@ use crate::environment_props::PropAssets;
 use crate::environment_signage::SignageAssets;
 use crate::old_metro_landmarks;
 use crate::types::*;
+use crate::zones::normalized_zone_progress;
 use bevy::prelude::*;
 
-/// The 7 distinct narrative chapters across Old Metro (0–800m).
+/// The 7 distinct narrative chapters across Old Metro (0–2,000m).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OldMetroChapter {
-    /// 0–100m: Abandoned railway entrance arch, broken signage, hanging cables, water leaks.
+    /// First 12.5%: Abandoned railway entrance arch, broken signage, hanging cables, water leaks.
     Entrance,
-    /// 100–220m: Maintenance corridor, utility pipe runs, side tunnels, derelict train carriage.
+    /// 12.5–27.5%: Maintenance corridor, utility pipe runs, side tunnels, derelict train carriage.
     ServiceTunnel,
-    /// 220–350m: Station platform landmark, timetable, benches, posters, cyan ECHO graffiti.
+    /// 27.5–43.75%: Station platform landmark, timetable, benches, posters, cyan ECHO graffiti.
     Platform,
-    /// 350–470m: Industrial junction, pipe crossing manifolds, ventilation fans, rolling maintenance cart.
+    /// 43.75–58.75%: Industrial junction, pipe crossing manifolds, ventilation fans, rolling maintenance cart.
     MaintenanceJunction,
-    /// 470–600m: High-voltage transformers, cooling fins, ceramic insulators, electrical arc sparks.
+    /// 58.75–75%: High-voltage transformers, cooling fins, ceramic insulators, electrical arc sparks.
     PowerSubstation,
-    /// 600–700m: Structural roof collapse, concrete rubble piles, bent rebar, shoring jacks, red beacons.
+    /// 75–87.5%: Structural roof collapse, concrete rubble piles, bent rebar, shoring jacks, red beacons.
     CollapsedSection,
-    /// 700–800m: Brutalist matte-black Veyron security checkpoint, surveillance cameras, scanner gantry, Neon District glow.
+    /// Final 12.5%: Brutalist matte-black Veyron security checkpoint, surveillance cameras, scanner gantry, Neon District glow.
     VeyronCheckpoint,
 }
 
 /// The 22 granular sub-section visual variants across Old Metro, eliminating repetition.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OldMetroVariant {
-    // 0–100m Entrance
-    AbandonedEntrance, // 0–40m
-    DamagedTunnel,     // 40–70m
-    EchoTraces,        // 70–100m
+    // Entrance (first 12.5%)
+    AbandonedEntrance, // 0–5%
+    DamagedTunnel,     // 5–8.75%
+    EchoTraces,        // 8.75–12.5%
 
-    // 100–220m Service Tunnel
-    PipeCorridor,      // 100–140m
-    MaintenanceAccess, // 140–180m
-    DerelictCarriage,  // 180–220m
+    // Service Tunnel (12.5–27.5%)
+    PipeCorridor,      // 12.5–17.5%
+    MaintenanceAccess, // 17.5–22.5%
+    DerelictCarriage,  // 22.5–27.5%
 
-    // 220–350m Platform
-    PlatformApproach,    // 220–260m
-    MainStationPlatform, // 260–300m
-    StationAdWall,       // 300–330m
-    PlatformExit,        // 330–350m
+    // Platform (27.5–43.75%)
+    PlatformApproach,    // 27.5–32.5%
+    MainStationPlatform, // 32.5–37.5%
+    StationAdWall,       // 37.5–41.25%
+    PlatformExit,        // 41.25–43.75%
 
-    // 350–470m Maintenance Junction
-    JunctionManifold, // 350–390m
-    VentilationShaft, // 390–430m
-    MaintenanceCart,  // 430–470m
+    // Maintenance Junction (43.75–58.75%)
+    JunctionManifold, // 43.75–48.75%
+    VentilationShaft, // 48.75–53.75%
+    MaintenanceCart,  // 53.75–58.75%
 
-    // 470–600m Power Substation
-    SubstationFeeders,   // 470–510m
-    TransformerArcZone,  // 510–560m
-    EchoContaminatedGen, // 560–600m
+    // Power Substation (58.75–75%)
+    SubstationFeeders,   // 58.75–63.75%
+    TransformerArcZone,  // 63.75–70%
+    EchoContaminatedGen, // 70–75%
 
-    // 600–700m Collapsed Section
-    ShoringWarning,     // 600–640m
-    DeepCollapseRubble, // 640–675m
-    EmergencyBreach,    // 675–700m
+    // Collapsed Section (75–87.5%)
+    ShoringWarning,     // 75–80%
+    DeepCollapseRubble, // 80–84.375%
+    EmergencyBreach,    // 84.375–87.5%
 
-    // 700–800m Veyron Checkpoint
-    SecurityPerimeter, // 700–740m
-    CheckpointGantry,  // 740–775m
-    NeonExitPortal,    // 775–800m
+    // Veyron Checkpoint (87.5–100%)
+    SecurityPerimeter, // 87.5–92.5%
+    CheckpointGantry,  // 92.5–96.875%
+    NeonExitPortal,    // 96.875–100%
 }
 
 pub fn get_old_metro_chapter(distance: f32) -> OldMetroChapter {
-    if distance < 100.0 {
+    let progress = normalized_zone_progress(1, distance);
+    if progress < 0.125 {
         OldMetroChapter::Entrance
-    } else if distance < 220.0 {
+    } else if progress < 0.275 {
         OldMetroChapter::ServiceTunnel
-    } else if distance < 350.0 {
+    } else if progress < 0.4375 {
         OldMetroChapter::Platform
-    } else if distance < 470.0 {
+    } else if progress < 0.5875 {
         OldMetroChapter::MaintenanceJunction
-    } else if distance < 600.0 {
+    } else if progress < 0.75 {
         OldMetroChapter::PowerSubstation
-    } else if distance < 700.0 {
+    } else if progress < 0.875 {
         OldMetroChapter::CollapsedSection
     } else {
         OldMetroChapter::VeyronCheckpoint
@@ -84,47 +86,48 @@ pub fn get_old_metro_chapter(distance: f32) -> OldMetroChapter {
 }
 
 pub fn get_old_metro_variant(distance: f32) -> OldMetroVariant {
-    if distance < 40.0 {
+    let progress = normalized_zone_progress(1, distance);
+    if progress < 0.05 {
         OldMetroVariant::AbandonedEntrance
-    } else if distance < 70.0 {
+    } else if progress < 0.0875 {
         OldMetroVariant::DamagedTunnel
-    } else if distance < 100.0 {
+    } else if progress < 0.125 {
         OldMetroVariant::EchoTraces
-    } else if distance < 140.0 {
+    } else if progress < 0.175 {
         OldMetroVariant::PipeCorridor
-    } else if distance < 180.0 {
+    } else if progress < 0.225 {
         OldMetroVariant::MaintenanceAccess
-    } else if distance < 220.0 {
+    } else if progress < 0.275 {
         OldMetroVariant::DerelictCarriage
-    } else if distance < 260.0 {
+    } else if progress < 0.325 {
         OldMetroVariant::PlatformApproach
-    } else if distance < 300.0 {
+    } else if progress < 0.375 {
         OldMetroVariant::MainStationPlatform
-    } else if distance < 330.0 {
+    } else if progress < 0.4125 {
         OldMetroVariant::StationAdWall
-    } else if distance < 350.0 {
+    } else if progress < 0.4375 {
         OldMetroVariant::PlatformExit
-    } else if distance < 390.0 {
+    } else if progress < 0.4875 {
         OldMetroVariant::JunctionManifold
-    } else if distance < 430.0 {
+    } else if progress < 0.5375 {
         OldMetroVariant::VentilationShaft
-    } else if distance < 470.0 {
+    } else if progress < 0.5875 {
         OldMetroVariant::MaintenanceCart
-    } else if distance < 510.0 {
+    } else if progress < 0.6375 {
         OldMetroVariant::SubstationFeeders
-    } else if distance < 560.0 {
+    } else if progress < 0.70 {
         OldMetroVariant::TransformerArcZone
-    } else if distance < 600.0 {
+    } else if progress < 0.75 {
         OldMetroVariant::EchoContaminatedGen
-    } else if distance < 640.0 {
+    } else if progress < 0.80 {
         OldMetroVariant::ShoringWarning
-    } else if distance < 675.0 {
+    } else if progress < 0.84375 {
         OldMetroVariant::DeepCollapseRubble
-    } else if distance < 700.0 {
+    } else if progress < 0.875 {
         OldMetroVariant::EmergencyBreach
-    } else if distance < 740.0 {
+    } else if progress < 0.925 {
         OldMetroVariant::SecurityPerimeter
-    } else if distance < 775.0 {
+    } else if progress < 0.96875 {
         OldMetroVariant::CheckpointGantry
     } else {
         OldMetroVariant::NeonExitPortal
@@ -749,66 +752,66 @@ mod tests {
     #[test]
     fn test_old_metro_chapter_boundaries() {
         assert_eq!(get_old_metro_chapter(0.0), OldMetroChapter::Entrance);
-        assert_eq!(get_old_metro_chapter(50.0), OldMetroChapter::Entrance);
-        assert_eq!(get_old_metro_chapter(99.9), OldMetroChapter::Entrance);
+        assert_eq!(get_old_metro_chapter(125.0), OldMetroChapter::Entrance);
+        assert_eq!(get_old_metro_chapter(249.9), OldMetroChapter::Entrance);
 
-        assert_eq!(get_old_metro_chapter(100.0), OldMetroChapter::ServiceTunnel);
-        assert_eq!(get_old_metro_chapter(180.0), OldMetroChapter::ServiceTunnel);
-        assert_eq!(get_old_metro_chapter(219.9), OldMetroChapter::ServiceTunnel);
+        assert_eq!(get_old_metro_chapter(250.0), OldMetroChapter::ServiceTunnel);
+        assert_eq!(get_old_metro_chapter(450.0), OldMetroChapter::ServiceTunnel);
+        assert_eq!(get_old_metro_chapter(549.9), OldMetroChapter::ServiceTunnel);
 
-        assert_eq!(get_old_metro_chapter(220.0), OldMetroChapter::Platform);
-        assert_eq!(get_old_metro_chapter(300.0), OldMetroChapter::Platform);
-        assert_eq!(get_old_metro_chapter(349.9), OldMetroChapter::Platform);
+        assert_eq!(get_old_metro_chapter(550.0), OldMetroChapter::Platform);
+        assert_eq!(get_old_metro_chapter(750.0), OldMetroChapter::Platform);
+        assert_eq!(get_old_metro_chapter(874.9), OldMetroChapter::Platform);
 
         assert_eq!(
-            get_old_metro_chapter(350.0),
+            get_old_metro_chapter(875.0),
             OldMetroChapter::MaintenanceJunction
         );
         assert_eq!(
-            get_old_metro_chapter(400.0),
+            get_old_metro_chapter(1000.0),
             OldMetroChapter::MaintenanceJunction
         );
         assert_eq!(
-            get_old_metro_chapter(469.9),
+            get_old_metro_chapter(1174.9),
             OldMetroChapter::MaintenanceJunction
         );
 
         assert_eq!(
-            get_old_metro_chapter(470.0),
+            get_old_metro_chapter(1175.0),
             OldMetroChapter::PowerSubstation
         );
         assert_eq!(
-            get_old_metro_chapter(550.0),
+            get_old_metro_chapter(1375.0),
             OldMetroChapter::PowerSubstation
         );
         assert_eq!(
-            get_old_metro_chapter(599.9),
+            get_old_metro_chapter(1499.9),
             OldMetroChapter::PowerSubstation
         );
 
         assert_eq!(
-            get_old_metro_chapter(600.0),
+            get_old_metro_chapter(1500.0),
             OldMetroChapter::CollapsedSection
         );
         assert_eq!(
-            get_old_metro_chapter(650.0),
+            get_old_metro_chapter(1625.0),
             OldMetroChapter::CollapsedSection
         );
         assert_eq!(
-            get_old_metro_chapter(699.9),
+            get_old_metro_chapter(1749.9),
             OldMetroChapter::CollapsedSection
         );
 
         assert_eq!(
-            get_old_metro_chapter(700.0),
+            get_old_metro_chapter(1750.0),
             OldMetroChapter::VeyronCheckpoint
         );
         assert_eq!(
-            get_old_metro_chapter(750.0),
+            get_old_metro_chapter(1875.0),
             OldMetroChapter::VeyronCheckpoint
         );
         assert_eq!(
-            get_old_metro_chapter(799.9),
+            get_old_metro_chapter(1999.9),
             OldMetroChapter::VeyronCheckpoint
         );
     }
@@ -817,88 +820,88 @@ mod tests {
     fn test_old_metro_sub_section_variants() {
         // Entrance
         assert_eq!(
-            get_old_metro_variant(15.0),
+            get_old_metro_variant(75.0),
             OldMetroVariant::AbandonedEntrance
         );
-        assert_eq!(get_old_metro_variant(55.0), OldMetroVariant::DamagedTunnel);
-        assert_eq!(get_old_metro_variant(85.0), OldMetroVariant::EchoTraces);
+        assert_eq!(get_old_metro_variant(137.5), OldMetroVariant::DamagedTunnel);
+        assert_eq!(get_old_metro_variant(212.5), OldMetroVariant::EchoTraces);
 
         // Service Tunnel
-        assert_eq!(get_old_metro_variant(120.0), OldMetroVariant::PipeCorridor);
+        assert_eq!(get_old_metro_variant(300.0), OldMetroVariant::PipeCorridor);
         assert_eq!(
-            get_old_metro_variant(160.0),
+            get_old_metro_variant(400.0),
             OldMetroVariant::MaintenanceAccess
         );
         assert_eq!(
-            get_old_metro_variant(200.0),
+            get_old_metro_variant(500.0),
             OldMetroVariant::DerelictCarriage
         );
 
         // Platform
         assert_eq!(
-            get_old_metro_variant(240.0),
+            get_old_metro_variant(600.0),
             OldMetroVariant::PlatformApproach
         );
         assert_eq!(
-            get_old_metro_variant(280.0),
+            get_old_metro_variant(700.0),
             OldMetroVariant::MainStationPlatform
         );
-        assert_eq!(get_old_metro_variant(315.0), OldMetroVariant::StationAdWall);
-        assert_eq!(get_old_metro_variant(340.0), OldMetroVariant::PlatformExit);
+        assert_eq!(get_old_metro_variant(787.5), OldMetroVariant::StationAdWall);
+        assert_eq!(get_old_metro_variant(850.0), OldMetroVariant::PlatformExit);
 
         // Maintenance Junction
         assert_eq!(
-            get_old_metro_variant(370.0),
+            get_old_metro_variant(925.0),
             OldMetroVariant::JunctionManifold
         );
         assert_eq!(
-            get_old_metro_variant(410.0),
+            get_old_metro_variant(1025.0),
             OldMetroVariant::VentilationShaft
         );
         assert_eq!(
-            get_old_metro_variant(450.0),
+            get_old_metro_variant(1125.0),
             OldMetroVariant::MaintenanceCart
         );
 
         // Power Substation
         assert_eq!(
-            get_old_metro_variant(490.0),
+            get_old_metro_variant(1225.0),
             OldMetroVariant::SubstationFeeders
         );
         assert_eq!(
-            get_old_metro_variant(535.0),
+            get_old_metro_variant(1337.5),
             OldMetroVariant::TransformerArcZone
         );
         assert_eq!(
-            get_old_metro_variant(580.0),
+            get_old_metro_variant(1450.0),
             OldMetroVariant::EchoContaminatedGen
         );
 
         // Collapsed Section
         assert_eq!(
-            get_old_metro_variant(620.0),
+            get_old_metro_variant(1550.0),
             OldMetroVariant::ShoringWarning
         );
         assert_eq!(
-            get_old_metro_variant(660.0),
+            get_old_metro_variant(1650.0),
             OldMetroVariant::DeepCollapseRubble
         );
         assert_eq!(
-            get_old_metro_variant(685.0),
+            get_old_metro_variant(1712.5),
             OldMetroVariant::EmergencyBreach
         );
 
         // Veyron Checkpoint
         assert_eq!(
-            get_old_metro_variant(720.0),
+            get_old_metro_variant(1800.0),
             OldMetroVariant::SecurityPerimeter
         );
         assert_eq!(
-            get_old_metro_variant(760.0),
+            get_old_metro_variant(1900.0),
             OldMetroVariant::CheckpointGantry
         );
         assert_eq!(
-            get_old_metro_variant(790.0),
+            get_old_metro_variant(1975.0),
             OldMetroVariant::NeonExitPortal
         );
     }

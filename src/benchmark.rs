@@ -86,18 +86,18 @@ fn handle_benchmark_hotkey(
 
 const BENCHMARK_SCENARIOS: &[(f32, &'static str)] = &[
     (20.0, "Metro: Entrance (20m)"),
-    (200.0, "Metro: Service/Train (200m)"),
-    (280.0, "Metro: Platform (280m)"),
-    (450.0, "Metro: Maint Cart (450m)"),
-    (535.0, "Metro: Substation (535m)"),
-    (660.0, "Metro: Collapse (660m)"),
-    (760.0, "Metro: Checkpoint (760m)"),
-    (1200.0, "Zone 2: Neon District"),
-    (2400.0, "Zone 3: Sky Rail Transit"),
-    (3800.0, "Zone 4: Industrial Foundry"),
-    (5400.0, "Zone 5: Flooded Conduits"),
-    (7200.0, "Zone 6: Veyron Data Vault"),
-    (9000.0, "Zone 7: The Echo Core"),
+    (500.0, "Metro: Service/Train (500m)"),
+    (700.0, "Metro: Platform (700m)"),
+    (1100.0, "Metro: Maint Cart (1100m)"),
+    (1350.0, "Metro: Substation (1350m)"),
+    (1650.0, "Metro: Collapse (1650m)"),
+    (1900.0, "Metro: Checkpoint (1900m)"),
+    (2200.0, "Zone 2: Neon District"),
+    (5000.0, "Zone 3: Industrial Sector"),
+    (7000.0, "Zone 4: Flooded Metro"),
+    (9000.0, "Zone 5: Sky Rail"),
+    (11000.0, "Zone 6: Forbidden Line"),
+    (13000.0, "Zone 7: The Echo Core"),
 ];
 
 fn run_benchmark_step(

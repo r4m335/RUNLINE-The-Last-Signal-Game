@@ -1,4 +1,5 @@
 use crate::types::*;
+use crate::zones::{get_zone_for_distance, normalized_zone_progress};
 use rand::Rng;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -427,7 +428,7 @@ pub fn get_pattern_catalog() -> Vec<PatternChunk> {
 
     vec![
         // -------------------------------------------------------------
-        // COMPLEXITY 1: ZONE 1 OLD METRO PROGRESSIVE ONBOARDING (0 - 800m)
+        // COMPLEXITY 1: ZONE 1 OLD METRO PROGRESSIVE ONBOARDING (0 - 2,000m)
         // -------------------------------------------------------------
         // Tier 1 (0–150m): Basic Lane Switching & Diverts
         PatternChunk::new("Intro Divert Left", 1, 35.0)
@@ -527,7 +528,7 @@ pub fn get_pattern_catalog() -> Vec<PatternChunk> {
             )
             .with_fragment_arc(Lane::Right, -8.0, 5, 3.0, 2.2)
             .with_fragment_line(Lane::Left, -8.0, 5, 3.5, 0.85),
-        // Tier 5 (600–800m): Rhythm & Approaching Neon Transition
+        // Tier 5 (75–100% of Zone 1): Rhythm & Approaching Neon Transition
         PatternChunk::new("Old Metro Rhythm", 1, 35.0)
             .with_obstacle(
                 Lane::Left,
@@ -543,7 +544,7 @@ pub fn get_pattern_catalog() -> Vec<PatternChunk> {
             )
             .with_fragment_line(Lane::Right, -6.0, 6, 3.5, 0.85),
         // -------------------------------------------------------------
-        // COMPLEXITY 2: NEON DISTRICT (800 - 1,800m) — REACT
+        // COMPLEXITY 2: NEON DISTRICT (2,000 - 4,000m) — REACT
         // -------------------------------------------------------------
         // Family 1: SLALOM (Rapid sequential lane shifts)
         PatternChunk::new("Neon Slalom", 2, 40.0)
@@ -713,7 +714,7 @@ pub fn get_pattern_catalog() -> Vec<PatternChunk> {
             .with_fragment_line(Lane::Right, -14.0, 4, 2.5, 0.85)
             .with_fragment_line(Lane::Right, -22.0, 3, 2.2, 0.45),
         // -------------------------------------------------------------
-        // COMPLEXITY 3: INDUSTRIAL FOUNDRY & FLOODED METRO (1,800 - 4,800m)
+        // COMPLEXITY 3: INDUSTRIAL FOUNDRY & FLOODED METRO (4,000 - 8,000m)
         // -------------------------------------------------------------
         // Pattern 8: The Squeeze (Left and Right blocked, Center requires slide under wire)
         PatternChunk::new("Foundry Needle", 3, 40.0)
@@ -768,7 +769,7 @@ pub fn get_pattern_catalog() -> Vec<PatternChunk> {
             )
             .with_fragment_line(Lane::Left, -8.0, 7, 3.2, 0.85),
         // -------------------------------------------------------------
-        // COMPLEXITY 4: SKY RAIL (4,800 - 6,500m)
+        // COMPLEXITY 4: SKY RAIL (8,000 - 10,000m)
         // -------------------------------------------------------------
         // Pattern 11: Switchback Trap (Rapid left-right directional demand)
         PatternChunk::new("Skyline Switchback", 4, 40.0)
@@ -876,32 +877,35 @@ pub fn select_validated_pattern(
 ) -> PatternChunk {
     let catalog = get_pattern_catalog();
 
-    // Rhythmic pedagogy in Zone 1 (Old Metro: 0 - 800m):
-    // 0–150m: basic lane switching & clear trails
-    // 150–300m: jump obstacles (vault hurdles with crystal arcs)
-    // 300–450m: slide obstacles (hanging wires with low crystal trails)
-    // 450–600m: multi-lane choice gates
-    // 600–800m: combinations + Scout pursuer pressure
-    let mut candidates: Vec<PatternChunk> = if complexity == 1 && distance < 800.0 {
-        let matching: Vec<PatternChunk> = if distance < 150.0 {
+    // Rhythmic pedagogy in Zone 1 (Old Metro: 0 - 2,000m):
+    // 0–18.75%: basic lane switching & clear trails
+    // 18.75–37.5%: jump obstacles (vault hurdles with crystal arcs)
+    // 37.5–56.25%: slide obstacles (hanging wires with low crystal trails)
+    // 56.25–75%: multi-lane choice gates
+    // 75–100%: combinations + Scout pursuer pressure
+    let zone1_progress = normalized_zone_progress(1, distance);
+    let zone2_progress = normalized_zone_progress(2, distance);
+    let zone = get_zone_for_distance(distance);
+    let mut candidates: Vec<PatternChunk> = if complexity == 1 && zone.id == 1 {
+        let matching: Vec<PatternChunk> = if zone1_progress < 0.1875 {
             catalog
                 .iter()
                 .filter(|p| p.name.starts_with("Intro") || p.name.contains("Clear"))
                 .cloned()
                 .collect()
-        } else if distance < 300.0 {
+        } else if zone1_progress < 0.375 {
             catalog
                 .iter()
                 .filter(|p| p.name.contains("Vault"))
                 .cloned()
                 .collect()
-        } else if distance < 450.0 {
+        } else if zone1_progress < 0.5625 {
             catalog
                 .iter()
                 .filter(|p| p.name.contains("Slide") || p.name.contains("Wire"))
                 .cloned()
                 .collect()
-        } else if distance < 600.0 {
+        } else if zone1_progress < 0.75 {
             catalog
                 .iter()
                 .filter(|p| p.name.contains("Gate"))
@@ -923,14 +927,14 @@ pub fn select_validated_pattern(
         } else {
             matching
         }
-    } else if complexity <= 2 && distance < 1800.0 {
-        // Zone 2 (Neon District: 800 - 1,800m) REACT Progressive Pacing:
-        // 800–950m: Speed adaptation (Slalom & Pulse rhythm, no Hunter)
-        // 950–1,100m: Hunter introduction (Hunter Flank & Hunter Gauntlet with 2 open lanes)
-        // 1,100–1,300m: Hunter + obstacles (Pulse & Rooftop Fork)
-        // 1,300–1,500m: Hunter + choice splits (Neon Choice Split & Rooftop Fork)
-        // 1,500–1,800m: Hunter + combinations (Vault-and-Weave & Neon Flow Combo)
-        let matching: Vec<PatternChunk> = if distance < 950.0 {
+    } else if complexity <= 2 && zone.id == 2 {
+        // Zone 2 (Neon District: 2,000 - 4,000m) REACT Progressive Pacing:
+        // 0–15%: Speed adaptation (Slalom & Pulse rhythm, no Hunter)
+        // 15–30%: Hunter introduction (Hunter Flank & Hunter Gauntlet with 2 open lanes)
+        // 30–50%: Hunter + obstacles (Pulse & Rooftop Fork)
+        // 50–70%: Hunter + choice splits (Neon Choice Split & Rooftop Fork)
+        // 70–100%: Hunter + combinations (Vault-and-Weave & Neon Flow Combo)
+        let matching: Vec<PatternChunk> = if zone2_progress < 0.15 {
             catalog
                 .iter()
                 .filter(|p| {
@@ -938,13 +942,13 @@ pub fn select_validated_pattern(
                 })
                 .cloned()
                 .collect()
-        } else if distance < 1100.0 {
+        } else if zone2_progress < 0.30 {
             catalog
                 .iter()
                 .filter(|p| p.min_complexity == 2 && p.name.contains("Hunter"))
                 .cloned()
                 .collect()
-        } else if distance < 1300.0 {
+        } else if zone2_progress < 0.50 {
             catalog
                 .iter()
                 .filter(|p| {
@@ -953,7 +957,7 @@ pub fn select_validated_pattern(
                 })
                 .cloned()
                 .collect()
-        } else if distance < 1500.0 {
+        } else if zone2_progress < 0.70 {
             catalog
                 .iter()
                 .filter(|p| {
@@ -1021,6 +1025,7 @@ pub fn select_validated_pattern(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::zones::{BOSS_MILESTONE_4_DISTANCE, BOSS_MILESTONE_7_DISTANCE, ZONES};
     use bevy::prelude::Vec3;
 
     #[test]
@@ -1220,21 +1225,9 @@ mod tests {
             let _time_elapsed = tick as f32 * dt;
 
             // Zone progression based on distance
-            let (target_zone, speed_mult) = if distance < 800.0 {
-                (1, 1.0) // Old Metro (16.0 m/s)
-            } else if distance < 1800.0 {
-                (2, 1.15) // Neon District (18.4 m/s)
-            } else if distance < 3000.0 {
-                (3, 1.30) // Industrial Foundry (20.8 m/s)
-            } else if distance < 4500.0 {
-                (4, 1.45) // Flooded Metro (23.2 m/s)
-            } else if distance < 6500.0 {
-                (5, 1.60) // Sky Rail (25.6 m/s)
-            } else if distance < 9000.0 {
-                (6, 1.75) // Forbidden Line (28.0 m/s)
-            } else {
-                (7, 1.95) // ECHO Core (31.2 m/s)
-            };
+            let current_zone = get_zone_for_distance(distance);
+            let target_zone = current_zone.id;
+            let speed_mult = current_zone.speed_modifier;
 
             active_zone = target_zone;
             speed = 16.0 * speed_mult;
@@ -1245,14 +1238,14 @@ mod tests {
             score_accum += advance * 2.0;
             score = score_accum as u32;
 
-            // Milestone 4 Boss @ 3000m
-            if distance >= 3000.0 && !boss_1_triggered {
+            // Milestone 4 Boss at the configured Zone 4 boundary.
+            if distance >= BOSS_MILESTONE_4_DISTANCE && !boss_1_triggered {
                 boss_1_triggered = true;
                 boss_timer = 25.0;
             }
 
-            // Milestone 7 Boss @ 8500m
-            if distance >= 8500.0 && !boss_2_triggered {
+            // Milestone 7 Boss at the configured Zone 7 boundary.
+            if distance >= BOSS_MILESTONE_7_DISTANCE && !boss_2_triggered {
                 boss_2_triggered = true;
                 boss_timer = 25.0;
             }
@@ -1282,7 +1275,7 @@ mod tests {
         // Verification of 10-Minute Run Metrics:
         // 1. Distance exceeds 12,000m (Kai traversed all 7 zones)
         assert!(
-            distance > 12000.0,
+            distance > ZONES[6].start_distance,
             "10-minute run should reach >12,000m, reached: {:.1}m",
             distance
         );
@@ -1412,7 +1405,7 @@ mod tests {
     #[test]
     fn test_zone_1_pedagogical_rhythm_progression() {
         // Tier 1: 0–150m (Basic lane switching & clear trails only)
-        for d in [0.0, 50.0, 100.0, 149.0] {
+        for d in [0.0, 100.0, 200.0, 374.0] {
             let pattern = select_validated_pattern(1, None, 16.0, d);
             assert!(
                 pattern.name.starts_with("Intro") || pattern.name.contains("Clear"),
@@ -1432,7 +1425,7 @@ mod tests {
         }
 
         // Tier 2: 150–300m (Jump hurdles with crystal arcs)
-        for d in [150.0, 200.0, 250.0, 299.0] {
+        for d in [375.0, 500.0, 625.0, 749.0] {
             let pattern = select_validated_pattern(1, None, 16.0, d);
             assert!(
                 pattern.name.contains("Vault"),
@@ -1448,7 +1441,7 @@ mod tests {
         }
 
         // Tier 3: 300–450m (Slide obstacles with low crystal trails)
-        for d in [300.0, 350.0, 400.0, 449.0] {
+        for d in [750.0, 875.0, 1000.0, 1124.0] {
             let pattern = select_validated_pattern(1, None, 16.0, d);
             assert!(
                 pattern.name.contains("Slide") || pattern.name.contains("Wire"),
@@ -1468,7 +1461,7 @@ mod tests {
         }
 
         // Tier 4: 450–600m (Multi-lane choice gates)
-        for d in [450.0, 500.0, 550.0, 599.0] {
+        for d in [1125.0, 1250.0, 1375.0, 1499.0] {
             let pattern = select_validated_pattern(1, None, 16.0, d);
             assert!(
                 pattern.name.contains("Gate"),
@@ -1478,8 +1471,8 @@ mod tests {
             );
         }
 
-        // Tier 5: 600–800m (Combinations + Scout pressure rhythm)
-        for d in [600.0, 650.0, 700.0, 799.0] {
+        // Tier 5: final quarter of Zone 1 (Combinations + Scout pressure rhythm)
+        for d in [1500.0, 1625.0, 1750.0, 1999.0] {
             let pattern = select_validated_pattern(1, None, 16.0, d);
             assert_eq!(
                 pattern.min_complexity, 1,
@@ -1496,9 +1489,9 @@ mod tests {
 
     #[test]
     fn test_zone_2_neon_district_pedagogical_rhythm() {
-        // Zone 2 (Neon District: 800 - 1,800m) REACT Progressive Pacing:
-        // Phase 1: 800–950m (Speed transition adaptation: 18.4 m/s, Slalom & Pulse rhythm, no Hunter)
-        for d in [800.0, 850.0, 900.0, 949.0] {
+        // Zone 2 (Neon District: 2,000 - 4,000m) REACT Progressive Pacing:
+        // Phase 1: first 15% of Zone 2 (Speed transition adaptation: 18.4 m/s, Slalom & Pulse rhythm, no Hunter)
+        for d in [2000.0, 2100.0, 2200.0, 2298.0] {
             let pattern = select_validated_pattern(2, None, 18.4, d);
             assert_eq!(
                 pattern.min_complexity, 2,
@@ -1507,7 +1500,7 @@ mod tests {
             );
             assert!(
                 pattern.name.contains("Slalom") || pattern.name.contains("Pulse"),
-                "Phase 1 (800-950m) at {}m must feature Slalom or Pulse rhythm: {}",
+                "Zone 2 Phase 1 at {}m must feature Slalom or Pulse rhythm: {}",
                 d,
                 pattern.name
             );
@@ -1518,12 +1511,12 @@ mod tests {
             );
         }
 
-        // Phase 2: 950–1,100m (Hunter introduction: Flank corridor & Gauntlet with 2 open lanes)
-        for d in [950.0, 1000.0, 1050.0, 1099.0] {
+        // Phase 2: 15–30% of Zone 2 (Hunter introduction: Flank corridor & Gauntlet with 2 open lanes)
+        for d in [2300.0, 2400.0, 2500.0, 2598.0] {
             let pattern = select_validated_pattern(2, None, 18.4, d);
             assert!(
                 pattern.name.contains("Hunter"),
-                "Phase 2 (950-1100m) at {}m must feature Hunter sweep patterns: {}",
+                "Zone 2 Phase 2 at {}m must feature Hunter sweep patterns: {}",
                 d,
                 pattern.name
             );
@@ -1534,12 +1527,12 @@ mod tests {
             );
         }
 
-        // Phase 3: 1,100–1,300m (Hunter + normal obstacles: Pulse & Rooftop)
-        for d in [1100.0, 1150.0, 1200.0, 1299.0] {
+        // Phase 3: 30–50% of Zone 2 (Hunter + normal obstacles: Pulse & Rooftop)
+        for d in [2600.0, 2700.0, 2800.0, 2998.0] {
             let pattern = select_validated_pattern(2, None, 18.4, d);
             assert!(
                 pattern.name.contains("Pulse") || pattern.name.contains("Rooftop"),
-                "Phase 3 (1100-1300m) at {}m must feature Pulse or Rooftop patterns: {}",
+                "Zone 2 Phase 3 at {}m must feature Pulse or Rooftop patterns: {}",
                 d,
                 pattern.name
             );
@@ -1550,12 +1543,12 @@ mod tests {
             );
         }
 
-        // Phase 4: 1,300–1,500m (Hunter + tactical choice split gates)
-        for d in [1300.0, 1350.0, 1400.0, 1499.0] {
+        // Phase 4: 50–70% of Zone 2 (Hunter + tactical choice split gates)
+        for d in [3000.0, 3100.0, 3200.0, 3398.0] {
             let pattern = select_validated_pattern(2, None, 18.4, d);
             assert!(
                 pattern.name.contains("Split") || pattern.name.contains("Fork"),
-                "Phase 4 (1300-1500m) at {}m must feature Split or Fork choice gates: {}",
+                "Zone 2 Phase 4 at {}m must feature Split or Fork choice gates: {}",
                 d,
                 pattern.name
             );
@@ -1566,8 +1559,8 @@ mod tests {
             );
         }
 
-        // Phase 5: 1,500–1,800m (Hunter + multi-verb combinations)
-        for d in [1500.0, 1600.0, 1700.0, 1799.0] {
+        // Phase 5: final 30% of Zone 2 (Hunter + multi-verb combinations)
+        for d in [3400.0, 3600.0, 3800.0, 3998.0] {
             let pattern = select_validated_pattern(2, None, 18.4, d);
             assert_eq!(
                 pattern.min_complexity, 2,

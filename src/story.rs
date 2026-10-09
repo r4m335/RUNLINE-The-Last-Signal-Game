@@ -1,3 +1,5 @@
+use crate::zones::ZONES;
+
 #[allow(dead_code)]
 pub struct StoryLogEntry {
     pub id: usize,
@@ -54,27 +56,46 @@ pub const DISTANCE_MILESTONES: [MilestoneStory; 5] = [
         message: "Warning: Unauthorized ECHO signature confirmed in Old Metro. Interceptor units dispatched.",
     },
     MilestoneStory {
-        distance: 1200.0,
+        distance: ZONES[1].start_distance + 500.0,
         title: "INCOMING COMMS",
         sender: "Mira (Ex-Veyron)",
         message: "Kai, listen to me! That device in your pack isn't cargo. Veyron will blow the entire district to stop you!",
     },
     MilestoneStory {
-        distance: 2500.0,
+        distance: ZONES[2].start_distance + 500.0,
         title: "INTERCEPTOR LOCK-ON",
         sender: "Heavy Security Armored Unit",
         message: "Pursuer vehicle deployed on central line. All barriers locked down. Terminate runner on sight.",
     },
     MilestoneStory {
-        distance: 4000.0,
+        distance: ZONES[3].start_distance + 500.0,
         title: "DEEP METRO SENSORS",
         sender: "Automated Rail AI",
         message: "Submerged sectors breached. Water turbines active. Structural integrity degrading.",
     },
     MilestoneStory {
-        distance: 6500.0,
+        distance: ZONES[5].start_distance + 500.0,
         title: "ECHO CORE SYNCHRONIZATION",
         sender: "The ECHO Singularity",
         message: "You are nearing the forbidden epicenter, Kai. The railway is bending to our will. Do not stop.",
     },
 ];
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn milestone_distances_remain_inside_the_intended_progression() {
+        assert!(DISTANCE_MILESTONES
+            .windows(2)
+            .all(|pair| pair[0].distance < pair[1].distance));
+        assert!(DISTANCE_MILESTONES
+            .iter()
+            .all(|milestone| milestone.distance >= 0.0));
+        assert!(DISTANCE_MILESTONES[1].distance > ZONES[1].start_distance);
+        assert!(DISTANCE_MILESTONES[2].distance > ZONES[2].start_distance);
+        assert!(DISTANCE_MILESTONES[3].distance > ZONES[3].start_distance);
+        assert!(DISTANCE_MILESTONES[4].distance > ZONES[5].start_distance);
+    }
+}

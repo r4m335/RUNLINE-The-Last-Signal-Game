@@ -1,6 +1,7 @@
 use crate::environment_signage::{draw_string, make_image, set_pixel};
 use crate::neon_district_landmarks;
 use crate::types::*;
+use crate::zones::normalized_zone_progress;
 use bevy::prelude::*;
 
 // -----------------------------------------------------------------------------
@@ -47,58 +48,59 @@ impl Plugin for NeonDistrictPlugin {
 // CHAPTERS & SUB-SECTION VARIANTS
 // -----------------------------------------------------------------------------
 
-/// The 5 narrative chapters across Zone 2 — Neon District (800m–1800m).
+/// The 5 narrative chapters across Zone 2 — Neon District (2,000m–4,000m).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NeonDistrictChapter {
-    /// 800–1000m: Emergence from Old Metro tunnel into elevated open sky; first skyscraper silhouettes.
+    /// First 20%: Emergence from Old Metro tunnel into elevated open sky; first skyscraper silhouettes.
     NeonEntry,
-    /// 1000–1200m: Elevated viaduct with heavy pylons, corporate towers, overhead power grid.
+    /// 20–40%: Elevated viaduct with heavy pylons, corporate towers, overhead power grid.
     UpperAurelia,
-    /// 1200–1400m: Dense holographic advertising, twin towers with glass skybridge, media marquees.
+    /// 40–60%: Dense holographic advertising, twin towers with glass skybridge, media marquees.
     CommercialCorridor,
-    /// 1400–1600m: High-speed rail interchange, parallel maglev train guideway, comms towers.
+    /// 60–80%: High-speed rail interchange, parallel maglev train guideway, comms towers.
     TransitCore,
-    /// 1600–1800m: Veyron corporate security presence, heavy industrial supports, Zone 3 portal approach.
+    /// Final 20%: Veyron corporate security presence, heavy industrial supports, Zone 3 portal approach.
     VeyronTransition,
 }
 
 /// The 15 granular sub-section visual variants across Zone 2 (3 variants per chapter).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NeonDistrictVariant {
-    // 800–1000m Neon Entry
-    TunnelExitPortal,  // 800–860m
-    OpenSkyEmergence,  // 860–930m
-    FirstNeonApproach, // 930–1000m
+    // Neon Entry (first 20%)
+    TunnelExitPortal,  // 0–6%
+    OpenSkyEmergence,  // 6–13%
+    FirstNeonApproach, // 13–20%
 
-    // 1000–1200m Upper Aurelia
-    ViaductPylons,       // 1000–1070m
-    OverheadPowerGrid,   // 1070–1140m
-    AureliaCorporateRow, // 1140–1200m
+    // Upper Aurelia (20–40%)
+    ViaductPylons,       // 20–27%
+    OverheadPowerGrid,   // 27–34%
+    AureliaCorporateRow, // 34–40%
 
-    // 1200–1400m Commercial Corridor
-    HologramPlaza,        // 1200–1270m
-    TwinTowerSkybridge,   // 1270–1340m
-    MediaMarqueeOverpass, // 1340–1400m
+    // Commercial Corridor (40–60%)
+    HologramPlaza,        // 40–47%
+    TwinTowerSkybridge,   // 47–54%
+    MediaMarqueeOverpass, // 54–60%
 
-    // 1400–1600m Transit Core
-    ParallelMaglevExpress,  // 1400–1470m
-    CentralInterchangeArch, // 1470–1540m
-    CommsTowerArray,        // 1540–1600m
+    // Transit Core (60–80%)
+    ParallelMaglevExpress,  // 60–67%
+    CentralInterchangeArch, // 67–74%
+    CommsTowerArray,        // 74–80%
 
-    // 1600–1800m Veyron Transition
-    SecurityGridGantry,      // 1600–1670m
-    HeavyIndustrialApproach, // 1670–1740m
-    Zone3TransitionPortal,   // 1740–1800m
+    // Veyron Transition (80–100%)
+    SecurityGridGantry,      // 80–87%
+    HeavyIndustrialApproach, // 87–94%
+    Zone3TransitionPortal,   // 94–100%
 }
 
 pub fn get_neon_district_chapter(distance: f32) -> NeonDistrictChapter {
-    if distance < 1000.0 {
+    let progress = normalized_zone_progress(2, distance);
+    if progress < 0.2 {
         NeonDistrictChapter::NeonEntry
-    } else if distance < 1200.0 {
+    } else if progress < 0.4 {
         NeonDistrictChapter::UpperAurelia
-    } else if distance < 1400.0 {
+    } else if progress < 0.6 {
         NeonDistrictChapter::CommercialCorridor
-    } else if distance < 1600.0 {
+    } else if progress < 0.8 {
         NeonDistrictChapter::TransitCore
     } else {
         NeonDistrictChapter::VeyronTransition
@@ -106,33 +108,34 @@ pub fn get_neon_district_chapter(distance: f32) -> NeonDistrictChapter {
 }
 
 pub fn get_neon_district_variant(distance: f32) -> NeonDistrictVariant {
-    if distance < 860.0 {
+    let progress = normalized_zone_progress(2, distance);
+    if progress < 0.06 {
         NeonDistrictVariant::TunnelExitPortal
-    } else if distance < 930.0 {
+    } else if progress < 0.13 {
         NeonDistrictVariant::OpenSkyEmergence
-    } else if distance < 1000.0 {
+    } else if progress < 0.2 {
         NeonDistrictVariant::FirstNeonApproach
-    } else if distance < 1070.0 {
+    } else if progress < 0.27 {
         NeonDistrictVariant::ViaductPylons
-    } else if distance < 1140.0 {
+    } else if progress < 0.34 {
         NeonDistrictVariant::OverheadPowerGrid
-    } else if distance < 1200.0 {
+    } else if progress < 0.4 {
         NeonDistrictVariant::AureliaCorporateRow
-    } else if distance < 1270.0 {
+    } else if progress < 0.47 {
         NeonDistrictVariant::HologramPlaza
-    } else if distance < 1340.0 {
+    } else if progress < 0.54 {
         NeonDistrictVariant::TwinTowerSkybridge
-    } else if distance < 1400.0 {
+    } else if progress < 0.6 {
         NeonDistrictVariant::MediaMarqueeOverpass
-    } else if distance < 1470.0 {
+    } else if progress < 0.67 {
         NeonDistrictVariant::ParallelMaglevExpress
-    } else if distance < 1540.0 {
+    } else if progress < 0.74 {
         NeonDistrictVariant::CentralInterchangeArch
-    } else if distance < 1600.0 {
+    } else if progress < 0.8 {
         NeonDistrictVariant::CommsTowerArray
-    } else if distance < 1670.0 {
+    } else if progress < 0.87 {
         NeonDistrictVariant::SecurityGridGantry
-    } else if distance < 1740.0 {
+    } else if progress < 0.94 {
         NeonDistrictVariant::HeavyIndustrialApproach
     } else {
         NeonDistrictVariant::Zone3TransitionPortal
@@ -191,6 +194,8 @@ pub struct NeonDistrictAssets {
     pub mesh_rooftop_condenser: Handle<Mesh>,
     pub mesh_rooftop_watertank: Handle<Mesh>,
     pub mesh_antenna_array: Handle<Mesh>,
+    pub mesh_building_facade_fin: Handle<Mesh>,
+    pub mesh_building_structural_band: Handle<Mesh>,
 
     // Elevated Highways & Flyover Skyways
     pub mesh_highway_deck: Handle<Mesh>,
@@ -199,6 +204,9 @@ pub struct NeonDistrictAssets {
     pub mesh_highway_pylon: Handle<Mesh>,
     pub mesh_cross_bridge_deck: Handle<Mesh>,
     pub mesh_cross_bridge_barrier: Handle<Mesh>,
+    pub mesh_highway_underbeam: Handle<Mesh>,
+    pub mesh_highway_support_brace: Handle<Mesh>,
+    pub mesh_traffic_signal: Handle<Mesh>,
 
     // Background Moving Vehicles
     pub mesh_traffic_car: Handle<Mesh>,
@@ -206,6 +214,9 @@ pub struct NeonDistrictAssets {
     pub mesh_traffic_van: Handle<Mesh>,
     pub mesh_headlight_pair: Handle<Mesh>,
     pub mesh_taillight_pair: Handle<Mesh>,
+    pub mesh_traffic_wheel: Handle<Mesh>,
+    pub mesh_traffic_rim: Handle<Mesh>,
+    pub mesh_traffic_window_band: Handle<Mesh>,
 
     // Materials
     pub mat_track_bed: Handle<StandardMaterial>,
@@ -234,6 +245,10 @@ pub struct NeonDistrictAssets {
     pub mat_traffic_van_body: Handle<StandardMaterial>,
     pub mat_headlight_glow: Handle<StandardMaterial>,
     pub mat_taillight_glow: Handle<StandardMaterial>,
+    pub mat_traffic_glass: Handle<StandardMaterial>,
+    pub mat_traffic_rubber: Handle<StandardMaterial>,
+    pub mat_traffic_rim: Handle<StandardMaterial>,
+    pub mat_traffic_trim: Handle<StandardMaterial>,
     pub mat_rooftop_machinery: Handle<StandardMaterial>,
 
     // Holographic Textures / Materials
@@ -298,6 +313,8 @@ pub fn init_neon_district_assets(
         mesh_rooftop_condenser: meshes.add(Cuboid::new(4.5, 3.2, 5.5)),
         mesh_rooftop_watertank: meshes.add(Cylinder::new(2.4, 4.2)),
         mesh_antenna_array: meshes.add(Cylinder::new(0.35, 16.0)),
+        mesh_building_facade_fin: meshes.add(Cuboid::new(0.22, 24.0, 0.42)),
+        mesh_building_structural_band: meshes.add(Cuboid::new(20.0, 0.35, 0.45)),
 
         // Elevated Highways & Flyover Skyways
         mesh_highway_deck: meshes.add(Cuboid::new(6.4, 0.5, length)),
@@ -306,6 +323,9 @@ pub fn init_neon_district_assets(
         mesh_highway_pylon: meshes.add(Cuboid::new(2.2, 36.0, 2.2)),
         mesh_cross_bridge_deck: meshes.add(Cuboid::new(64.0, 0.6, 6.4)),
         mesh_cross_bridge_barrier: meshes.add(Cuboid::new(64.0, 0.7, 0.3)),
+        mesh_highway_underbeam: meshes.add(Cuboid::new(0.45, 1.05, length)),
+        mesh_highway_support_brace: meshes.add(Cuboid::new(0.35, 8.0, 0.35)),
+        mesh_traffic_signal: meshes.add(Cuboid::new(0.18, 0.78, 0.18)),
 
         // Background Moving Vehicles
         mesh_traffic_car: meshes.add(Cuboid::new(1.5, 0.75, 3.4)),
@@ -313,6 +333,9 @@ pub fn init_neon_district_assets(
         mesh_traffic_van: meshes.add(Cuboid::new(1.8, 1.35, 4.8)),
         mesh_headlight_pair: meshes.add(Cuboid::new(1.2, 0.16, 0.08)),
         mesh_taillight_pair: meshes.add(Cuboid::new(1.2, 0.16, 0.08)),
+        mesh_traffic_wheel: meshes.add(Cylinder::new(0.28, 0.16)),
+        mesh_traffic_rim: meshes.add(Cylinder::new(0.12, 0.18)),
+        mesh_traffic_window_band: meshes.add(Cuboid::new(0.06, 0.34, 2.40)),
 
         // Holographic Billboards
         mesh_billboard_large: meshes.add(Cuboid::new(8.5, 4.8, 0.15)),
@@ -462,6 +485,31 @@ pub fn init_neon_district_assets(
         mat_taillight_glow: materials.add(StandardMaterial {
             base_color: Color::srgb(1.0, 0.05, 0.1),
             emissive: LinearRgba::new(4.0, 0.1, 0.15, 1.0),
+            ..default()
+        }),
+        mat_traffic_glass: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.025, 0.08, 0.13),
+            metallic: 0.80,
+            perceptual_roughness: 0.10,
+            ..default()
+        }),
+        mat_traffic_rubber: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.012, 0.014, 0.020),
+            perceptual_roughness: 0.90,
+            metallic: 0.04,
+            ..default()
+        }),
+        mat_traffic_rim: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.38, 0.44, 0.52),
+            metallic: 0.95,
+            perceptual_roughness: 0.18,
+            ..default()
+        }),
+        mat_traffic_trim: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.05, 0.68, 0.78),
+            emissive: LinearRgba::new(0.1, 0.8, 1.2, 1.0),
+            metallic: 0.75,
+            perceptual_roughness: 0.20,
             ..default()
         }),
         mat_rooftop_machinery: materials.add(StandardMaterial {
@@ -762,7 +810,7 @@ pub fn spawn_neon_district_segment(
             // 3. Overhead Catenary Gantries & Cyber Arches (depth & structural scale)
             spawn_overhead_infrastructure(seg, neon, is_even, chapter);
 
-            // 4. Chapter Landmark Sub-Sections (0 repetition across 800m–1800m!)
+            // 4. Chapter Landmark Sub-Sections (0 repetition across the full zone)
             match variant {
                 NeonDistrictVariant::TunnelExitPortal => {
                     neon_district_landmarks::spawn_tunnel_exit_portal(seg, neon, is_even);
@@ -901,18 +949,62 @@ fn spawn_elevated_railway_track(
 // 2. TOWERING CITYSCAPE SKYLINE
 // -----------------------------------------------------------------------------
 
+fn spawn_background_vehicle_details(
+    vehicle: &mut ChildBuilder,
+    neon: &NeonDistrictAssets,
+    half_width: f32,
+    half_length: f32,
+    wheel_y: f32,
+    window_y: f32,
+) {
+    // Shared low-poly details keep background traffic recognizable without
+    // allocating meshes or materials per vehicle instance.
+    for &x in &[-half_width, half_width] {
+        for &z in &[-half_length * 0.62, half_length * 0.62] {
+            vehicle.spawn(PbrBundle {
+                mesh: neon.mesh_traffic_wheel.clone(),
+                material: neon.mat_traffic_rubber.clone(),
+                transform: Transform::from_xyz(x, wheel_y, z)
+                    .with_rotation(Quat::from_rotation_z(std::f32::consts::FRAC_PI_2)),
+                ..default()
+            });
+            vehicle.spawn(PbrBundle {
+                mesh: neon.mesh_traffic_rim.clone(),
+                material: neon.mat_traffic_rim.clone(),
+                transform: Transform::from_xyz(x + if x < 0.0 { -0.09 } else { 0.09 }, wheel_y, z)
+                    .with_rotation(Quat::from_rotation_z(std::f32::consts::FRAC_PI_2)),
+                ..default()
+            });
+        }
+        vehicle.spawn(PbrBundle {
+            mesh: neon.mesh_traffic_window_band.clone(),
+            material: neon.mat_traffic_glass.clone(),
+            transform: Transform::from_xyz(x, window_y, 0.0).with_scale(Vec3::new(
+                1.0,
+                1.0,
+                (half_length * 0.72).max(1.0) / 1.2,
+            )),
+            ..default()
+        });
+    }
+}
+
 fn spawn_city_skyline(
     seg: &mut ChildBuilder,
     neon: &NeonDistrictAssets,
     _length: f32,
     seg_idx: i32,
-    _chapter: NeonDistrictChapter,
+    chapter: NeonDistrictChapter,
 ) {
     // Deterministic pseudo-random generation based on segment index
     let h1 = ((seg_idx.wrapping_mul(17) + 3).rem_euclid(100)) as f32 / 100.0;
     let h2 = ((seg_idx.wrapping_mul(31) + 7).rem_euclid(100)) as f32 / 100.0;
     let h3 = ((seg_idx.wrapping_mul(53) + 11).rem_euclid(100)) as f32 / 100.0;
     let h4 = ((seg_idx.wrapping_mul(79) + 19).rem_euclid(100)) as f32 / 100.0;
+    let chapter_glass = matches!(
+        chapter,
+        NeonDistrictChapter::CommercialCorridor | NeonDistrictChapter::TransitCore
+    );
 
     // -------------------------------------------------------------------------
     // LAYER 1: NEAR/MID-GROUND FLANK BUILDINGS (|X| in [18.0, 26.0]m)
@@ -940,6 +1032,26 @@ fn spawn_city_skyline(
         material: left_win_mat,
         transform: Transform::from_xyz(near_l_x + 11.1, near_l_y, near_l_z)
             .with_rotation(Quat::from_rotation_y(std::f32::consts::FRAC_PI_2)),
+        ..default()
+    });
+    // Reusable facade fins and a structural belt break up the near silhouette
+    // while keeping all detail outside the playable corridor.
+    for &z_offset in &[-5.5, 0.0, 5.5] {
+        seg.spawn(PbrBundle {
+            mesh: neon.mesh_building_facade_fin.clone(),
+            material: if chapter_glass {
+                neon.mat_window_matrix_cyan.clone()
+            } else {
+                neon.mat_structural_gunmetal.clone()
+            },
+            transform: Transform::from_xyz(near_l_x + 11.15, near_l_y, near_l_z + z_offset),
+            ..default()
+        });
+    }
+    seg.spawn(PbrBundle {
+        mesh: neon.mesh_building_structural_band.clone(),
+        material: neon.mat_structural_gunmetal.clone(),
+        transform: Transform::from_xyz(near_l_x + 0.2, near_l_y + 8.0, near_l_z - 7.0),
         ..default()
     });
     // Rooftop mechanical equipment on left near building
@@ -989,6 +1101,14 @@ fn spawn_city_skyline(
             .with_rotation(Quat::from_rotation_y(std::f32::consts::FRAC_PI_2)),
         ..default()
     });
+    for &z_offset in &[-4.2, 1.5, 5.2] {
+        seg.spawn(PbrBundle {
+            mesh: neon.mesh_building_facade_fin.clone(),
+            material: neon.mat_structural_gunmetal.clone(),
+            transform: Transform::from_xyz(near_r_x - 7.15, near_r_y, near_r_z + z_offset),
+            ..default()
+        });
+    }
     // Rooftop condenser on right near building
     seg.spawn(PbrBundle {
         mesh: neon.mesh_rooftop_condenser.clone(),
@@ -1035,6 +1155,24 @@ fn spawn_city_skyline(
         transform: Transform::from_xyz(hw_l_x + 3.1, hw_l_y + 0.65, 0.0),
         ..default()
     });
+    // Underside beams and end braces give the flyover convincing thickness.
+    for &x in &[hw_l_x - 2.05, hw_l_x + 2.05] {
+        seg.spawn(PbrBundle {
+            mesh: neon.mesh_highway_underbeam.clone(),
+            material: neon.mat_structural_gunmetal.clone(),
+            transform: Transform::from_xyz(x, hw_l_y - 0.72, 0.0),
+            ..default()
+        });
+    }
+    for &z in &[-14.0, 14.0] {
+        seg.spawn(PbrBundle {
+            mesh: neon.mesh_highway_support_brace.clone(),
+            material: neon.mat_structural_gunmetal.clone(),
+            transform: Transform::from_xyz(hw_l_x - 2.1, hw_l_y - 5.0, z)
+                .with_rotation(Quat::from_rotation_z(0.18)),
+            ..default()
+        });
+    }
 
     // Left Highway Active Moving Traffic (Autonomous cyber-car + cargo van)
     let l_speed_1 = -24.0; // cruising forward along with Kai
@@ -1065,6 +1203,7 @@ fn spawn_city_skyline(
             transform: Transform::from_xyz(0.0, 0.0, 1.7),
             ..default()
         });
+        spawn_background_vehicle_details(car, neon, 0.76, 1.70, -0.38, 0.18);
     });
 
     let l_speed_2 = 18.0; // oncoming traffic
@@ -1095,6 +1234,7 @@ fn spawn_city_skyline(
             transform: Transform::from_xyz(0.0, 0.0, -2.4),
             ..default()
         });
+        spawn_background_vehicle_details(van, neon, 0.91, 2.40, -0.60, 0.28);
     });
 
     // Right Highway (X = +35.5m, Y = 18.0m)
@@ -1130,6 +1270,23 @@ fn spawn_city_skyline(
         transform: Transform::from_xyz(hw_r_x - 3.1, hw_r_y + 0.65, 0.0),
         ..default()
     });
+    for &x in &[hw_r_x - 2.05, hw_r_x + 2.05] {
+        seg.spawn(PbrBundle {
+            mesh: neon.mesh_highway_underbeam.clone(),
+            material: neon.mat_structural_gunmetal.clone(),
+            transform: Transform::from_xyz(x, hw_r_y - 0.72, 0.0),
+            ..default()
+        });
+    }
+    for &z in &[-14.0, 14.0] {
+        seg.spawn(PbrBundle {
+            mesh: neon.mesh_highway_support_brace.clone(),
+            material: neon.mat_structural_gunmetal.clone(),
+            transform: Transform::from_xyz(hw_r_x + 2.1, hw_r_y - 5.0, z)
+                .with_rotation(Quat::from_rotation_z(-0.18)),
+            ..default()
+        });
+    }
 
     // Right Highway Active Moving Traffic (Cyber-bus cruising at speed)
     let r_speed_bus = -16.0;
@@ -1160,7 +1317,19 @@ fn spawn_city_skyline(
             transform: Transform::from_xyz(0.0, 0.0, 3.9),
             ..default()
         });
+        spawn_background_vehicle_details(bus, neon, 1.16, 3.90, -0.88, 0.40);
     });
+
+    // A small synchronized signal pair adds roadside scale and activity without
+    // introducing point lights or a new per-frame animation system.
+    for &x in &[hw_l_x - 3.5, hw_l_x + 3.5] {
+        seg.spawn(PbrBundle {
+            mesh: neon.mesh_traffic_signal.clone(),
+            material: neon.mat_highway_amber_glow.clone(),
+            transform: Transform::from_xyz(x, hw_l_y + 1.15, -16.0),
+            ..default()
+        });
+    }
 
     // -------------------------------------------------------------------------
     // LAYER 3: MIDDLE-DISTANCE MEGA-TOWERS (|X| in [44.0, 64.0]m)
@@ -1185,6 +1354,21 @@ fn spawn_city_skyline(
         transform: Transform::from_xyz(mid_l_x + 11.0, mid_l_height * 0.5, mid_l_z),
         ..default()
     });
+    if h2 > 0.28 {
+        for &z_offset in &[-8.0, 5.0] {
+            seg.spawn(PbrBundle {
+                mesh: neon.mesh_building_facade_fin.clone(),
+                material: neon.mat_window_matrix_amber.clone(),
+                transform: Transform::from_xyz(
+                    mid_l_x + 11.2,
+                    mid_l_height * 0.5,
+                    mid_l_z + z_offset,
+                )
+                .with_scale(Vec3::new(1.0, mid_l_height / 24.0, 1.0)),
+                ..default()
+            });
+        }
+    }
     // Rooftop spire
     seg.spawn(PbrBundle {
         mesh: neon.mesh_spire_tower.clone(),
@@ -1212,6 +1396,21 @@ fn spawn_city_skyline(
         transform: Transform::from_xyz(mid_r_x - 13.3, mid_r_height * 0.5, mid_r_z),
         ..default()
     });
+    if h3 > 0.35 {
+        for &z_offset in &[-7.0, 6.0] {
+            seg.spawn(PbrBundle {
+                mesh: neon.mesh_building_facade_fin.clone(),
+                material: neon.mat_window_matrix_magenta.clone(),
+                transform: Transform::from_xyz(
+                    mid_r_x - 13.5,
+                    mid_r_height * 0.5,
+                    mid_r_z + z_offset,
+                )
+                .with_scale(Vec3::new(1.0, mid_r_height / 24.0, 1.0)),
+                ..default()
+            });
+        }
+    }
     seg.spawn(PbrBundle {
         mesh: neon.mesh_spire_tower.clone(),
         material: neon.mat_tower_beacon_magenta.clone(),
@@ -1322,43 +1521,43 @@ mod tests {
     #[test]
     fn test_neon_district_chapter_boundaries() {
         assert_eq!(
-            get_neon_district_chapter(800.0),
+            get_neon_district_chapter(2000.0),
             NeonDistrictChapter::NeonEntry
         );
         assert_eq!(
-            get_neon_district_chapter(999.0),
+            get_neon_district_chapter(2399.0),
             NeonDistrictChapter::NeonEntry
         );
         assert_eq!(
-            get_neon_district_chapter(1000.0),
+            get_neon_district_chapter(2400.0),
             NeonDistrictChapter::UpperAurelia
         );
         assert_eq!(
-            get_neon_district_chapter(1199.0),
+            get_neon_district_chapter(2799.0),
             NeonDistrictChapter::UpperAurelia
         );
         assert_eq!(
-            get_neon_district_chapter(1200.0),
+            get_neon_district_chapter(2800.0),
             NeonDistrictChapter::CommercialCorridor
         );
         assert_eq!(
-            get_neon_district_chapter(1399.0),
+            get_neon_district_chapter(3199.0),
             NeonDistrictChapter::CommercialCorridor
         );
         assert_eq!(
-            get_neon_district_chapter(1400.0),
+            get_neon_district_chapter(3200.0),
             NeonDistrictChapter::TransitCore
         );
         assert_eq!(
-            get_neon_district_chapter(1599.0),
+            get_neon_district_chapter(3599.0),
             NeonDistrictChapter::TransitCore
         );
         assert_eq!(
-            get_neon_district_chapter(1600.0),
+            get_neon_district_chapter(3600.0),
             NeonDistrictChapter::VeyronTransition
         );
         assert_eq!(
-            get_neon_district_chapter(1799.0),
+            get_neon_district_chapter(3999.0),
             NeonDistrictChapter::VeyronTransition
         );
     }
@@ -1367,21 +1566,21 @@ mod tests {
     fn test_neon_district_variant_determinism() {
         // Verify all 15 variants are covered and deterministically reachable
         let checkpoints = [
-            (820.0, NeonDistrictVariant::TunnelExitPortal),
-            (890.0, NeonDistrictVariant::OpenSkyEmergence),
-            (960.0, NeonDistrictVariant::FirstNeonApproach),
-            (1030.0, NeonDistrictVariant::ViaductPylons),
-            (1100.0, NeonDistrictVariant::OverheadPowerGrid),
-            (1170.0, NeonDistrictVariant::AureliaCorporateRow),
-            (1230.0, NeonDistrictVariant::HologramPlaza),
-            (1300.0, NeonDistrictVariant::TwinTowerSkybridge),
-            (1370.0, NeonDistrictVariant::MediaMarqueeOverpass),
-            (1430.0, NeonDistrictVariant::ParallelMaglevExpress),
-            (1500.0, NeonDistrictVariant::CentralInterchangeArch),
-            (1570.0, NeonDistrictVariant::CommsTowerArray),
-            (1630.0, NeonDistrictVariant::SecurityGridGantry),
-            (1700.0, NeonDistrictVariant::HeavyIndustrialApproach),
-            (1770.0, NeonDistrictVariant::Zone3TransitionPortal),
+            (2119.0, NeonDistrictVariant::TunnelExitPortal),
+            (2259.0, NeonDistrictVariant::OpenSkyEmergence),
+            (2399.0, NeonDistrictVariant::FirstNeonApproach),
+            (2539.0, NeonDistrictVariant::ViaductPylons),
+            (2679.0, NeonDistrictVariant::OverheadPowerGrid),
+            (2799.0, NeonDistrictVariant::AureliaCorporateRow),
+            (2939.0, NeonDistrictVariant::HologramPlaza),
+            (3079.0, NeonDistrictVariant::TwinTowerSkybridge),
+            (3199.0, NeonDistrictVariant::MediaMarqueeOverpass),
+            (3339.0, NeonDistrictVariant::ParallelMaglevExpress),
+            (3479.0, NeonDistrictVariant::CentralInterchangeArch),
+            (3599.0, NeonDistrictVariant::CommsTowerArray),
+            (3739.0, NeonDistrictVariant::SecurityGridGantry),
+            (3879.0, NeonDistrictVariant::HeavyIndustrialApproach),
+            (3980.0, NeonDistrictVariant::Zone3TransitionPortal),
         ];
 
         for (dist, expected_variant) in checkpoints {
@@ -1396,19 +1595,18 @@ mod tests {
     }
 
     #[test]
-    fn test_zone_transition_at_800m() {
-        // Distance < 800m is Zone 1 (Old Metro)
-        let zone_799 = crate::zones::get_zone_for_distance(799.0);
-        assert_eq!(zone_799.id, 1, "799m must be Zone 1");
+    fn test_zone_transition_at_2000m() {
+        // Distance immediately before 2,000m remains Zone 1.
+        let zone_1999 = crate::zones::get_zone_for_distance(1999.99);
+        assert_eq!(zone_1999.id, 1, "1999.99m must be Zone 1");
 
-        // Distance >= 800m is Zone 2 (Neon District)
-        let zone_800 = crate::zones::get_zone_for_distance(800.0);
-        assert_eq!(zone_800.id, 2, "800m must be Zone 2");
-        assert_eq!(zone_800.name, "ZONE 2 — NEON DISTRICT");
+        // Distance >= 2,000m is Zone 2 (Neon District)
+        let zone_2000 = crate::zones::get_zone_for_distance(2000.0);
+        assert_eq!(zone_2000.id, 2, "2000m must be Zone 2");
+        assert!(zone_2000.name.contains("NEON DISTRICT"));
 
-        // Distance 1800m is Zone 3 (Industrial Sector)
-        let zone_1800 = crate::zones::get_zone_for_distance(1800.0);
-        assert_eq!(zone_1800.id, 3, "1800m must be Zone 3");
+        assert_eq!(crate::zones::get_zone_for_distance(3999.99).id, 2);
+        assert_eq!(crate::zones::get_zone_for_distance(4000.0).id, 3);
     }
 
     #[test]

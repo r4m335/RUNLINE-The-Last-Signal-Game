@@ -8,6 +8,24 @@ pub struct EnvironmentFan;
 #[derive(Component)]
 pub struct EnvironmentalSign;
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum EnvironmentRoute {
+    OldMetro,
+    NeonDistrict,
+    Generic,
+}
+
+/// Resolves a track chunk's authored environment from that chunk's world
+/// distance. This is intentionally independent from the player's current
+/// distance so lookahead chunks cannot inherit the wrong zone visuals.
+pub fn environment_route_for_distance(distance: f32) -> EnvironmentRoute {
+    match get_zone_for_distance(distance).id {
+        1 => EnvironmentRoute::OldMetro,
+        2 => EnvironmentRoute::NeonDistrict,
+        _ => EnvironmentRoute::Generic,
+    }
+}
+
 #[derive(Resource)]
 pub struct EnvironmentAssets {
     // Track & Ground Meshes
@@ -311,37 +329,41 @@ pub fn spawn_modular_environment_slice(
     neon: Option<&crate::neon_district::NeonDistrictAssets>,
     z_center: f32,
     length: f32,
-    distance: f32,
+    _distance: f32,
 ) -> Entity {
     let segment_dist = (-z_center).max(0.0);
-    if segment_dist < 800.0 {
-        if let (Some(props_ref), Some(signage_ref)) = (props, signage) {
-            return crate::old_metro::spawn_old_metro_segment(
-                commands,
-                env,
-                props_ref,
-                signage_ref,
-                z_center,
-                length,
-                segment_dist,
-            );
+    match environment_route_for_distance(segment_dist) {
+        EnvironmentRoute::OldMetro => {
+            if let (Some(props_ref), Some(signage_ref)) = (props, signage) {
+                return crate::old_metro::spawn_old_metro_segment(
+                    commands,
+                    env,
+                    props_ref,
+                    signage_ref,
+                    z_center,
+                    length,
+                    segment_dist,
+                );
+            }
         }
-    } else if segment_dist < 1800.0 {
-        if let Some(neon_ref) = neon {
-            return crate::neon_district::spawn_neon_district_segment(
-                commands,
-                env,
-                neon_ref,
-                props,
-                signage,
-                z_center,
-                length,
-                segment_dist,
-            );
+        EnvironmentRoute::NeonDistrict => {
+            if let Some(neon_ref) = neon {
+                return crate::neon_district::spawn_neon_district_segment(
+                    commands,
+                    env,
+                    neon_ref,
+                    props,
+                    signage,
+                    z_center,
+                    length,
+                    segment_dist,
+                );
+            }
         }
+        EnvironmentRoute::Generic => {}
     }
 
-    let _zone = get_zone_for_distance(distance);
+    let _zone = get_zone_for_distance(segment_dist);
     let is_even_segment = ((z_center.abs() / length).floor() as i32) % 2 == 0;
 
     commands
@@ -657,4 +679,55 @@ pub fn spawn_modular_environment_slice(
             }
         })
         .id()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::zones::ZONES;
+
+    #[test]
+    fn track_chunk_environment_routing_uses_chunk_distance_at_boundaries() {
+        for zone in ZONES {
+            let before = (zone.start_distance - 0.01).max(0.0);
+            let at = zone.start_distance;
+            let after = zone.start_distance + 0.01;
+
+            if zone.id == 1 {
+                assert_eq!(
+                    environment_route_for_distance(at),
+                    EnvironmentRoute::OldMetro
+                );
+            } else if zone.id == 2 {
+                assert_eq!(
+                    environment_route_for_distance(at),
+                    EnvironmentRoute::NeonDistrict
+                );
+            } else {
+                assert_eq!(
+                    environment_route_for_distance(at),
+                    EnvironmentRoute::Generic
+                );
+            }
+
+            if zone.id > 3 {
+                assert_ne!(
+                    environment_route_for_distance(before),
+                    EnvironmentRoute::NeonDistrict,
+                    "chunk before Zone {} must not inherit Zone 2 visuals",
+                    zone.id
+                );
+            }
+            let _ = environment_route_for_distance(after);
+        }
+
+        assert_eq!(
+            environment_route_for_distance(ZONES[0].end_distance - 0.01),
+            EnvironmentRoute::OldMetro
+        );
+        assert_eq!(
+            environment_route_for_distance(ZONES[1].end_distance - 0.01),
+            EnvironmentRoute::NeonDistrict
+        );
+    }
 }

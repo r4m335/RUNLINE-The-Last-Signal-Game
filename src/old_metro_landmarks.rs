@@ -765,7 +765,7 @@ pub fn spawn_collapse_sub_section(
 }
 
 // -----------------------------------------------------------------------------
-// 7. VEYRON CHECKPOINT SUB-SECTIONS (700–800m)
+// 7. VEYRON CHECKPOINT SUB-SECTIONS (final 12.5% of Zone 1)
 // -----------------------------------------------------------------------------
 pub fn spawn_checkpoint_sub_section(
     seg: &mut ChildBuilder,
@@ -873,7 +873,7 @@ pub fn spawn_checkpoint_sub_section(
             });
         }
         OldMetroVariant::NeonExitPortal => {
-            // [775–800m] Neon Exit Portal: Cyan & Magenta city lights bleeding into tunnel ahead!
+            // Final checkpoint subsection: Cyan & Magenta city lights bleed into the tunnel ahead.
             seg.spawn(PointLightBundle {
                 point_light: PointLight {
                     color: Color::srgb(0.05, 0.95, 1.0),

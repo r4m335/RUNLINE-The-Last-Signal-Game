@@ -76,7 +76,6 @@ pub fn spawn_segment_obstacles(
     let mut rng = rand::thread_rng();
     let zone = get_zone_for_distance(distance);
     let density = density_override.unwrap_or(zone.obstacle_density);
-    let neon_visuals = zone.id == 2;
 
     let hazard_mat = materials.add(StandardMaterial {
         base_color: Color::srgb(1.0, 0.50, 0.05),
@@ -155,6 +154,10 @@ pub fn spawn_segment_obstacles(
         if z_pos < z_end {
             continue;
         }
+
+        // Resolve visuals from each obstacle's world distance so a segment
+        // crossing a boundary cannot give lookahead hazards the wrong style.
+        let neon_visuals = get_zone_for_distance((-z_pos).max(0.0)).id == 2;
 
         if rng.gen_bool(density as f64) {
             let pattern = rng.gen_range(0..5);

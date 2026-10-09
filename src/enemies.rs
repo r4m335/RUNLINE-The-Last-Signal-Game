@@ -644,7 +644,7 @@ fn update_enemy_spawning_and_pacing(
     // - Cooldown: 4-7 seconds between encounters
     // - Solvability: Player must have >= 2 navigable lanes ahead to evade safely
     // - Concurrency protection: Does not spawn during active boss fight or concurrent Hunter attack
-    if (stats.distance >= 850.0 || director.active_zone_id >= 2)
+    if director.active_zone_id >= 2
         && !squad_mgr.active_boss
         && !has_hunter
         && squad_mgr.hunter_cooldown <= 0.0

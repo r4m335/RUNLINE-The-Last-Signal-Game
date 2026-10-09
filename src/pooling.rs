@@ -108,8 +108,20 @@ pub struct PoolAssets {
     pub mesh_neon_van_taillights: Handle<Mesh>,
     pub mesh_neon_van_skid: Handle<Mesh>,
     pub mesh_neon_van_display: Handle<Mesh>,
+    pub mesh_neon_van_nose: Handle<Mesh>,
+    pub mesh_neon_van_hood: Handle<Mesh>,
+    pub mesh_neon_van_wheel: Handle<Mesh>,
+    pub mesh_neon_van_rim: Handle<Mesh>,
+    pub mesh_neon_van_panel: Handle<Mesh>,
+    pub mesh_neon_van_sensor: Handle<Mesh>,
+    pub mesh_neon_van_headlamp_unit: Handle<Mesh>,
     pub mat_neon_van_body: Handle<StandardMaterial>,
     pub mat_neon_van_cabin: Handle<StandardMaterial>,
+    pub mat_neon_van_glass: Handle<StandardMaterial>,
+    pub mat_neon_van_rubber: Handle<StandardMaterial>,
+    pub mat_neon_van_rim: Handle<StandardMaterial>,
+    pub mat_neon_van_trim: Handle<StandardMaterial>,
+    pub mat_neon_van_marking: Handle<StandardMaterial>,
     pub mat_neon_van_headlight: Handle<StandardMaterial>,
     pub mat_neon_van_taillight: Handle<StandardMaterial>,
     pub mat_neon_van_display: Handle<StandardMaterial>,
@@ -122,7 +134,17 @@ pub struct PoolAssets {
     pub mesh_neon_bus_taillights: Handle<Mesh>,
     pub mesh_neon_bus_windows: Handle<Mesh>,
     pub mesh_neon_bus_skirt: Handle<Mesh>,
+    pub mesh_neon_bus_nose: Handle<Mesh>,
+    pub mesh_neon_bus_wheel: Handle<Mesh>,
+    pub mesh_neon_bus_rim: Handle<Mesh>,
+    pub mesh_neon_bus_window_panel: Handle<Mesh>,
+    pub mesh_neon_bus_trim: Handle<Mesh>,
+    pub mesh_neon_bus_sensor: Handle<Mesh>,
     pub mat_neon_bus_body: Handle<StandardMaterial>,
+    pub mat_neon_bus_glass: Handle<StandardMaterial>,
+    pub mat_neon_bus_rubber: Handle<StandardMaterial>,
+    pub mat_neon_bus_rim: Handle<StandardMaterial>,
+    pub mat_neon_bus_trim: Handle<StandardMaterial>,
     pub mat_neon_bus_destination: Handle<StandardMaterial>,
 
     // C. Illuminated Road Barricade (Low Obstacle)
@@ -482,6 +504,13 @@ fn init_pool_assets(
         mesh_neon_van_taillights: meshes.add(Cuboid::new(1.80, 0.15, 0.08)),
         mesh_neon_van_skid: meshes.add(Cuboid::new(0.25, 0.30, 9.20)),
         mesh_neon_van_display: meshes.add(Cuboid::new(0.04, 0.40, 3.50)),
+        mesh_neon_van_nose: meshes.add(Cuboid::new(1.92, 0.42, 1.10)),
+        mesh_neon_van_hood: meshes.add(Cuboid::new(1.72, 0.12, 1.65)),
+        mesh_neon_van_wheel: meshes.add(Cylinder::new(0.38, 0.20)),
+        mesh_neon_van_rim: meshes.add(Cylinder::new(0.18, 0.22)),
+        mesh_neon_van_panel: meshes.add(Cuboid::new(0.035, 0.55, 2.10)),
+        mesh_neon_van_sensor: meshes.add(Cuboid::new(0.22, 0.16, 0.32)),
+        mesh_neon_van_headlamp_unit: meshes.add(Cuboid::new(0.34, 0.16, 0.10)),
         mat_neon_van_body: materials.add(StandardMaterial {
             base_color: Color::srgb(0.14, 0.16, 0.20),
             metallic: 0.92,
@@ -492,6 +521,36 @@ fn init_pool_assets(
             base_color: Color::srgb(0.08, 0.18, 0.24),
             metallic: 0.85,
             perceptual_roughness: 0.12,
+            ..default()
+        }),
+        mat_neon_van_glass: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.03, 0.10, 0.16),
+            metallic: 0.80,
+            perceptual_roughness: 0.08,
+            ..default()
+        }),
+        mat_neon_van_rubber: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.015, 0.018, 0.025),
+            perceptual_roughness: 0.88,
+            metallic: 0.05,
+            ..default()
+        }),
+        mat_neon_van_rim: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.42, 0.48, 0.58),
+            metallic: 0.95,
+            perceptual_roughness: 0.16,
+            ..default()
+        }),
+        mat_neon_van_trim: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.05, 0.70, 0.82),
+            emissive: LinearRgba::new(0.1, 1.2, 1.8, 1.0),
+            metallic: 0.75,
+            perceptual_roughness: 0.22,
+            ..default()
+        }),
+        mat_neon_van_marking: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.78, 0.18, 0.78),
+            emissive: LinearRgba::new(0.6, 0.05, 0.8, 1.0),
             ..default()
         }),
         mat_neon_van_headlight: materials.add(StandardMaterial {
@@ -518,9 +577,40 @@ fn init_pool_assets(
         mesh_neon_bus_taillights: meshes.add(Cuboid::new(0.18, 0.85, 0.08)),
         mesh_neon_bus_windows: meshes.add(Cuboid::new(0.06, 0.75, 11.20)),
         mesh_neon_bus_skirt: meshes.add(Cuboid::new(2.10, 0.35, 13.20)),
+        mesh_neon_bus_nose: meshes.add(Cuboid::new(1.98, 0.42, 1.15)),
+        mesh_neon_bus_wheel: meshes.add(Cylinder::new(0.48, 0.22)),
+        mesh_neon_bus_rim: meshes.add(Cylinder::new(0.23, 0.24)),
+        mesh_neon_bus_window_panel: meshes.add(Cuboid::new(0.06, 0.78, 1.72)),
+        mesh_neon_bus_trim: meshes.add(Cuboid::new(0.08, 0.10, 11.60)),
+        mesh_neon_bus_sensor: meshes.add(Cuboid::new(0.28, 0.18, 0.38)),
         mat_neon_bus_body: materials.add(StandardMaterial {
             base_color: Color::srgb(0.16, 0.18, 0.25),
             metallic: 0.90,
+            perceptual_roughness: 0.20,
+            ..default()
+        }),
+        mat_neon_bus_glass: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.025, 0.09, 0.15),
+            metallic: 0.82,
+            perceptual_roughness: 0.08,
+            ..default()
+        }),
+        mat_neon_bus_rubber: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.012, 0.015, 0.022),
+            perceptual_roughness: 0.90,
+            metallic: 0.04,
+            ..default()
+        }),
+        mat_neon_bus_rim: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.38, 0.45, 0.56),
+            metallic: 0.95,
+            perceptual_roughness: 0.16,
+            ..default()
+        }),
+        mat_neon_bus_trim: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.08, 0.75, 0.92),
+            emissive: LinearRgba::new(0.15, 1.4, 2.0, 1.0),
+            metallic: 0.70,
             perceptual_roughness: 0.20,
             ..default()
         }),

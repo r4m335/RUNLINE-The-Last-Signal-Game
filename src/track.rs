@@ -789,6 +789,20 @@ pub fn spawn_pattern_chunk(
                                 },
                             ))
                             .with_children(|van| {
+                                // Shaped lower nose and raised autonomous cabin keep the
+                                // silhouette readable without changing the collision root.
+                                van.spawn(PbrBundle {
+                                    mesh: pool_assets.mesh_neon_van_nose.clone(),
+                                    material: pool_assets.mat_neon_van_body.clone(),
+                                    transform: Transform::from_xyz(0.0, -0.42, 4.48),
+                                    ..default()
+                                });
+                                van.spawn(PbrBundle {
+                                    mesh: pool_assets.mesh_neon_van_hood.clone(),
+                                    material: pool_assets.mat_neon_van_trim.clone(),
+                                    transform: Transform::from_xyz(0.0, 0.20, 3.48),
+                                    ..default()
+                                });
                                 // Upper delivery cargo pod & cabin
                                 van.spawn(PbrBundle {
                                     mesh: pool_assets.mesh_neon_van_cabin.clone(),
@@ -796,18 +810,28 @@ pub fn spawn_pattern_chunk(
                                     transform: Transform::from_xyz(0.0, 0.75, 0.8),
                                     ..default()
                                 });
-                                // Front full-width laser headlights (facing Kai at +Z)
+                                // Sloped sensor windshield (facing Kai at +Z)
+                                van.spawn(PbrBundle {
+                                    mesh: pool_assets.mesh_train_windscreen.clone(),
+                                    material: pool_assets.mat_neon_van_glass.clone(),
+                                    transform: Transform::from_xyz(0.0, 0.66, 3.62)
+                                        .with_rotation(Quat::from_rotation_x(-0.18)),
+                                    ..default()
+                                });
+                                // Separate front headlights, rather than one emissive bar.
+                                for &x in &[-0.66, 0.66] {
+                                    van.spawn(PbrBundle {
+                                        mesh: pool_assets.mesh_neon_van_headlamp_unit.clone(),
+                                        material: pool_assets.mat_neon_van_headlight.clone(),
+                                        transform: Transform::from_xyz(x, -0.08, 4.98),
+                                        ..default()
+                                    });
+                                }
+                                // Front full-width light blade adds a recognizable vehicle face.
                                 van.spawn(PbrBundle {
                                     mesh: pool_assets.mesh_neon_van_headlights.clone(),
                                     material: pool_assets.mat_neon_van_headlight.clone(),
-                                    transform: Transform::from_xyz(0.0, -0.15, 4.91),
-                                    ..default()
-                                });
-                                // Driver cab tinted sensor windscreen (at +Z)
-                                van.spawn(PbrBundle {
-                                    mesh: pool_assets.mesh_train_windscreen.clone(),
-                                    material: pool_assets.mat_train_windscreen.clone(),
-                                    transform: Transform::from_xyz(0.0, 0.65, 3.8),
+                                    transform: Transform::from_xyz(0.0, -0.28, 5.00),
                                     ..default()
                                 });
                                 // Rear red laser taillights (at -Z)
@@ -820,16 +844,60 @@ pub fn spawn_pattern_chunk(
                                 // Maglev skid runners (left & right)
                                 van.spawn(PbrBundle {
                                     mesh: pool_assets.mesh_neon_van_skid.clone(),
-                                    material: pool_assets.mat_train_chassis.clone(),
+                                    material: pool_assets.mat_neon_van_rubber.clone(),
                                     transform: Transform::from_xyz(-0.92, -0.75, 0.0),
                                     ..default()
                                 });
                                 van.spawn(PbrBundle {
                                     mesh: pool_assets.mesh_neon_van_skid.clone(),
-                                    material: pool_assets.mat_train_chassis.clone(),
+                                    material: pool_assets.mat_neon_van_rubber.clone(),
                                     transform: Transform::from_xyz(0.92, -0.75, 0.0),
                                     ..default()
                                 });
+                                // Four wheel assemblies and reused metallic rims.
+                                for &x in &[-1.04, 1.04] {
+                                    for &z in &[-3.05, 3.05] {
+                                        van.spawn(PbrBundle {
+                                            mesh: pool_assets.mesh_neon_van_wheel.clone(),
+                                            material: pool_assets.mat_neon_van_rubber.clone(),
+                                            transform: Transform::from_xyz(x, -0.66, z)
+                                                .with_rotation(Quat::from_rotation_z(
+                                                    std::f32::consts::FRAC_PI_2,
+                                                )),
+                                            ..default()
+                                        });
+                                        van.spawn(PbrBundle {
+                                            mesh: pool_assets.mesh_neon_van_rim.clone(),
+                                            material: pool_assets.mat_neon_van_rim.clone(),
+                                            transform: Transform::from_xyz(
+                                                x + if x < 0.0 { -0.11 } else { 0.11 },
+                                                -0.66,
+                                                z,
+                                            )
+                                            .with_rotation(Quat::from_rotation_z(
+                                                std::f32::consts::FRAC_PI_2,
+                                            )),
+                                            ..default()
+                                        });
+                                    }
+                                }
+                                // Door seams, fender strips, side mirrors and a small delivery mark.
+                                for &x in &[-1.071, 1.071] {
+                                    for &z in &[-1.25, 1.05] {
+                                        van.spawn(PbrBundle {
+                                            mesh: pool_assets.mesh_neon_van_panel.clone(),
+                                            material: pool_assets.mat_neon_van_trim.clone(),
+                                            transform: Transform::from_xyz(x, 0.58, z),
+                                            ..default()
+                                        });
+                                    }
+                                    van.spawn(PbrBundle {
+                                        mesh: pool_assets.mesh_neon_van_sensor.clone(),
+                                        material: pool_assets.mat_neon_van_marking.clone(),
+                                        transform: Transform::from_xyz(x, 1.16, 3.18),
+                                        ..default()
+                                    });
+                                }
                                 // Side digital cargo route displays (left & right)
                                 van.spawn(PbrBundle {
                                     mesh: pool_assets.mesh_neon_van_display.clone(),
@@ -999,11 +1067,20 @@ pub fn spawn_pattern_chunk(
                                 },
                             ))
                             .with_children(|bus| {
+                                // Angled lower nose makes the bus read as a transit vehicle
+                                // at speed while keeping the collision root unchanged.
+                                bus.spawn(PbrBundle {
+                                    mesh: pool_assets.mesh_neon_bus_nose.clone(),
+                                    material: pool_assets.mat_neon_bus_body.clone(),
+                                    transform: Transform::from_xyz(0.0, -0.78, 6.42),
+                                    ..default()
+                                });
                                 // Front panoramic windshield (facing Kai at +Z)
                                 bus.spawn(PbrBundle {
                                     mesh: pool_assets.mesh_neon_bus_windscreen.clone(),
-                                    material: pool_assets.mat_train_windscreen.clone(),
-                                    transform: Transform::from_xyz(0.0, 0.35, 6.81),
+                                    material: pool_assets.mat_neon_bus_glass.clone(),
+                                    transform: Transform::from_xyz(0.0, 0.38, 6.80)
+                                        .with_rotation(Quat::from_rotation_x(-0.12)),
                                     ..default()
                                 });
                                 // Front illuminated digital destination sign ("EXPRESS // DOWNTOWN")
@@ -1039,23 +1116,62 @@ pub fn spawn_pattern_chunk(
                                     transform: Transform::from_xyz(0.85, 0.0, -6.81),
                                     ..default()
                                 });
-                                // Side illuminated passenger window bands (left & right)
+                                // Five separated side windows create a readable articulated
+                                // passenger cabin instead of a single rectangular strip.
+                                for &x in &[-1.10, 1.10] {
+                                    for &z in &[-4.55, -2.30, 0.0, 2.30, 4.55] {
+                                        bus.spawn(PbrBundle {
+                                            mesh: pool_assets.mesh_neon_bus_window_panel.clone(),
+                                            material: pool_assets.mat_neon_bus_glass.clone(),
+                                            transform: Transform::from_xyz(x, 0.38, z),
+                                            ..default()
+                                        });
+                                    }
+                                    bus.spawn(PbrBundle {
+                                        mesh: pool_assets.mesh_neon_bus_trim.clone(),
+                                        material: pool_assets.mat_neon_bus_trim.clone(),
+                                        transform: Transform::from_xyz(x, -0.32, 0.0),
+                                        ..default()
+                                    });
+                                }
+                                // Four wheel assemblies and bright inset rims.
+                                for &x in &[-1.06, 1.06] {
+                                    for &z in &[-4.25, 4.25] {
+                                        bus.spawn(PbrBundle {
+                                            mesh: pool_assets.mesh_neon_bus_wheel.clone(),
+                                            material: pool_assets.mat_neon_bus_rubber.clone(),
+                                            transform: Transform::from_xyz(x, -0.72, z)
+                                                .with_rotation(Quat::from_rotation_z(
+                                                    std::f32::consts::FRAC_PI_2,
+                                                )),
+                                            ..default()
+                                        });
+                                        bus.spawn(PbrBundle {
+                                            mesh: pool_assets.mesh_neon_bus_rim.clone(),
+                                            material: pool_assets.mat_neon_bus_rim.clone(),
+                                            transform: Transform::from_xyz(
+                                                x + if x < 0.0 { -0.12 } else { 0.12 },
+                                                -0.72,
+                                                z,
+                                            )
+                                            .with_rotation(Quat::from_rotation_z(
+                                                std::f32::consts::FRAC_PI_2,
+                                            )),
+                                            ..default()
+                                        });
+                                    }
+                                }
+                                // Roof sensor pod and side-mounted illuminated trim.
                                 bus.spawn(PbrBundle {
-                                    mesh: pool_assets.mesh_neon_bus_windows.clone(),
-                                    material: pool_assets.mat_train_windows.clone(),
-                                    transform: Transform::from_xyz(-1.08, 0.35, 0.0),
-                                    ..default()
-                                });
-                                bus.spawn(PbrBundle {
-                                    mesh: pool_assets.mesh_neon_bus_windows.clone(),
-                                    material: pool_assets.mat_train_windows.clone(),
-                                    transform: Transform::from_xyz(1.08, 0.35, 0.0),
+                                    mesh: pool_assets.mesh_neon_bus_sensor.clone(),
+                                    material: pool_assets.mat_neon_bus_trim.clone(),
+                                    transform: Transform::from_xyz(0.0, 1.20, 5.65),
                                     ..default()
                                 });
                                 // Aerodynamic lower skirt / maglev runners
                                 bus.spawn(PbrBundle {
                                     mesh: pool_assets.mesh_neon_bus_skirt.clone(),
-                                    material: pool_assets.mat_train_chassis.clone(),
+                                    material: pool_assets.mat_neon_bus_rubber.clone(),
                                     transform: Transform::from_xyz(0.0, -1.05, 0.0),
                                     ..default()
                                 });
@@ -1588,7 +1704,7 @@ mod tests {
 
     #[test]
     fn test_obstacle_visual_selection_zone_1_metro_unchanged() {
-        let test_distances = [0.0, 150.0, 450.0, 799.0];
+        let test_distances = [0.0, 500.0, 1500.0, ZONES[0].end_distance - 0.001];
         for &dist in &test_distances {
             assert_eq!(
                 resolve_obstacle_pool_type(ObstacleType::LowBarrier, dist),
@@ -1623,8 +1739,8 @@ mod tests {
         let zone_2 = ZONES[1];
         let test_distances = [
             zone_2.start_distance,
-            1000.0,
-            1350.0,
+            2500.0,
+            3300.0,
             zone_2.end_distance - 0.001,
         ];
         for &dist in &test_distances {
@@ -1658,7 +1774,13 @@ mod tests {
 
     #[test]
     fn test_obstacle_visual_selection_zones_3_to_7_protected() {
-        let test_distances = [ZONES[1].end_distance, 2200.0, 3100.0, 4500.0, 6000.0];
+        let test_distances = [
+            ZONES[1].end_distance,
+            ZONES[2].start_distance,
+            ZONES[3].start_distance,
+            ZONES[4].start_distance,
+            ZONES[5].start_distance,
+        ];
         for &dist in &test_distances {
             assert_eq!(
                 resolve_obstacle_pool_type(ObstacleType::LowBarrier, dist),
