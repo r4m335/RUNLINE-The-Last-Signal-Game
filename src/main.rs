@@ -30,6 +30,7 @@ use director::DirectorPlugin;
 use enemies::EnemyPlugin;
 use environment::EnvironmentPlugin;
 use environment_lighting::EnvironmentLightingPlugin;
+use neon_district::NeonDistrictPlugin;
 use obstacles::ObstaclePlugin;
 use player::PlayerPlugin;
 use pooling::PoolingPlugin;
@@ -74,6 +75,7 @@ fn main() {
             BenchmarkPlugin,
             EnvironmentPlugin,
             EnvironmentLightingPlugin,
+            NeonDistrictPlugin,
         ))
         .add_systems(Startup, setup_scene)
         .add_systems(
@@ -92,6 +94,14 @@ fn setup_scene(mut commands: Commands) {
         Camera3dBundle {
             transform: Transform::from_xyz(0.0, 3.8, 6.8)
                 .looking_at(Vec3::new(0.0, 1.4, -6.0), Vec3::Y),
+            ..default()
+        },
+        bevy::pbr::FogSettings {
+            color: Color::srgb(0.04, 0.03, 0.06),
+            falloff: bevy::pbr::FogFalloff::Linear {
+                start: 40.0,
+                end: 220.0,
+            },
             ..default()
         },
         MainCamera,

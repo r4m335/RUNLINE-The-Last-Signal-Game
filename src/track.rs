@@ -1051,12 +1051,32 @@ fn handle_zone_lighting_events(
     mut zone_events: EventReader<ZoneChangedEvent>,
     mut clear_color: ResMut<ClearColor>,
     mut dir_light_q: Query<&mut DirectionalLight>,
+    mut fog_q: Query<&mut bevy::pbr::FogSettings>,
     mut sfx: EventWriter<SoundEffect>,
 ) {
     for event in zone_events.read() {
         clear_color.0 = event.config.ambient_color;
         if let Ok(mut dl) = dir_light_q.get_single_mut() {
             dl.color = event.config.directional_color;
+        }
+        if let Ok(mut fog) = fog_q.get_single_mut() {
+            if event.config.id == 2 {
+                // Zone 2: Neon District atmospheric violet smog
+                fog.color = Color::srgb(0.09, 0.04, 0.14);
+                fog.falloff = bevy::pbr::FogFalloff::Linear {
+                    start: 45.0,
+                    end: 240.0,
+                };
+            } else if event.config.id == 1 {
+                // Zone 1: Old Metro subterranean tunnel haze
+                fog.color = Color::srgb(0.03, 0.03, 0.04);
+                fog.falloff = bevy::pbr::FogFalloff::Linear {
+                    start: 25.0,
+                    end: 110.0,
+                };
+            } else {
+                fog.color = event.config.ambient_color;
+            }
         }
         sfx.send(SoundEffect::ZoneTransition);
     }

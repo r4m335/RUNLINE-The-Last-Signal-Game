@@ -4,6 +4,46 @@ use crate::types::*;
 use bevy::prelude::*;
 
 // -----------------------------------------------------------------------------
+// BACKGROUND TRAFFIC & ANIMATION
+// -----------------------------------------------------------------------------
+
+#[derive(Component, Debug, Clone)]
+pub struct BackgroundTrafficVehicle {
+    pub speed: f32,
+    pub min_local_z: f32,
+    pub max_local_z: f32,
+}
+
+pub fn update_background_traffic(
+    time: Res<Time>,
+    mut traffic_q: Query<(&BackgroundTrafficVehicle, &mut Transform)>,
+) {
+    let dt = time.delta_seconds();
+    for (veh, mut trans) in traffic_q.iter_mut() {
+        trans.translation.z += veh.speed * dt;
+        let span = veh.max_local_z - veh.min_local_z;
+        if span > 0.0 {
+            if trans.translation.z > veh.max_local_z {
+                trans.translation.z -= span;
+            } else if trans.translation.z < veh.min_local_z {
+                trans.translation.z += span;
+            }
+        }
+    }
+}
+
+pub struct NeonDistrictPlugin;
+
+impl Plugin for NeonDistrictPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(
+            Update,
+            update_background_traffic.run_if(in_state(crate::types::AppState::InGame)),
+        );
+    }
+}
+
+// -----------------------------------------------------------------------------
 // CHAPTERS & SUB-SECTION VARIANTS
 // -----------------------------------------------------------------------------
 
@@ -143,6 +183,30 @@ pub struct NeonDistrictAssets {
     pub mesh_maglev_car: Handle<Mesh>,
     pub mesh_maglev_stripe: Handle<Mesh>,
 
+    // Layered Megastructures & Horizon Architecture
+    pub mesh_building_far_monolith: Handle<Mesh>,
+    pub mesh_building_far_spire: Handle<Mesh>,
+    pub mesh_building_podium: Handle<Mesh>,
+    pub mesh_building_stepped_top: Handle<Mesh>,
+    pub mesh_rooftop_condenser: Handle<Mesh>,
+    pub mesh_rooftop_watertank: Handle<Mesh>,
+    pub mesh_antenna_array: Handle<Mesh>,
+
+    // Elevated Highways & Flyover Skyways
+    pub mesh_highway_deck: Handle<Mesh>,
+    pub mesh_highway_barrier: Handle<Mesh>,
+    pub mesh_highway_glow_trim: Handle<Mesh>,
+    pub mesh_highway_pylon: Handle<Mesh>,
+    pub mesh_cross_bridge_deck: Handle<Mesh>,
+    pub mesh_cross_bridge_barrier: Handle<Mesh>,
+
+    // Background Moving Vehicles
+    pub mesh_traffic_car: Handle<Mesh>,
+    pub mesh_traffic_bus: Handle<Mesh>,
+    pub mesh_traffic_van: Handle<Mesh>,
+    pub mesh_headlight_pair: Handle<Mesh>,
+    pub mesh_taillight_pair: Handle<Mesh>,
+
     // Materials
     pub mat_track_bed: Handle<StandardMaterial>,
     pub mat_structural_gunmetal: Handle<StandardMaterial>,
@@ -159,6 +223,18 @@ pub struct NeonDistrictAssets {
     pub mat_skybridge_glass: Handle<StandardMaterial>,
     pub mat_maglev_hull: Handle<StandardMaterial>,
     pub mat_maglev_stripe: Handle<StandardMaterial>,
+
+    // Layered & Traffic Materials
+    pub mat_building_far_silhouette: Handle<StandardMaterial>,
+    pub mat_highway_deck: Handle<StandardMaterial>,
+    pub mat_highway_amber_glow: Handle<StandardMaterial>,
+    pub mat_window_matrix_amber: Handle<StandardMaterial>,
+    pub mat_traffic_car_body: Handle<StandardMaterial>,
+    pub mat_traffic_bus_body: Handle<StandardMaterial>,
+    pub mat_traffic_van_body: Handle<StandardMaterial>,
+    pub mat_headlight_glow: Handle<StandardMaterial>,
+    pub mat_taillight_glow: Handle<StandardMaterial>,
+    pub mat_rooftop_machinery: Handle<StandardMaterial>,
 
     // Holographic Textures / Materials
     pub mat_hologram_veyron: Handle<StandardMaterial>,
@@ -213,6 +289,30 @@ pub fn init_neon_district_assets(
         mesh_window_strip_v: meshes.add(Cuboid::new(0.8, 42.0, 0.15)),
         mesh_skybridge_tube: meshes.add(Cuboid::new(56.0, 3.8, 4.2)),
         mesh_skybridge_accent: meshes.add(Cuboid::new(56.0, 0.2, 0.2)),
+
+        // Layered Megastructures & Horizon Architecture
+        mesh_building_far_monolith: meshes.add(Cuboid::new(38.0, 190.0, 38.0)),
+        mesh_building_far_spire: meshes.add(Cylinder::new(3.6, 220.0)),
+        mesh_building_podium: meshes.add(Cuboid::new(22.0, 34.0, 22.0)),
+        mesh_building_stepped_top: meshes.add(Cuboid::new(12.0, 42.0, 12.0)),
+        mesh_rooftop_condenser: meshes.add(Cuboid::new(4.5, 3.2, 5.5)),
+        mesh_rooftop_watertank: meshes.add(Cylinder::new(2.4, 4.2)),
+        mesh_antenna_array: meshes.add(Cylinder::new(0.35, 16.0)),
+
+        // Elevated Highways & Flyover Skyways
+        mesh_highway_deck: meshes.add(Cuboid::new(6.4, 0.5, length)),
+        mesh_highway_barrier: meshes.add(Cuboid::new(0.3, 0.7, length)),
+        mesh_highway_glow_trim: meshes.add(Cuboid::new(0.08, 0.12, length)),
+        mesh_highway_pylon: meshes.add(Cuboid::new(2.2, 36.0, 2.2)),
+        mesh_cross_bridge_deck: meshes.add(Cuboid::new(64.0, 0.6, 6.4)),
+        mesh_cross_bridge_barrier: meshes.add(Cuboid::new(64.0, 0.7, 0.3)),
+
+        // Background Moving Vehicles
+        mesh_traffic_car: meshes.add(Cuboid::new(1.5, 0.75, 3.4)),
+        mesh_traffic_bus: meshes.add(Cuboid::new(2.3, 1.9, 7.8)),
+        mesh_traffic_van: meshes.add(Cuboid::new(1.8, 1.35, 4.8)),
+        mesh_headlight_pair: meshes.add(Cuboid::new(1.2, 0.16, 0.08)),
+        mesh_taillight_pair: meshes.add(Cuboid::new(1.2, 0.16, 0.08)),
 
         // Holographic Billboards
         mesh_billboard_large: meshes.add(Cuboid::new(8.5, 4.8, 0.15)),
@@ -310,6 +410,64 @@ pub fn init_neon_district_assets(
         mat_maglev_stripe: materials.add(StandardMaterial {
             base_color: Color::srgb(0.1, 0.9, 1.0),
             emissive: LinearRgba::new(0.3, 2.8, 3.5, 1.0),
+            ..default()
+        }),
+
+        // Layered & Traffic Materials
+        mat_building_far_silhouette: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.05, 0.04, 0.08),
+            perceptual_roughness: 0.90,
+            metallic: 0.20,
+            ..default()
+        }),
+        mat_highway_deck: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.08, 0.07, 0.10),
+            perceptual_roughness: 0.80,
+            metallic: 0.30,
+            ..default()
+        }),
+        mat_highway_amber_glow: materials.add(StandardMaterial {
+            base_color: Color::srgb(1.0, 0.6, 0.1),
+            emissive: LinearRgba::new(2.6, 1.4, 0.15, 1.0),
+            ..default()
+        }),
+        mat_window_matrix_amber: materials.add(StandardMaterial {
+            base_color: Color::srgb(1.0, 0.7, 0.2),
+            emissive: LinearRgba::new(2.4, 1.5, 0.3, 1.0),
+            ..default()
+        }),
+        mat_traffic_car_body: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.14, 0.13, 0.18),
+            perceptual_roughness: 0.30,
+            metallic: 0.80,
+            ..default()
+        }),
+        mat_traffic_bus_body: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.09, 0.14, 0.22),
+            perceptual_roughness: 0.25,
+            metallic: 0.85,
+            ..default()
+        }),
+        mat_traffic_van_body: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.18, 0.15, 0.12),
+            perceptual_roughness: 0.40,
+            metallic: 0.60,
+            ..default()
+        }),
+        mat_headlight_glow: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.9, 0.95, 1.0),
+            emissive: LinearRgba::new(3.0, 3.5, 4.2, 1.0),
+            ..default()
+        }),
+        mat_taillight_glow: materials.add(StandardMaterial {
+            base_color: Color::srgb(1.0, 0.05, 0.1),
+            emissive: LinearRgba::new(4.0, 0.1, 0.15, 1.0),
+            ..default()
+        }),
+        mat_rooftop_machinery: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.16, 0.15, 0.18),
+            perceptual_roughness: 0.60,
+            metallic: 0.60,
             ..default()
         }),
 
@@ -751,88 +909,371 @@ fn spawn_city_skyline(
     _chapter: NeonDistrictChapter,
 ) {
     // Deterministic pseudo-random generation based on segment index
-    let hash_l = ((seg_idx * 17 + 3) % 100) as f32 / 100.0;
-    let hash_r = ((seg_idx * 31 + 7) % 100) as f32 / 100.0;
+    let h1 = ((seg_idx.wrapping_mul(17) + 3).rem_euclid(100)) as f32 / 100.0;
+    let h2 = ((seg_idx.wrapping_mul(31) + 7).rem_euclid(100)) as f32 / 100.0;
+    let h3 = ((seg_idx.wrapping_mul(53) + 11).rem_euclid(100)) as f32 / 100.0;
+    let h4 = ((seg_idx.wrapping_mul(79) + 19).rem_euclid(100)) as f32 / 100.0;
 
-    // LEFT FLANK SKYLINE (X <= -18.0m, outside playable area)
-    let left_x = -22.0 - hash_l * 18.0;
-    let left_z = -12.0 + hash_l * 24.0;
-    if hash_l > 0.45 {
-        // Towering skyscraper (85–110m tall)
+    // -------------------------------------------------------------------------
+    // LAYER 1: NEAR/MID-GROUND FLANK BUILDINGS (|X| in [18.0, 26.0]m)
+    // -------------------------------------------------------------------------
+    // Left Near-ground podium / mid-rise (height 26–42m)
+    let near_l_x = -20.0 - h1 * 5.0;
+    let near_l_z = -10.0 + h2 * 20.0;
+    let near_l_y = 16.0 + h3 * 12.0;
+    seg.spawn(PbrBundle {
+        mesh: neon.mesh_building_podium.clone(),
+        material: neon.mat_building_dark.clone(),
+        transform: Transform::from_xyz(near_l_x, near_l_y, near_l_z),
+        ..default()
+    });
+    // Horizontal window strip (cyan, magenta, or amber)
+    let left_win_mat = if h1 > 0.65 {
+        neon.mat_window_matrix_cyan.clone()
+    } else if h1 > 0.35 {
+        neon.mat_window_matrix_magenta.clone()
+    } else {
+        neon.mat_window_matrix_amber.clone()
+    };
+    seg.spawn(PbrBundle {
+        mesh: neon.mesh_window_strip_h.clone(),
+        material: left_win_mat,
+        transform: Transform::from_xyz(near_l_x + 11.1, near_l_y, near_l_z)
+            .with_rotation(Quat::from_rotation_y(std::f32::consts::FRAC_PI_2)),
+        ..default()
+    });
+    // Rooftop mechanical equipment on left near building
+    if h2 > 0.5 {
         seg.spawn(PbrBundle {
-            mesh: neon.mesh_building_large.clone(),
-            material: neon.mat_building_dark.clone(),
-            transform: Transform::from_xyz(left_x, 48.0, left_z),
+            mesh: neon.mesh_rooftop_condenser.clone(),
+            material: neon.mat_rooftop_machinery.clone(),
+            transform: Transform::from_xyz(near_l_x + 4.0, near_l_y + 17.0 + 1.6, near_l_z),
             ..default()
         });
-        // Vertical cyan window band
         seg.spawn(PbrBundle {
-            mesh: neon.mesh_window_strip_v.clone(),
-            material: neon.mat_window_matrix_cyan.clone(),
-            transform: Transform::from_xyz(left_x + 12.1, 40.0, left_z),
-            ..default()
-        });
-        // Rooftop antenna spire
-        seg.spawn(PbrBundle {
-            mesh: neon.mesh_spire_tower.clone(),
+            mesh: neon.mesh_antenna_array.clone(),
             material: neon.mat_tower_beacon_cyan.clone(),
-            transform: Transform::from_xyz(left_x, 116.0, left_z),
+            transform: Transform::from_xyz(near_l_x - 5.0, near_l_y + 17.0 + 8.0, near_l_z - 3.0),
             ..default()
         });
     } else {
-        // Mid-rise commercial block (40–56m tall)
         seg.spawn(PbrBundle {
-            mesh: neon.mesh_building_medium.clone(),
-            material: neon.mat_building_glass.clone(),
-            transform: Transform::from_xyz(left_x, 24.0, left_z),
-            ..default()
-        });
-        // Horizontal magenta window band
-        seg.spawn(PbrBundle {
-            mesh: neon.mesh_window_strip_h.clone(),
-            material: neon.mat_window_matrix_magenta.clone(),
-            transform: Transform::from_xyz(left_x + 9.1, 22.0, left_z)
-                .with_rotation(Quat::from_rotation_y(std::f32::consts::FRAC_PI_2)),
+            mesh: neon.mesh_rooftop_watertank.clone(),
+            material: neon.mat_rooftop_machinery.clone(),
+            transform: Transform::from_xyz(near_l_x - 3.0, near_l_y + 17.0 + 2.1, near_l_z + 2.0),
             ..default()
         });
     }
 
-    // RIGHT FLANK SKYLINE (X >= 18.0m, outside playable area)
-    let right_x = 22.0 + hash_r * 18.0;
-    let right_z = 12.0 - hash_r * 24.0;
-    if hash_r > 0.40 {
-        // Towering skyscraper on right
-        seg.spawn(PbrBundle {
-            mesh: neon.mesh_building_large.clone(),
-            material: neon.mat_building_glass.clone(),
-            transform: Transform::from_xyz(right_x, 50.0, right_z),
-            ..default()
-        });
-        seg.spawn(PbrBundle {
-            mesh: neon.mesh_window_strip_v.clone(),
-            material: neon.mat_window_matrix_magenta.clone(),
-            transform: Transform::from_xyz(right_x - 12.1, 42.0, right_z),
-            ..default()
-        });
-        seg.spawn(PbrBundle {
-            mesh: neon.mesh_spire_tower.clone(),
-            material: neon.mat_tower_beacon_magenta.clone(),
-            transform: Transform::from_xyz(right_x, 118.0, right_z),
-            ..default()
-        });
+    // Right Near-ground stepped building (height 24–40m)
+    let near_r_x = 20.0 + h2 * 5.0;
+    let near_r_z = 10.0 - h1 * 20.0;
+    let near_r_y = 18.0 + h4 * 14.0;
+    seg.spawn(PbrBundle {
+        mesh: neon.mesh_building_small.clone(),
+        material: neon.mat_building_glass.clone(),
+        transform: Transform::from_xyz(near_r_x, near_r_y, near_r_z),
+        ..default()
+    });
+    let right_win_mat = if h2 > 0.6 {
+        neon.mat_window_matrix_amber.clone()
+    } else if h2 > 0.3 {
+        neon.mat_window_matrix_cyan.clone()
     } else {
-        // Medium apartment block on right
+        neon.mat_window_matrix_magenta.clone()
+    };
+    seg.spawn(PbrBundle {
+        mesh: neon.mesh_window_strip_h.clone(),
+        material: right_win_mat,
+        transform: Transform::from_xyz(near_r_x - 7.1, near_r_y, near_r_z)
+            .with_rotation(Quat::from_rotation_y(std::f32::consts::FRAC_PI_2)),
+        ..default()
+    });
+    // Rooftop condenser on right near building
+    seg.spawn(PbrBundle {
+        mesh: neon.mesh_rooftop_condenser.clone(),
+        material: neon.mat_rooftop_machinery.clone(),
+        transform: Transform::from_xyz(near_r_x, near_r_y + 14.0 + 1.6, near_r_z),
+        ..default()
+    });
+
+    // -------------------------------------------------------------------------
+    // LAYER 2: ELEVATED HIGHWAYS WITH ACTIVE MOVING TRAFFIC (Left & Right)
+    // -------------------------------------------------------------------------
+    // Left Highway (X = -31.5m, Y = 14.0m)
+    let hw_l_x = -31.5;
+    let hw_l_y = 14.0;
+    seg.spawn(PbrBundle {
+        mesh: neon.mesh_highway_deck.clone(),
+        material: neon.mat_highway_deck.clone(),
+        transform: Transform::from_xyz(hw_l_x, hw_l_y, 0.0),
+        ..default()
+    });
+    // Left highway support pier
+    seg.spawn(PbrBundle {
+        mesh: neon.mesh_highway_pylon.clone(),
+        material: neon.mat_structural_gunmetal.clone(),
+        transform: Transform::from_xyz(hw_l_x, hw_l_y - 18.0, 0.0),
+        ..default()
+    });
+    // Left highway outer guardrails + glowing amber trim
+    seg.spawn(PbrBundle {
+        mesh: neon.mesh_highway_barrier.clone(),
+        material: neon.mat_structural_gunmetal.clone(),
+        transform: Transform::from_xyz(hw_l_x - 3.2, hw_l_y + 0.35, 0.0),
+        ..default()
+    });
+    seg.spawn(PbrBundle {
+        mesh: neon.mesh_highway_barrier.clone(),
+        material: neon.mat_structural_gunmetal.clone(),
+        transform: Transform::from_xyz(hw_l_x + 3.2, hw_l_y + 0.35, 0.0),
+        ..default()
+    });
+    seg.spawn(PbrBundle {
+        mesh: neon.mesh_highway_glow_trim.clone(),
+        material: neon.mat_highway_amber_glow.clone(),
+        transform: Transform::from_xyz(hw_l_x + 3.1, hw_l_y + 0.65, 0.0),
+        ..default()
+    });
+
+    // Left Highway Active Moving Traffic (Autonomous cyber-car + cargo van)
+    let l_speed_1 = -24.0; // cruising forward along with Kai
+    let l_car_z_1 = -12.0 + h3 * 16.0;
+    seg.spawn((
+        PbrBundle {
+            mesh: neon.mesh_traffic_car.clone(),
+            material: neon.mat_traffic_car_body.clone(),
+            transform: Transform::from_xyz(hw_l_x - 1.4, hw_l_y + 0.55, l_car_z_1),
+            ..default()
+        },
+        BackgroundTrafficVehicle {
+            speed: l_speed_1,
+            min_local_z: -20.0,
+            max_local_z: 20.0,
+        },
+    ))
+    .with_children(|car| {
+        car.spawn(PbrBundle {
+            mesh: neon.mesh_headlight_pair.clone(),
+            material: neon.mat_headlight_glow.clone(),
+            transform: Transform::from_xyz(0.0, 0.0, -1.7),
+            ..default()
+        });
+        car.spawn(PbrBundle {
+            mesh: neon.mesh_taillight_pair.clone(),
+            material: neon.mat_taillight_glow.clone(),
+            transform: Transform::from_xyz(0.0, 0.0, 1.7),
+            ..default()
+        });
+    });
+
+    let l_speed_2 = 18.0; // oncoming traffic
+    let l_car_z_2 = 10.0 - h4 * 16.0;
+    seg.spawn((
+        PbrBundle {
+            mesh: neon.mesh_traffic_van.clone(),
+            material: neon.mat_traffic_van_body.clone(),
+            transform: Transform::from_xyz(hw_l_x + 1.4, hw_l_y + 0.85, l_car_z_2),
+            ..default()
+        },
+        BackgroundTrafficVehicle {
+            speed: l_speed_2,
+            min_local_z: -20.0,
+            max_local_z: 20.0,
+        },
+    ))
+    .with_children(|van| {
+        van.spawn(PbrBundle {
+            mesh: neon.mesh_headlight_pair.clone(),
+            material: neon.mat_headlight_glow.clone(),
+            transform: Transform::from_xyz(0.0, 0.0, 2.4),
+            ..default()
+        });
+        van.spawn(PbrBundle {
+            mesh: neon.mesh_taillight_pair.clone(),
+            material: neon.mat_taillight_glow.clone(),
+            transform: Transform::from_xyz(0.0, 0.0, -2.4),
+            ..default()
+        });
+    });
+
+    // Right Highway (X = +35.5m, Y = 18.0m)
+    let hw_r_x = 35.5;
+    let hw_r_y = 18.0;
+    seg.spawn(PbrBundle {
+        mesh: neon.mesh_highway_deck.clone(),
+        material: neon.mat_highway_deck.clone(),
+        transform: Transform::from_xyz(hw_r_x, hw_r_y, 0.0),
+        ..default()
+    });
+    seg.spawn(PbrBundle {
+        mesh: neon.mesh_highway_pylon.clone(),
+        material: neon.mat_structural_gunmetal.clone(),
+        transform: Transform::from_xyz(hw_r_x, hw_r_y - 18.0, 0.0),
+        ..default()
+    });
+    seg.spawn(PbrBundle {
+        mesh: neon.mesh_highway_barrier.clone(),
+        material: neon.mat_structural_gunmetal.clone(),
+        transform: Transform::from_xyz(hw_r_x - 3.2, hw_r_y + 0.35, 0.0),
+        ..default()
+    });
+    seg.spawn(PbrBundle {
+        mesh: neon.mesh_highway_barrier.clone(),
+        material: neon.mat_structural_gunmetal.clone(),
+        transform: Transform::from_xyz(hw_r_x + 3.2, hw_r_y + 0.35, 0.0),
+        ..default()
+    });
+    seg.spawn(PbrBundle {
+        mesh: neon.mesh_highway_glow_trim.clone(),
+        material: neon.mat_cyan_rail_glow.clone(),
+        transform: Transform::from_xyz(hw_r_x - 3.1, hw_r_y + 0.65, 0.0),
+        ..default()
+    });
+
+    // Right Highway Active Moving Traffic (Cyber-bus cruising at speed)
+    let r_speed_bus = -16.0;
+    let r_bus_z = -8.0 + h1 * 16.0;
+    seg.spawn((
+        PbrBundle {
+            mesh: neon.mesh_traffic_bus.clone(),
+            material: neon.mat_traffic_bus_body.clone(),
+            transform: Transform::from_xyz(hw_r_x - 1.3, hw_r_y + 1.15, r_bus_z),
+            ..default()
+        },
+        BackgroundTrafficVehicle {
+            speed: r_speed_bus,
+            min_local_z: -20.0,
+            max_local_z: 20.0,
+        },
+    ))
+    .with_children(|bus| {
+        bus.spawn(PbrBundle {
+            mesh: neon.mesh_headlight_pair.clone(),
+            material: neon.mat_headlight_glow.clone(),
+            transform: Transform::from_xyz(0.0, 0.0, -3.9),
+            ..default()
+        });
+        bus.spawn(PbrBundle {
+            mesh: neon.mesh_taillight_pair.clone(),
+            material: neon.mat_taillight_glow.clone(),
+            transform: Transform::from_xyz(0.0, 0.0, 3.9),
+            ..default()
+        });
+    });
+
+    // -------------------------------------------------------------------------
+    // LAYER 3: MIDDLE-DISTANCE MEGA-TOWERS (|X| in [44.0, 64.0]m)
+    // -------------------------------------------------------------------------
+    let mid_l_x = -48.0 - h3 * 12.0;
+    let mid_l_z = -14.0 + h4 * 28.0;
+    let mid_l_height = 56.0 + h1 * 45.0;
+    seg.spawn(PbrBundle {
+        mesh: neon.mesh_building_medium.clone(),
+        material: neon.mat_building_dark.clone(),
+        transform: Transform::from_xyz(mid_l_x, mid_l_height * 0.5, mid_l_z).with_scale(Vec3::new(
+            1.2,
+            mid_l_height / 56.0,
+            1.2,
+        )),
+        ..default()
+    });
+    // Vertical matrix
+    seg.spawn(PbrBundle {
+        mesh: neon.mesh_window_strip_v.clone(),
+        material: neon.mat_window_matrix_cyan.clone(),
+        transform: Transform::from_xyz(mid_l_x + 11.0, mid_l_height * 0.5, mid_l_z),
+        ..default()
+    });
+    // Rooftop spire
+    seg.spawn(PbrBundle {
+        mesh: neon.mesh_spire_tower.clone(),
+        material: neon.mat_tower_beacon_cyan.clone(),
+        transform: Transform::from_xyz(mid_l_x, mid_l_height + 13.0, mid_l_z),
+        ..default()
+    });
+
+    let mid_r_x = 50.0 + h4 * 12.0;
+    let mid_r_z = 12.0 - h3 * 28.0;
+    let mid_r_height = 65.0 + h2 * 45.0;
+    seg.spawn(PbrBundle {
+        mesh: neon.mesh_building_large.clone(),
+        material: neon.mat_building_glass.clone(),
+        transform: Transform::from_xyz(mid_r_x, mid_r_height * 0.5, mid_r_z).with_scale(Vec3::new(
+            1.1,
+            mid_r_height / 110.0,
+            1.1,
+        )),
+        ..default()
+    });
+    seg.spawn(PbrBundle {
+        mesh: neon.mesh_window_strip_v.clone(),
+        material: neon.mat_window_matrix_magenta.clone(),
+        transform: Transform::from_xyz(mid_r_x - 13.3, mid_r_height * 0.5, mid_r_z),
+        ..default()
+    });
+    seg.spawn(PbrBundle {
+        mesh: neon.mesh_spire_tower.clone(),
+        material: neon.mat_tower_beacon_magenta.clone(),
+        transform: Transform::from_xyz(mid_r_x, mid_r_height + 13.0, mid_r_z),
+        ..default()
+    });
+
+    // -------------------------------------------------------------------------
+    // LAYER 4: FAR HORIZON MEGASTRUCTURES & ARCOLOGIES (|X| in [85.0, 150.0]m)
+    // -------------------------------------------------------------------------
+    let far_l_x = -96.0 - h1 * 40.0;
+    let far_l_z = -18.0 + h2 * 36.0;
+    seg.spawn(PbrBundle {
+        mesh: neon.mesh_building_far_monolith.clone(),
+        material: neon.mat_building_far_silhouette.clone(),
+        transform: Transform::from_xyz(far_l_x, 95.0, far_l_z),
+        ..default()
+    });
+    seg.spawn(PbrBundle {
+        mesh: neon.mesh_building_far_spire.clone(),
+        material: neon.mat_tower_beacon_magenta.clone(),
+        transform: Transform::from_xyz(far_l_x, 190.0 + 110.0, far_l_z),
+        ..default()
+    });
+
+    let far_r_x = 100.0 + h3 * 40.0;
+    let far_r_z = 16.0 - h4 * 36.0;
+    seg.spawn(PbrBundle {
+        mesh: neon.mesh_building_far_monolith.clone(),
+        material: neon.mat_building_far_silhouette.clone(),
+        transform: Transform::from_xyz(far_r_x, 95.0, far_r_z),
+        ..default()
+    });
+    seg.spawn(PbrBundle {
+        mesh: neon.mesh_building_far_spire.clone(),
+        material: neon.mat_tower_beacon_cyan.clone(),
+        transform: Transform::from_xyz(far_r_x, 190.0 + 110.0, far_r_z),
+        ..default()
+    });
+
+    // -------------------------------------------------------------------------
+    // TRANSVERSE SKYWAY CROSS-BRIDGES (Alternate segments, spanning overhead at Y = 28m)
+    // -------------------------------------------------------------------------
+    if seg_idx % 2 == 0 {
+        let bridge_y = 28.0;
+        let bridge_z = -8.0 + h1 * 16.0;
         seg.spawn(PbrBundle {
-            mesh: neon.mesh_building_medium.clone(),
-            material: neon.mat_building_dark.clone(),
-            transform: Transform::from_xyz(right_x, 24.0, right_z),
+            mesh: neon.mesh_cross_bridge_deck.clone(),
+            material: neon.mat_highway_deck.clone(),
+            transform: Transform::from_xyz(0.0, bridge_y, bridge_z),
             ..default()
         });
         seg.spawn(PbrBundle {
-            mesh: neon.mesh_window_strip_h.clone(),
-            material: neon.mat_window_matrix_cyan.clone(),
-            transform: Transform::from_xyz(right_x - 9.1, 18.0, right_z)
-                .with_rotation(Quat::from_rotation_y(std::f32::consts::FRAC_PI_2)),
+            mesh: neon.mesh_cross_bridge_barrier.clone(),
+            material: neon.mat_magenta_rail_glow.clone(),
+            transform: Transform::from_xyz(0.0, bridge_y + 0.45, bridge_z - 3.2),
+            ..default()
+        });
+        seg.spawn(PbrBundle {
+            mesh: neon.mesh_cross_bridge_barrier.clone(),
+            material: neon.mat_cyan_rail_glow.clone(),
+            transform: Transform::from_xyz(0.0, bridge_y + 0.45, bridge_z + 3.2),
             ..default()
         });
     }
@@ -992,6 +1433,65 @@ mod tests {
         assert!(
             building_min_x > 5.0,
             "Background skyscrapers must not collide with track"
+        );
+    }
+
+    #[test]
+    fn test_background_traffic_kinematics_and_wrapping() {
+        let veh = BackgroundTrafficVehicle {
+            speed: 20.0,
+            min_local_z: -20.0,
+            max_local_z: 20.0,
+        };
+
+        let mut trans = Transform::from_xyz(-31.5, 14.0, 19.0);
+        let dt = 0.1; // 100ms
+        trans.translation.z += veh.speed * dt; // 19.0 + 2.0 = 21.0
+        let span = veh.max_local_z - veh.min_local_z; // 40.0
+        if trans.translation.z > veh.max_local_z {
+            trans.translation.z -= span;
+        }
+
+        assert_eq!(
+            trans.translation.z, -19.0,
+            "Vehicle must wrap across segment boundary"
+        );
+
+        let rev_veh = BackgroundTrafficVehicle {
+            speed: -20.0,
+            min_local_z: -20.0,
+            max_local_z: 20.0,
+        };
+        let mut rev_trans = Transform::from_xyz(35.5, 18.0, -19.5);
+        rev_trans.translation.z += rev_veh.speed * dt; // -19.5 - 2.0 = -21.5
+        if rev_trans.translation.z < rev_veh.min_local_z {
+            rev_trans.translation.z += span;
+        }
+        assert_eq!(
+            rev_trans.translation.z, 18.5,
+            "Reverse vehicle must wrap across boundary"
+        );
+    }
+
+    #[test]
+    fn test_elevated_highway_and_skyway_clearance() {
+        // Highway X positions: Left X = -31.5, Right X = +35.5
+        let hw_left_x = 31.5_f32;
+        let hw_right_x = 35.5_f32;
+        assert!(
+            hw_left_x > 15.0,
+            "Left highway must maintain extensive lateral buffer"
+        );
+        assert!(
+            hw_right_x > 15.0,
+            "Right highway must maintain extensive lateral buffer"
+        );
+
+        // Transverse skyway bridges span at Y = 28.0m
+        let skyway_y = 28.0_f32;
+        assert!(
+            skyway_y >= 20.0,
+            "Skyway bridge must be high overhead in the skyline"
         );
     }
 }
