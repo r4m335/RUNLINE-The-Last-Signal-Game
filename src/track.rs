@@ -856,45 +856,21 @@ pub fn spawn_pattern_chunk(
         ));
 
         p_cmd.with_children(|parent| {
-            // Layer 2: Universal high-contrast neutral energy ring outline around pickup
-            parent.spawn(PbrBundle {
-                mesh: pool_assets.mesh_powerup_neutral_ring.clone(),
-                material: pool_assets.mat_powerup_neutral_ring.clone(),
-                ..default()
-            });
-
             match p_type {
                 CollectibleType::EchoShield => {
-                    // Layer 3: Vertical holographic beacon & ground track marker (Cyan)
+                    // Vertical holographic beacon beam ascending above pickup (does not obscure model)
                     parent.spawn(PbrBundle {
                         mesh: pool_assets.mesh_powerup_beacon_beam.clone(),
                         material: pool_assets.mat_beacon_shield.clone(),
-                        transform: Transform::from_xyz(0.0, 0.72, 0.0),
-                        ..default()
-                    });
-                    parent.spawn(PbrBundle {
-                        mesh: pool_assets.mesh_powerup_ground_ring.clone(),
-                        material: pool_assets.mat_beacon_shield.clone(),
-                        transform: Transform::from_xyz(0.0, -1.18, 0.0),
+                        transform: Transform::from_xyz(0.0, 0.78, 0.0),
                         ..default()
                     });
 
                     if let Some(assets) = powerup_assets {
-                        // Layer 1: Shield GLB model
+                        // Shield GLB model (Original scale preserved)
                         parent.spawn(SceneBundle {
                             scene: assets.shield_scene.clone(),
                             transform: Transform::from_scale(Vec3::splat(0.48)),
-                            ..default()
-                        });
-                        // Restrained ambient glow
-                        parent.spawn(PointLightBundle {
-                            point_light: PointLight {
-                                color: Color::srgb(0.08, 0.85, 1.0),
-                                intensity: 3200.0,
-                                range: 3.8,
-                                shadows_enabled: false,
-                                ..default()
-                            },
                             ..default()
                         });
                     } else {
@@ -918,36 +894,19 @@ pub fn spawn_pattern_chunk(
                     }
                 }
                 CollectibleType::Magnet => {
-                    // Layer 3: Vertical holographic beacon & ground track marker (Magenta)
+                    // Vertical holographic beacon beam ascending above pickup (does not obscure model)
                     parent.spawn(PbrBundle {
                         mesh: pool_assets.mesh_powerup_beacon_beam.clone(),
                         material: pool_assets.mat_beacon_magnet.clone(),
-                        transform: Transform::from_xyz(0.0, 0.72, 0.0),
-                        ..default()
-                    });
-                    parent.spawn(PbrBundle {
-                        mesh: pool_assets.mesh_powerup_ground_ring.clone(),
-                        material: pool_assets.mat_beacon_magnet.clone(),
-                        transform: Transform::from_xyz(0.0, -1.18, 0.0),
+                        transform: Transform::from_xyz(0.0, 0.78, 0.0),
                         ..default()
                     });
 
                     if let Some(assets) = powerup_assets {
-                        // Layer 1: Magnet GLB model
+                        // Magnet GLB model (Original scale preserved)
                         parent.spawn(SceneBundle {
                             scene: assets.magnet_scene.clone(),
                             transform: Transform::from_scale(Vec3::splat(0.48)),
-                            ..default()
-                        });
-                        // Restrained ambient glow
-                        parent.spawn(PointLightBundle {
-                            point_light: PointLight {
-                                color: Color::srgb(1.0, 0.15, 0.90),
-                                intensity: 3200.0,
-                                range: 3.8,
-                                shadows_enabled: false,
-                                ..default()
-                            },
                             ..default()
                         });
                     } else {
@@ -973,36 +932,19 @@ pub fn spawn_pattern_chunk(
                     }
                 }
                 CollectibleType::Overdrive => {
-                    // Layer 3: Vertical holographic beacon & ground track marker (Amber/Orange)
+                    // Vertical holographic beacon beam ascending above pickup (does not obscure model)
                     parent.spawn(PbrBundle {
                         mesh: pool_assets.mesh_powerup_beacon_beam.clone(),
                         material: pool_assets.mat_beacon_overdrive.clone(),
-                        transform: Transform::from_xyz(0.0, 0.72, 0.0),
-                        ..default()
-                    });
-                    parent.spawn(PbrBundle {
-                        mesh: pool_assets.mesh_powerup_ground_ring.clone(),
-                        material: pool_assets.mat_beacon_overdrive.clone(),
-                        transform: Transform::from_xyz(0.0, -1.18, 0.0),
+                        transform: Transform::from_xyz(0.0, 0.78, 0.0),
                         ..default()
                     });
 
                     if let Some(assets) = powerup_assets {
-                        // Layer 1: Overdrive GLB model
+                        // Overdrive GLB model (Original scale preserved)
                         parent.spawn(SceneBundle {
                             scene: assets.overdrive_scene.clone(),
                             transform: Transform::from_scale(Vec3::splat(0.48)),
-                            ..default()
-                        });
-                        // Restrained ambient glow
-                        parent.spawn(PointLightBundle {
-                            point_light: PointLight {
-                                color: Color::srgb(1.0, 0.55, 0.05),
-                                intensity: 3500.0,
-                                range: 3.8,
-                                shadows_enabled: false,
-                                ..default()
-                            },
                             ..default()
                         });
                     } else {

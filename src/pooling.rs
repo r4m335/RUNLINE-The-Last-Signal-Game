@@ -87,11 +87,8 @@ pub struct PoolAssets {
     pub mesh_jump_ring: Handle<Mesh>,
     pub mat_powerup_jump: Handle<StandardMaterial>,
 
-    // Power-up Universal Readability Beacon & Outline Layers
-    pub mesh_powerup_neutral_ring: Handle<Mesh>,
-    pub mat_powerup_neutral_ring: Handle<StandardMaterial>,
+    // Power-up Vertical Holographic Beacon
     pub mesh_powerup_beacon_beam: Handle<Mesh>,
-    pub mesh_powerup_ground_ring: Handle<Mesh>,
     pub mat_beacon_shield: Handle<StandardMaterial>,
     pub mat_beacon_magnet: Handle<StandardMaterial>,
     pub mat_beacon_overdrive: Handle<StandardMaterial>,
@@ -384,32 +381,23 @@ fn init_pool_assets(
             ..default()
         }),
 
-        // Power-up Universal Readability Beacon & Outline Layers
-        mesh_powerup_neutral_ring: meshes.add(Torus::new(0.018, 0.62)),
-        mat_powerup_neutral_ring: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.92, 0.96, 1.0),
-            emissive: LinearRgba::new(2.5, 2.8, 3.2, 1.0),
-            perceptual_roughness: 0.1,
-            metallic: 0.9,
-            ..default()
-        }),
+        // Power-up Vertical Holographic Beacon Beam (Elevated above pickups)
         mesh_powerup_beacon_beam: meshes.add(Cylinder::new(0.035, 1.10)),
-        mesh_powerup_ground_ring: meshes.add(Torus::new(0.025, 0.52)),
         mat_beacon_shield: materials.add(StandardMaterial {
-            base_color: Color::srgba(0.08, 0.85, 1.0, 0.35),
-            emissive: LinearRgba::new(0.4, 2.2, 3.5, 1.0),
+            base_color: Color::srgba(0.08, 0.85, 1.0, 0.40),
+            emissive: LinearRgba::new(0.5, 2.5, 3.8, 1.0),
             alpha_mode: AlphaMode::Blend,
             ..default()
         }),
         mat_beacon_magnet: materials.add(StandardMaterial {
-            base_color: Color::srgba(1.0, 0.15, 0.90, 0.35),
-            emissive: LinearRgba::new(3.5, 0.3, 3.5, 1.0),
+            base_color: Color::srgba(1.0, 0.15, 0.90, 0.40),
+            emissive: LinearRgba::new(3.8, 0.4, 3.8, 1.0),
             alpha_mode: AlphaMode::Blend,
             ..default()
         }),
         mat_beacon_overdrive: materials.add(StandardMaterial {
-            base_color: Color::srgba(1.0, 0.60, 0.05, 0.35),
-            emissive: LinearRgba::new(3.8, 1.8, 0.2, 1.0),
+            base_color: Color::srgba(1.0, 0.60, 0.05, 0.40),
+            emissive: LinearRgba::new(4.0, 2.0, 0.2, 1.0),
             alpha_mode: AlphaMode::Blend,
             ..default()
         }),
