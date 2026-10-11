@@ -400,6 +400,7 @@ pub fn spawn_industrial_sector_segment(
             spawn_mid_industrial_features(seg, industrial, variant, even);
             spawn_far_industrial_features(seg, industrial, variant, even);
             spawn_industrial_signage(seg, industrial, signage, variant, even);
+            spawn_industrial_architecture(seg, industrial, variant, even, length);
             spawn_industrial_background_detail(seg, industrial, props, signage, variant, even);
             spawn_industrial_landmark(
                 seg,
@@ -1217,6 +1218,848 @@ fn spawn_far_industrial_detail(
         IndustrialVariant::TransitionDamagedWorks | IndustrialVariant::TransitionFloodApproach
     ) {
         spawn_steam_vent(seg, industrial, -side * 17.0, 5.3, -8.0);
+    }
+}
+
+#[derive(Clone, Copy)]
+enum IndustrialBuildingStyle {
+    Entry,
+    Freight,
+    Processing,
+    HeavyWorks,
+    Transition,
+}
+
+#[derive(Clone, Copy)]
+struct CompleteBuildingSpec {
+    side: f32,
+    center_x: f32,
+    z: f32,
+    depth: f32,
+    height: f32,
+    length: f32,
+    floors: u8,
+    style: IndustrialBuildingStyle,
+    loading_bays: bool,
+    roof_units: u8,
+    distressed: bool,
+}
+
+/// Composes full industrial buildings from the existing low-poly modules. The
+/// shell is deliberately a real volume, rather than another thin facade, so
+/// roofs, side walls, and overlapping service buildings read as one campus.
+fn spawn_industrial_architecture(
+    seg: &mut ChildBuilder,
+    industrial: &IndustrialSectorAssets,
+    variant: IndustrialVariant,
+    even: bool,
+    segment_length: f32,
+) {
+    let side = if even { 1.0 } else { -1.0 };
+    let building_length = (segment_length - 5.0).clamp(30.0, 36.0);
+
+    match variant {
+        IndustrialVariant::EntryPipeGallery => {
+            spawn_complete_industrial_building(
+                seg,
+                industrial,
+                CompleteBuildingSpec {
+                    side,
+                    center_x: 14.5,
+                    z: 0.0,
+                    depth: 10.5,
+                    height: 8.5,
+                    length: building_length,
+                    floors: 2,
+                    style: IndustrialBuildingStyle::Entry,
+                    loading_bays: false,
+                    roof_units: 2,
+                    distressed: false,
+                },
+            );
+            spawn_complete_industrial_building(
+                seg,
+                industrial,
+                CompleteBuildingSpec {
+                    side: -side,
+                    center_x: 14.0,
+                    z: 0.0,
+                    depth: 6.5,
+                    height: 5.5,
+                    length: building_length,
+                    floors: 1,
+                    style: IndustrialBuildingStyle::Entry,
+                    loading_bays: false,
+                    roof_units: 1,
+                    distressed: false,
+                },
+            );
+            spawn_side_pipe_bridge(seg, industrial, side, 10.0, 19.0, 7.35, 0.0);
+            spawn_utility_tower(seg, industrial, -side, 20.0, 8.0, 9.0);
+        }
+        IndustrialVariant::EntryServiceBlock => {
+            spawn_complete_industrial_building(
+                seg,
+                industrial,
+                CompleteBuildingSpec {
+                    side,
+                    center_x: 15.0,
+                    z: 0.0,
+                    depth: 11.0,
+                    height: 8.0,
+                    length: building_length,
+                    floors: 2,
+                    style: IndustrialBuildingStyle::Entry,
+                    loading_bays: true,
+                    roof_units: 2,
+                    distressed: false,
+                },
+            );
+            spawn_complete_industrial_building(
+                seg,
+                industrial,
+                CompleteBuildingSpec {
+                    side: -side,
+                    center_x: 13.5,
+                    z: 0.0,
+                    depth: 7.0,
+                    height: 5.0,
+                    length: building_length,
+                    floors: 1,
+                    style: IndustrialBuildingStyle::Entry,
+                    loading_bays: false,
+                    roof_units: 1,
+                    distressed: false,
+                },
+            );
+            spawn_side_pipe_bridge(seg, industrial, side, 10.0, 20.0, 6.95, -7.0);
+        }
+        IndustrialVariant::EntryWarningLine => {
+            spawn_complete_industrial_building(
+                seg,
+                industrial,
+                CompleteBuildingSpec {
+                    side,
+                    center_x: 14.0,
+                    z: 0.0,
+                    depth: 9.5,
+                    height: 7.2,
+                    length: building_length,
+                    floors: 2,
+                    style: IndustrialBuildingStyle::Entry,
+                    loading_bays: false,
+                    roof_units: 1,
+                    distressed: false,
+                },
+            );
+            spawn_complete_industrial_building(
+                seg,
+                industrial,
+                CompleteBuildingSpec {
+                    side: -side,
+                    center_x: 15.5,
+                    z: 0.0,
+                    depth: 8.0,
+                    height: 6.0,
+                    length: building_length,
+                    floors: 1,
+                    style: IndustrialBuildingStyle::Entry,
+                    loading_bays: true,
+                    roof_units: 1,
+                    distressed: false,
+                },
+            );
+            spawn_side_service_bridge(seg, industrial, side, 9.0, 18.0, 6.6, 6.0);
+        }
+        IndustrialVariant::FreightContainerStack => {
+            spawn_complete_industrial_building(
+                seg,
+                industrial,
+                CompleteBuildingSpec {
+                    side,
+                    center_x: 15.0,
+                    z: 0.0,
+                    depth: 11.5,
+                    height: 8.0,
+                    length: building_length,
+                    floors: 2,
+                    style: IndustrialBuildingStyle::Freight,
+                    loading_bays: true,
+                    roof_units: 2,
+                    distressed: false,
+                },
+            );
+            spawn_complete_industrial_building(
+                seg,
+                industrial,
+                CompleteBuildingSpec {
+                    side: -side,
+                    center_x: 15.5,
+                    z: 0.0,
+                    depth: 8.0,
+                    height: 6.0,
+                    length: building_length,
+                    floors: 1,
+                    style: IndustrialBuildingStyle::Freight,
+                    loading_bays: true,
+                    roof_units: 1,
+                    distressed: false,
+                },
+            );
+            spawn_side_service_bridge(seg, industrial, side, 9.5, 20.0, 7.0, -5.0);
+        }
+        IndustrialVariant::FreightCraneBay => {
+            spawn_complete_industrial_building(
+                seg,
+                industrial,
+                CompleteBuildingSpec {
+                    side,
+                    center_x: 15.5,
+                    z: 0.0,
+                    depth: 12.0,
+                    height: 8.5,
+                    length: building_length,
+                    floors: 2,
+                    style: IndustrialBuildingStyle::Freight,
+                    loading_bays: true,
+                    roof_units: 2,
+                    distressed: false,
+                },
+            );
+            spawn_complete_industrial_building(
+                seg,
+                industrial,
+                CompleteBuildingSpec {
+                    side: -side,
+                    center_x: 14.0,
+                    z: 0.0,
+                    depth: 7.0,
+                    height: 5.5,
+                    length: building_length,
+                    floors: 1,
+                    style: IndustrialBuildingStyle::Freight,
+                    loading_bays: true,
+                    roof_units: 1,
+                    distressed: false,
+                },
+            );
+            spawn_side_service_bridge(seg, industrial, side, 9.0, 21.5, 7.5, 6.0);
+        }
+        IndustrialVariant::FreightLoadingPlatform => {
+            spawn_complete_industrial_building(
+                seg,
+                industrial,
+                CompleteBuildingSpec {
+                    side,
+                    center_x: 14.5,
+                    z: 0.0,
+                    depth: 10.0,
+                    height: 7.0,
+                    length: building_length,
+                    floors: 2,
+                    style: IndustrialBuildingStyle::Freight,
+                    loading_bays: true,
+                    roof_units: 1,
+                    distressed: false,
+                },
+            );
+            spawn_complete_industrial_building(
+                seg,
+                industrial,
+                CompleteBuildingSpec {
+                    side: -side,
+                    center_x: 16.5,
+                    z: 0.0,
+                    depth: 9.0,
+                    height: 6.5,
+                    length: building_length,
+                    floors: 1,
+                    style: IndustrialBuildingStyle::Freight,
+                    loading_bays: true,
+                    roof_units: 2,
+                    distressed: false,
+                },
+            );
+            spawn_side_pipe_bridge(seg, industrial, -side, 11.0, 21.0, 6.6, 2.0);
+        }
+        IndustrialVariant::ProcessingPressureRow => {
+            spawn_complete_industrial_building(
+                seg,
+                industrial,
+                CompleteBuildingSpec {
+                    side,
+                    center_x: 15.0,
+                    z: 0.0,
+                    depth: 12.0,
+                    height: 10.5,
+                    length: building_length,
+                    floors: 3,
+                    style: IndustrialBuildingStyle::Processing,
+                    loading_bays: true,
+                    roof_units: 3,
+                    distressed: false,
+                },
+            );
+            spawn_complete_industrial_building(
+                seg,
+                industrial,
+                CompleteBuildingSpec {
+                    side: -side,
+                    center_x: 15.0,
+                    z: 0.0,
+                    depth: 8.0,
+                    height: 7.0,
+                    length: building_length,
+                    floors: 2,
+                    style: IndustrialBuildingStyle::Processing,
+                    loading_bays: false,
+                    roof_units: 1,
+                    distressed: false,
+                },
+            );
+            spawn_side_pipe_bridge(seg, industrial, side, 9.0, 21.0, 8.8, -5.0);
+            spawn_utility_tower(seg, industrial, -side, 20.0, 9.5, 8.0);
+        }
+        IndustrialVariant::ProcessingSteamManifold => {
+            spawn_complete_industrial_building(
+                seg,
+                industrial,
+                CompleteBuildingSpec {
+                    side,
+                    center_x: 16.0,
+                    z: 0.0,
+                    depth: 13.0,
+                    height: 11.5,
+                    length: building_length,
+                    floors: 3,
+                    style: IndustrialBuildingStyle::Processing,
+                    loading_bays: true,
+                    roof_units: 3,
+                    distressed: false,
+                },
+            );
+            spawn_complete_industrial_building(
+                seg,
+                industrial,
+                CompleteBuildingSpec {
+                    side: -side,
+                    center_x: 14.0,
+                    z: 0.0,
+                    depth: 7.5,
+                    height: 6.5,
+                    length: building_length,
+                    floors: 1,
+                    style: IndustrialBuildingStyle::Processing,
+                    loading_bays: false,
+                    roof_units: 2,
+                    distressed: false,
+                },
+            );
+            spawn_side_pipe_bridge(seg, industrial, side, 9.5, 22.0, 9.5, 6.0);
+        }
+        IndustrialVariant::ProcessingCatwalk => {
+            spawn_complete_industrial_building(
+                seg,
+                industrial,
+                CompleteBuildingSpec {
+                    side,
+                    center_x: 14.5,
+                    z: 0.0,
+                    depth: 10.5,
+                    height: 9.0,
+                    length: building_length,
+                    floors: 2,
+                    style: IndustrialBuildingStyle::Processing,
+                    loading_bays: true,
+                    roof_units: 2,
+                    distressed: false,
+                },
+            );
+            spawn_complete_industrial_building(
+                seg,
+                industrial,
+                CompleteBuildingSpec {
+                    side: -side,
+                    center_x: 16.0,
+                    z: 0.0,
+                    depth: 9.5,
+                    height: 7.5,
+                    length: building_length,
+                    floors: 2,
+                    style: IndustrialBuildingStyle::Processing,
+                    loading_bays: false,
+                    roof_units: 2,
+                    distressed: false,
+                },
+            );
+            spawn_side_service_bridge(seg, industrial, side, 9.0, 20.5, 8.0, -4.0);
+        }
+        IndustrialVariant::HeavyWorksConveyor => {
+            spawn_complete_industrial_building(
+                seg,
+                industrial,
+                CompleteBuildingSpec {
+                    side,
+                    center_x: 16.0,
+                    z: 0.0,
+                    depth: 14.0,
+                    height: 12.0,
+                    length: building_length,
+                    floors: 3,
+                    style: IndustrialBuildingStyle::HeavyWorks,
+                    loading_bays: true,
+                    roof_units: 3,
+                    distressed: false,
+                },
+            );
+            spawn_complete_industrial_building(
+                seg,
+                industrial,
+                CompleteBuildingSpec {
+                    side: -side,
+                    center_x: 15.0,
+                    z: 0.0,
+                    depth: 9.0,
+                    height: 8.0,
+                    length: building_length,
+                    floors: 2,
+                    style: IndustrialBuildingStyle::HeavyWorks,
+                    loading_bays: true,
+                    roof_units: 2,
+                    distressed: false,
+                },
+            );
+            spawn_side_service_bridge(seg, industrial, side, 9.5, 22.5, 10.0, -5.0);
+            spawn_utility_tower(seg, industrial, side, 23.0, 11.0, 9.0);
+        }
+        IndustrialVariant::HeavyWorksVeyronGate => {
+            spawn_complete_industrial_building(
+                seg,
+                industrial,
+                CompleteBuildingSpec {
+                    side,
+                    center_x: 15.5,
+                    z: 0.0,
+                    depth: 13.0,
+                    height: 11.0,
+                    length: building_length,
+                    floors: 3,
+                    style: IndustrialBuildingStyle::HeavyWorks,
+                    loading_bays: true,
+                    roof_units: 3,
+                    distressed: false,
+                },
+            );
+            spawn_complete_industrial_building(
+                seg,
+                industrial,
+                CompleteBuildingSpec {
+                    side: -side,
+                    center_x: 16.5,
+                    z: 0.0,
+                    depth: 10.0,
+                    height: 7.5,
+                    length: building_length,
+                    floors: 2,
+                    style: IndustrialBuildingStyle::HeavyWorks,
+                    loading_bays: true,
+                    roof_units: 2,
+                    distressed: false,
+                },
+            );
+            spawn_side_pipe_bridge(seg, industrial, side, 9.0, 22.0, 9.5, 5.0);
+        }
+        IndustrialVariant::HeavyWorksCoolingArray => {
+            spawn_complete_industrial_building(
+                seg,
+                industrial,
+                CompleteBuildingSpec {
+                    side,
+                    center_x: 16.5,
+                    z: 0.0,
+                    depth: 15.0,
+                    height: 12.5,
+                    length: building_length,
+                    floors: 3,
+                    style: IndustrialBuildingStyle::HeavyWorks,
+                    loading_bays: false,
+                    roof_units: 4,
+                    distressed: false,
+                },
+            );
+            spawn_complete_industrial_building(
+                seg,
+                industrial,
+                CompleteBuildingSpec {
+                    side: -side,
+                    center_x: 14.5,
+                    z: 0.0,
+                    depth: 8.0,
+                    height: 8.5,
+                    length: building_length,
+                    floors: 2,
+                    style: IndustrialBuildingStyle::HeavyWorks,
+                    loading_bays: false,
+                    roof_units: 2,
+                    distressed: false,
+                },
+            );
+            spawn_side_service_bridge(seg, industrial, side, 10.0, 23.5, 10.5, 0.0);
+        }
+        IndustrialVariant::TransitionLeakingMain => {
+            spawn_complete_industrial_building(
+                seg,
+                industrial,
+                CompleteBuildingSpec {
+                    side,
+                    center_x: 15.0,
+                    z: 0.0,
+                    depth: 12.0,
+                    height: 10.0,
+                    length: building_length,
+                    floors: 2,
+                    style: IndustrialBuildingStyle::Transition,
+                    loading_bays: true,
+                    roof_units: 2,
+                    distressed: true,
+                },
+            );
+            spawn_complete_industrial_building(
+                seg,
+                industrial,
+                CompleteBuildingSpec {
+                    side: -side,
+                    center_x: 14.0,
+                    z: 0.0,
+                    depth: 8.0,
+                    height: 6.5,
+                    length: building_length,
+                    floors: 1,
+                    style: IndustrialBuildingStyle::Transition,
+                    loading_bays: false,
+                    roof_units: 1,
+                    distressed: true,
+                },
+            );
+            spawn_side_pipe_bridge(seg, industrial, side, 9.0, 20.0, 8.0, -4.0);
+        }
+        IndustrialVariant::TransitionDamagedWorks => {
+            spawn_complete_industrial_building(
+                seg,
+                industrial,
+                CompleteBuildingSpec {
+                    side,
+                    center_x: 16.0,
+                    z: 0.0,
+                    depth: 13.0,
+                    height: 10.5,
+                    length: building_length,
+                    floors: 2,
+                    style: IndustrialBuildingStyle::Transition,
+                    loading_bays: true,
+                    roof_units: 2,
+                    distressed: true,
+                },
+            );
+            spawn_complete_industrial_building(
+                seg,
+                industrial,
+                CompleteBuildingSpec {
+                    side: -side,
+                    center_x: 15.0,
+                    z: 0.0,
+                    depth: 9.0,
+                    height: 7.0,
+                    length: building_length,
+                    floors: 1,
+                    style: IndustrialBuildingStyle::Transition,
+                    loading_bays: false,
+                    roof_units: 1,
+                    distressed: true,
+                },
+            );
+            spawn_side_service_bridge(seg, industrial, side, 9.5, 22.0, 7.4, 3.0);
+        }
+        IndustrialVariant::TransitionFloodApproach => {
+            spawn_complete_industrial_building(
+                seg,
+                industrial,
+                CompleteBuildingSpec {
+                    side,
+                    center_x: 15.0,
+                    z: 0.0,
+                    depth: 11.0,
+                    height: 9.0,
+                    length: building_length,
+                    floors: 2,
+                    style: IndustrialBuildingStyle::Transition,
+                    loading_bays: false,
+                    roof_units: 1,
+                    distressed: true,
+                },
+            );
+            spawn_complete_industrial_building(
+                seg,
+                industrial,
+                CompleteBuildingSpec {
+                    side: -side,
+                    center_x: 16.5,
+                    z: 0.0,
+                    depth: 10.0,
+                    height: 7.5,
+                    length: building_length,
+                    floors: 2,
+                    style: IndustrialBuildingStyle::Transition,
+                    loading_bays: true,
+                    roof_units: 1,
+                    distressed: true,
+                },
+            );
+            spawn_side_pipe_bridge(seg, industrial, -side, 10.5, 22.0, 7.0, 6.0);
+        }
+    }
+}
+
+fn spawn_complete_industrial_building(
+    seg: &mut ChildBuilder,
+    industrial: &IndustrialSectorAssets,
+    spec: CompleteBuildingSpec,
+) {
+    let shell_material = match spec.style {
+        IndustrialBuildingStyle::Entry => industrial.mat_factory.clone(),
+        IndustrialBuildingStyle::Freight => industrial.mat_facade.clone(),
+        IndustrialBuildingStyle::Processing => industrial.mat_steel.clone(),
+        IndustrialBuildingStyle::HeavyWorks => industrial.mat_dark_steel.clone(),
+        IndustrialBuildingStyle::Transition => industrial.mat_rusted_steel.clone(),
+    };
+    let panel_material = match spec.style {
+        IndustrialBuildingStyle::Entry => industrial.mat_veyron.clone(),
+        IndustrialBuildingStyle::Freight => industrial.mat_rusted_steel.clone(),
+        IndustrialBuildingStyle::Processing => industrial.mat_cooling.clone(),
+        IndustrialBuildingStyle::HeavyWorks => industrial.mat_veyron.clone(),
+        IndustrialBuildingStyle::Transition => industrial.mat_facade.clone(),
+    };
+    let roof_material = if spec.distressed {
+        industrial.mat_rusted_steel.clone()
+    } else {
+        industrial.mat_dark_steel.clone()
+    };
+    let x = spec.side * spec.center_x;
+    let near_x = spec.side * (spec.center_x - spec.depth * 0.5) - spec.side * 0.16;
+    let floor_height = spec.height / spec.floors.max(1) as f32;
+
+    seg.spawn(PbrBundle {
+        mesh: industrial.mesh_factory_wall.clone(),
+        material: shell_material,
+        transform: Transform::from_xyz(x, spec.height * 0.5, spec.z).with_scale(Vec3::new(
+            spec.depth / 0.55,
+            spec.height / 6.5,
+            spec.length / 38.0,
+        )),
+        ..default()
+    });
+    seg.spawn(PbrBundle {
+        mesh: industrial.mesh_factory_wall.clone(),
+        material: roof_material.clone(),
+        transform: Transform::from_xyz(x, spec.height + 0.28, spec.z).with_scale(Vec3::new(
+            spec.depth / 0.55 * 1.08,
+            0.10,
+            spec.length / 38.0 * 1.05,
+        )),
+        ..default()
+    });
+
+    for floor in 1..spec.floors {
+        let y = floor_height * floor as f32;
+        seg.spawn(PbrBundle {
+            mesh: industrial.mesh_reinforcement_beam.clone(),
+            material: roof_material.clone(),
+            transform: Transform::from_xyz(near_x, y, spec.z).with_scale(Vec3::new(
+                1.0,
+                1.0,
+                spec.length / 7.0,
+            )),
+            ..default()
+        });
+    }
+    for z_offset in [-0.38, 0.0, 0.38] {
+        seg.spawn(PbrBundle {
+            mesh: industrial.mesh_structural_column.clone(),
+            material: roof_material.clone(),
+            transform: Transform::from_xyz(
+                near_x,
+                spec.height * 0.5,
+                spec.z + spec.length * z_offset,
+            )
+            .with_scale(Vec3::new(1.0, spec.height / 7.0, 1.0)),
+            ..default()
+        });
+    }
+
+    for floor in 0..spec.floors {
+        let y = floor_height * (floor as f32 + 0.58);
+        for z_offset in [-0.25, 0.0, 0.25] {
+            seg.spawn(PbrBundle {
+                mesh: industrial.mesh_vent_panel.clone(),
+                material: panel_material.clone(),
+                transform: Transform::from_xyz(
+                    near_x - spec.side * 0.08,
+                    y,
+                    spec.z + spec.length * z_offset,
+                )
+                .with_scale(Vec3::new(
+                    1.0,
+                    (floor_height / 1.2 * 0.34).max(0.7),
+                    1.0,
+                )),
+                ..default()
+            });
+        }
+    }
+
+    let entrance_z = spec.z - spec.length * 0.32;
+    seg.spawn(PbrBundle {
+        mesh: if spec.loading_bays {
+            industrial.mesh_loading_bay.clone()
+        } else {
+            industrial.mesh_service_door.clone()
+        },
+        material: industrial.mat_hazard.clone(),
+        transform: Transform::from_xyz(near_x - spec.side * 0.12, 1.35, entrance_z).with_scale(
+            if spec.loading_bays {
+                Vec3::new(1.0, 1.0, 1.15)
+            } else {
+                Vec3::new(1.0, 1.25, 1.4)
+            },
+        ),
+        ..default()
+    });
+    if spec.loading_bays {
+        seg.spawn(PbrBundle {
+            mesh: industrial.mesh_loading_bay.clone(),
+            material: industrial.mat_dark_steel.clone(),
+            transform: Transform::from_xyz(
+                near_x - spec.side * 0.14,
+                1.3,
+                spec.z + spec.length * 0.22,
+            ),
+            ..default()
+        });
+    }
+
+    let roof_y = spec.height + 1.0;
+    for unit in 0..spec.roof_units {
+        let centered = unit as f32 - (spec.roof_units.saturating_sub(1) as f32 * 0.5);
+        seg.spawn(PbrBundle {
+            mesh: industrial.mesh_cooling_unit.clone(),
+            material: industrial.mat_cooling.clone(),
+            transform: Transform::from_xyz(
+                x + spec.side * centered * 2.0,
+                roof_y,
+                spec.z + spec.length * 0.18,
+            ),
+            ..default()
+        });
+    }
+    for z_offset in [-0.28, 0.28] {
+        seg.spawn(PbrBundle {
+            mesh: industrial.mesh_stack.clone(),
+            material: if spec.distressed {
+                industrial.mat_rusted_steel.clone()
+            } else {
+                industrial.mat_pipe.clone()
+            },
+            transform: Transform::from_xyz(
+                x + spec.side * spec.depth * 0.22,
+                spec.height + 4.5,
+                spec.z + spec.length * z_offset,
+            )
+            .with_scale(Vec3::splat(if spec.distressed { 0.82 } else { 1.0 })),
+            ..default()
+        });
+    }
+}
+
+fn spawn_side_pipe_bridge(
+    seg: &mut ChildBuilder,
+    industrial: &IndustrialSectorAssets,
+    side: f32,
+    from_x: f32,
+    to_x: f32,
+    y: f32,
+    z: f32,
+) {
+    let span = (to_x - from_x).abs();
+    let center_x = side * (from_x + to_x) * 0.5;
+    for offset in [-0.35, 0.35] {
+        seg.spawn(PbrBundle {
+            mesh: industrial.mesh_duct.clone(),
+            material: industrial.mat_pipe.clone(),
+            transform: Transform::from_xyz(center_x, y + offset, z)
+                .with_rotation(Quat::from_rotation_z(std::f32::consts::FRAC_PI_2))
+                .with_scale(Vec3::new(1.0, span / 6.0, 1.0)),
+            ..default()
+        });
+    }
+    spawn_side_service_bridge(seg, industrial, side, from_x, to_x, y - 0.9, z);
+}
+
+fn spawn_side_service_bridge(
+    seg: &mut ChildBuilder,
+    industrial: &IndustrialSectorAssets,
+    side: f32,
+    from_x: f32,
+    to_x: f32,
+    y: f32,
+    z: f32,
+) {
+    let span = (to_x - from_x).abs();
+    let center_x = side * (from_x + to_x) * 0.5;
+    seg.spawn(PbrBundle {
+        mesh: industrial.mesh_reinforcement_beam.clone(),
+        material: industrial.mat_dark_steel.clone(),
+        transform: Transform::from_xyz(center_x, y, z)
+            .with_rotation(Quat::from_rotation_y(std::f32::consts::FRAC_PI_2))
+            .with_scale(Vec3::new(1.0, 1.0, span / 7.0)),
+        ..default()
+    });
+    for x in [from_x, to_x] {
+        seg.spawn(PbrBundle {
+            mesh: industrial.mesh_security_gate.clone(),
+            material: industrial.mat_steel.clone(),
+            transform: Transform::from_xyz(side * x, y - 2.0, z),
+            ..default()
+        });
+    }
+}
+
+fn spawn_utility_tower(
+    seg: &mut ChildBuilder,
+    industrial: &IndustrialSectorAssets,
+    side: f32,
+    x: f32,
+    y: f32,
+    z: f32,
+) {
+    seg.spawn(PbrBundle {
+        mesh: industrial.mesh_stack.clone(),
+        material: industrial.mat_steel.clone(),
+        transform: Transform::from_xyz(side * x, y, z).with_scale(Vec3::new(1.5, 1.0, 1.5)),
+        ..default()
+    });
+    seg.spawn(PbrBundle {
+        mesh: industrial.mesh_platform.clone(),
+        material: industrial.mat_dark_steel.clone(),
+        transform: Transform::from_xyz(side * x, y - 2.8, z),
+        ..default()
+    });
+    for x_offset in [-1.2, 1.2] {
+        seg.spawn(PbrBundle {
+            mesh: industrial.mesh_security_gate.clone(),
+            material: industrial.mat_steel.clone(),
+            transform: Transform::from_xyz(side * x + x_offset, y - 1.4, z),
+            ..default()
+        });
     }
 }
 
