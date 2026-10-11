@@ -590,7 +590,7 @@ pub fn spawn_flooded_metro_segment(
                     spawn_sunken_transit_segment(seg, flooded, variant, landmark);
                 }
                 FloodedMetroChapter::DeepLineApproach => {
-                    spawn_deep_line_approach_segment(seg, flooded, variant, landmark);
+                    spawn_deep_line_approach_segment(seg, flooded, variant, landmark, distance);
                 }
             }
         })
@@ -923,6 +923,7 @@ fn spawn_tunnel_shell(
         &a.mesh_wall_main
     };
 
+    // Main structural sidewall slabs and panel seams on both sides
     for side in [-1.0, 1.0] {
         let x = side * wall_x;
         spawn_mesh(
@@ -937,31 +938,91 @@ fn spawn_tunnel_shell(
             &a.mat_steel,
             Transform::from_xyz(x - side * 0.22, wall_height * 0.5, 0.0),
         );
-        spawn_mesh(
-            seg,
-            &a.mesh_waterline_mark,
-            &a.mat_water_stain,
-            Transform::from_xyz(x - side * 0.24, 1.85, 0.0),
-        );
-        spawn_mesh(
-            seg,
-            &a.mesh_conduit_tray,
-            &a.mat_steel,
-            Transform::from_xyz(x - side * 0.26, 3.4, 0.0),
-        );
+    }
+
+    // PILLAR E & ASYMMETRY: Lived-in industrial wear & asymmetric wall dressing
+    // ------------------------------------------------------------------------
+    // LEFT WALL (side = -1.0): Conduit trays, historical waterline marks, and water seepage
+    let left_x = -wall_x;
+    spawn_mesh(
+        seg,
+        &a.mesh_waterline_mark,
+        &a.mat_water_stain,
+        Transform::from_xyz(left_x + 0.24, 1.85, 0.0),
+    );
+    spawn_mesh(
+        seg,
+        &a.mesh_conduit_tray,
+        &a.mat_steel,
+        Transform::from_xyz(left_x + 0.26, 3.4, 0.0),
+    );
+    spawn_mesh(
+        seg,
+        &a.mesh_cable_bundle,
+        &a.mat_cable,
+        Transform::from_xyz(left_x + 0.30, 2.1, 0.0)
+            .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
+    );
+    spawn_mesh(
+        seg,
+        &a.mesh_water_stain_vert,
+        &a.mat_water_stain,
+        Transform::from_xyz(left_x + 0.23, 2.4, -8.0),
+    );
+    spawn_mesh(
+        seg,
+        &a.mesh_terminal_box,
+        &a.mat_rusted_steel,
+        Transform::from_xyz(left_x + 0.32, 2.8, 10.0),
+    );
+    for z in [-16.0, 16.0] {
         spawn_mesh(
             seg,
             &a.mesh_support_column,
             &a.mat_concrete,
-            Transform::from_xyz(x - side * 0.45, 4.3, -16.0),
-        );
-        spawn_mesh(
-            seg,
-            &a.mesh_support_column,
-            &a.mat_concrete,
-            Transform::from_xyz(x - side * 0.45, 4.3, 16.0),
+            Transform::from_xyz(left_x + 0.45, 4.3, z),
         );
     }
+
+    // RIGHT WALL (side = 1.0): Maintenance girders, higher flood mark, drainage outlet & hazard sign
+    let right_x = wall_x;
+    spawn_mesh(
+        seg,
+        &a.mesh_waterline_mark,
+        &a.mat_water_stain,
+        Transform::from_xyz(right_x - 0.24, 2.05, 0.0),
+    );
+    spawn_mesh(
+        seg,
+        &a.mesh_maintenance_girder,
+        &a.mat_steel,
+        Transform::from_xyz(right_x - 0.28, 4.2, 0.0),
+    );
+    spawn_mesh(
+        seg,
+        &a.mesh_drainage_outlet,
+        &a.mat_rusted_steel,
+        Transform::from_xyz(right_x - 0.32, 2.2, 6.0)
+            .with_rotation(Quat::from_rotation_z(std::f32::consts::FRAC_PI_2)),
+    );
+    spawn_mesh(
+        seg,
+        &a.mesh_water_stain_vert,
+        &a.mat_water_stain,
+        Transform::from_xyz(right_x - 0.23, 1.4, 6.0),
+    );
+    spawn_mesh(
+        seg,
+        &a.mesh_hazard_sign,
+        &a.mat_hazard_stripe,
+        Transform::from_xyz(right_x - 0.25, 3.2, -6.0),
+    );
+    spawn_mesh(
+        seg,
+        &a.mesh_support_column,
+        &a.mat_concrete,
+        Transform::from_xyz(right_x - 0.45, 4.3, 0.0),
+    );
 }
 
 fn spawn_concrete_arch_ribs(
@@ -1121,12 +1182,39 @@ fn spawn_water_elements(
                 Transform::from_xyz(s * 14.5, -0.06, 0.0),
             );
         }
+        // Floating industrial drums and timber in wide reservoir expanse
+        spawn_mesh(
+            seg,
+            &a.mesh_floating_drum,
+            &a.mat_rusted_steel,
+            Transform::from_xyz(-13.5, 0.02, 10.0).with_rotation(Quat::from_rotation_x(0.35)),
+        );
+        spawn_mesh(
+            seg,
+            &a.mesh_floating_debris,
+            &a.mat_submerged_wood,
+            Transform::from_xyz(14.0, 0.02, -8.0),
+        );
     } else {
         spawn_mesh(
             seg,
             &a.mesh_water_trackside,
             &a.mat_water,
             Transform::from_xyz(side * 8.5, -0.02, 0.0),
+        );
+        // Subtle floating debris along the flooded side margin
+        spawn_mesh(
+            seg,
+            &a.mesh_floating_drum,
+            &a.mat_rusted_steel,
+            Transform::from_xyz(side * 7.6, 0.02, 8.0)
+                .with_rotation(Quat::from_rotation_z(side * 0.25)),
+        );
+        spawn_mesh(
+            seg,
+            &a.mesh_floating_debris,
+            &a.mat_submerged_wood,
+            Transform::from_xyz(side * 8.0, 0.03, -10.0),
         );
     }
 
@@ -1265,6 +1353,20 @@ fn spawn_floodgate_descent_segment(
             spawn_culvert_drain(seg, a, -1.0, -8.0);
             spawn_pump_station(seg, a, 1.0, 6.0);
             spawn_ladder(seg, a, 1.0, -12.0);
+            // Environmental Signage: Flood Level Indicator gauge
+            spawn_mesh(
+                seg,
+                &a.mesh_flood_level_gauge,
+                &a.mat_hazard_stripe,
+                Transform::from_xyz(-8.65, 2.6, 2.0),
+            );
+            // Signage: Pump Room / Hydraulic Control Warning
+            spawn_mesh(
+                seg,
+                &a.mesh_warning_panel,
+                &a.mat_hazard_stripe,
+                Transform::from_xyz(8.65, 3.4, -4.0),
+            );
         }
         1 => {
             spawn_background_pump_tower(seg, a, 7.8, 0.0, 0.0);
@@ -1277,6 +1379,19 @@ fn spawn_floodgate_descent_segment(
                 &a.mat_steel,
                 Transform::from_xyz(-8.7, 1.6, -4.0),
             );
+            // Wall hydraulic actuation infrastructure
+            spawn_mesh(
+                seg,
+                &a.mesh_hydraulic_cylinder,
+                &a.mat_steel,
+                Transform::from_xyz(8.4, 4.2, -6.0),
+            );
+            spawn_mesh(
+                seg,
+                &a.mesh_hydraulic_rod,
+                &a.mat_steel,
+                Transform::from_xyz(8.4, 6.2, -6.0),
+            );
         }
         _ => {
             spawn_background_vent_shaft(seg, a, 0.0, 0.0, -8.0);
@@ -1284,6 +1399,12 @@ fn spawn_floodgate_descent_segment(
             spawn_pump_station(seg, a, -1.0, -4.0);
             spawn_electrical_box(seg, a, 1.0, 8.0);
             spawn_culvert_drain(seg, a, -1.0, 12.0);
+            spawn_mesh(
+                seg,
+                &a.mesh_flood_level_gauge,
+                &a.mat_hazard_stripe,
+                Transform::from_xyz(8.65, 2.6, -2.0),
+            );
         }
     }
 
@@ -1414,6 +1535,13 @@ fn spawn_submerged_station_segment(
         0 => {
             spawn_electrical_box(seg, a, platform_side, 8.0);
             spawn_ladder(seg, a, -platform_side, -8.0);
+            // Station track & line identifier placard
+            spawn_mesh(
+                seg,
+                &a.mesh_hazard_sign,
+                &a.mat_hazard_stripe,
+                Transform::from_xyz(platform_side * 8.65, 3.2, -4.0),
+            );
         }
         1 => {
             spawn_mesh(
@@ -1527,6 +1655,13 @@ fn spawn_reservoir_crossing_segment(
         &a.mesh_catwalk_railing,
         &a.mat_rusted_steel,
         Transform::from_xyz(catwalk_side * 12.5, 6.8, 0.0),
+    );
+    // Industrial signage: SECTOR C // AQUEDUCT RESERVOIR warning panel
+    spawn_mesh(
+        seg,
+        &a.mesh_warning_panel,
+        &a.mat_hazard_stripe,
+        Transform::from_xyz(catwalk_side * 13.8, 7.8, -4.0),
     );
 
     match variant {
@@ -1651,6 +1786,13 @@ fn spawn_sunken_transit_segment(
         &a.mat_steel,
         Transform::from_xyz(-siding_side * 7.2, 0.28, 6.0),
     );
+    // Industrial signage: MAINTENANCE YARD // DANGER COLLAPSE placard
+    spawn_mesh(
+        seg,
+        &a.mesh_hazard_sign,
+        &a.mat_hazard_stripe,
+        Transform::from_xyz(-siding_side * 8.65, 3.4, 0.0),
+    );
 
     match variant {
         0 => {
@@ -1745,6 +1887,7 @@ fn spawn_deep_line_approach_segment(
     a: &FloodedMetroAssets,
     variant: u8,
     landmark: FloodedMetroLandmark,
+    distance: f32,
 ) {
     spawn_tunnel_shell(seg, a, 9.0, 8.6, false);
     spawn_concrete_arch_ribs(seg, a, 8.6, &[-14.0, -7.0, 7.0, 14.0]);
@@ -1814,6 +1957,33 @@ fn spawn_deep_line_approach_segment(
             spawn_pump_station(seg, a, -1.0, -8.0);
             spawn_electrical_box(seg, a, 1.0, 6.0);
         }
+    }
+
+    // PILLAR F: 8000m ZONE 5 APPROACH TRANSITION
+    // In the final 120m after the hero bulkhead (7880m-8000m), infrastructure becomes cleaner,
+    // fortified, and controlled as Kai approaches the deep ECHO research facility.
+    if distance >= 7880.0 {
+        spawn_mesh(
+            seg,
+            &a.mesh_echo_conduit_ring,
+            &a.mat_teal_glow,
+            Transform::from_xyz(0.0, 7.4, 0.0)
+                .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
+        );
+        for side in [-1.0, 1.0] {
+            spawn_mesh(
+                seg,
+                &a.mesh_echo_sensor_relay,
+                &a.mat_teal_glow,
+                Transform::from_xyz(side * 8.4, 3.4, -6.0),
+            );
+        }
+        spawn_mesh(
+            seg,
+            &a.mesh_hazard_sign,
+            &a.mat_emergency_red,
+            Transform::from_xyz(-8.65, 3.8, 6.0),
+        );
     }
 
     if landmark == FloodedMetroLandmark::DeepLineBulkheadPortal {
