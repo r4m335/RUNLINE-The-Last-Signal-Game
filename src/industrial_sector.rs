@@ -95,6 +95,15 @@ pub struct IndustrialSectorAssets {
     pub mesh_pallet: Handle<Mesh>,
     pub mesh_freight_platform: Handle<Mesh>,
     pub mesh_security_gate: Handle<Mesh>,
+    // Deliberate architectural assemblies. These keep complete buildings
+    // volumetric without stretching the thin legacy facade mesh into boxes.
+    pub mesh_arch_front_wall: Handle<Mesh>,
+    pub mesh_arch_side_wall: Handle<Mesh>,
+    pub mesh_arch_roof: Handle<Mesh>,
+    pub mesh_arch_foundation: Handle<Mesh>,
+    pub mesh_arch_frame: Handle<Mesh>,
+    pub mesh_arch_window_band: Handle<Mesh>,
+    pub mesh_arch_entrance_recess: Handle<Mesh>,
     // Zone 3 heavy-road track modules.
     pub mesh_track_plate: Handle<Mesh>,
     pub mesh_track_seam: Handle<Mesh>,
@@ -167,6 +176,13 @@ pub fn init_industrial_sector_assets(
         mesh_pallet: meshes.add(Cuboid::new(1.8, 0.25, 1.3)),
         mesh_freight_platform: meshes.add(Cuboid::new(4.0, 0.35, 6.0)),
         mesh_security_gate: meshes.add(Cuboid::new(0.42, 4.8, 0.42)),
+        mesh_arch_front_wall: meshes.add(Cuboid::new(0.34, 6.5, 24.0)),
+        mesh_arch_side_wall: meshes.add(Cuboid::new(10.0, 6.5, 0.34)),
+        mesh_arch_roof: meshes.add(Cuboid::new(10.6, 0.38, 24.8)),
+        mesh_arch_foundation: meshes.add(Cuboid::new(10.3, 0.45, 24.2)),
+        mesh_arch_frame: meshes.add(Cuboid::new(0.38, 7.0, 0.38)),
+        mesh_arch_window_band: meshes.add(Cuboid::new(0.14, 1.0, 5.0)),
+        mesh_arch_entrance_recess: meshes.add(Cuboid::new(0.24, 3.1, 4.0)),
         mesh_track_plate: meshes.add(Cuboid::new(2.05, 0.07, 7.5)),
         mesh_track_seam: meshes.add(Cuboid::new(2.05, 0.025, 0.08)),
         mesh_track_lane_mark: meshes.add(Cuboid::new(0.08, 0.025, 2.0)),
@@ -1825,7 +1841,7 @@ fn spawn_complete_industrial_building(
     industrial: &IndustrialSectorAssets,
     spec: CompleteBuildingSpec,
 ) {
-    let shell_material = match spec.style {
+    let front_material = match spec.style {
         IndustrialBuildingStyle::Entry => industrial.mat_factory.clone(),
         IndustrialBuildingStyle::Freight => industrial.mat_facade.clone(),
         IndustrialBuildingStyle::Processing => industrial.mat_steel.clone(),
@@ -1845,50 +1861,77 @@ fn spawn_complete_industrial_building(
         industrial.mat_dark_steel.clone()
     };
     let x = spec.side * spec.center_x;
-    let near_x = spec.side * (spec.center_x - spec.depth * 0.5) - spec.side * 0.16;
+    let near_x = spec.side * (spec.center_x - spec.depth * 0.5);
+    let far_x = spec.side * (spec.center_x + spec.depth * 0.5);
+    let wall_base = 0.45;
+    let wall_center_y = wall_base + spec.height * 0.5;
     let floor_height = spec.height / spec.floors.max(1) as f32;
 
+    // Foundation, front/rear walls, and end walls form an intentional volume.
+    // Each mesh has a useful native proportion; only the authored building
+    // footprint is scaled within a moderate range.
     seg.spawn(PbrBundle {
-        mesh: industrial.mesh_factory_wall.clone(),
-        material: shell_material,
-        transform: Transform::from_xyz(x, spec.height * 0.5, spec.z).with_scale(Vec3::new(
-            spec.depth / 0.55,
-            spec.height / 6.5,
-            spec.length / 38.0,
+        mesh: industrial.mesh_arch_foundation.clone(),
+        material: industrial.mat_dark_steel.clone(),
+        transform: Transform::from_xyz(x, 0.22, spec.z).with_scale(Vec3::new(
+            spec.depth / 10.3,
+            1.0,
+            spec.length / 24.2,
         )),
         ..default()
     });
+    for (wall_x, material) in [
+        (near_x, front_material),
+        (far_x, industrial.mat_facade.clone()),
+    ] {
+        seg.spawn(PbrBundle {
+            mesh: industrial.mesh_arch_front_wall.clone(),
+            material,
+            transform: Transform::from_xyz(wall_x, wall_center_y, spec.z).with_scale(Vec3::new(
+                1.0,
+                spec.height / 6.5,
+                spec.length / 24.0,
+            )),
+            ..default()
+        });
+    }
+    for z_end in [spec.z - spec.length * 0.5, spec.z + spec.length * 0.5] {
+        seg.spawn(PbrBundle {
+            mesh: industrial.mesh_arch_side_wall.clone(),
+            material: roof_material.clone(),
+            transform: Transform::from_xyz(x, wall_center_y, z_end).with_scale(Vec3::new(
+                spec.depth / 10.0,
+                spec.height / 6.5,
+                1.0,
+            )),
+            ..default()
+        });
+    }
     seg.spawn(PbrBundle {
-        mesh: industrial.mesh_factory_wall.clone(),
+        mesh: industrial.mesh_arch_roof.clone(),
         material: roof_material.clone(),
-        transform: Transform::from_xyz(x, spec.height + 0.28, spec.z).with_scale(Vec3::new(
-            spec.depth / 0.55 * 1.08,
-            0.10,
-            spec.length / 38.0 * 1.05,
-        )),
+        transform: Transform::from_xyz(x, wall_base + spec.height + 0.2, spec.z)
+            .with_scale(Vec3::new(spec.depth / 10.6, 1.0, spec.length / 24.8)),
         ..default()
     });
 
     for floor in 1..spec.floors {
-        let y = floor_height * floor as f32;
+        let y = wall_base + floor_height * floor as f32;
         seg.spawn(PbrBundle {
             mesh: industrial.mesh_reinforcement_beam.clone(),
             material: roof_material.clone(),
-            transform: Transform::from_xyz(near_x, y, spec.z).with_scale(Vec3::new(
-                1.0,
-                1.0,
-                spec.length / 7.0,
-            )),
+            transform: Transform::from_xyz(near_x - spec.side * 0.24, y, spec.z)
+                .with_scale(Vec3::new(1.0, 1.0, spec.length / 7.0)),
             ..default()
         });
     }
     for z_offset in [-0.38, 0.0, 0.38] {
         seg.spawn(PbrBundle {
-            mesh: industrial.mesh_structural_column.clone(),
+            mesh: industrial.mesh_arch_frame.clone(),
             material: roof_material.clone(),
             transform: Transform::from_xyz(
-                near_x,
-                spec.height * 0.5,
+                near_x - spec.side * 0.24,
+                wall_center_y,
                 spec.z + spec.length * z_offset,
             )
             .with_scale(Vec3::new(1.0, spec.height / 7.0, 1.0)),
@@ -1897,19 +1940,19 @@ fn spawn_complete_industrial_building(
     }
 
     for floor in 0..spec.floors {
-        let y = floor_height * (floor as f32 + 0.58);
+        let y = wall_base + floor_height * (floor as f32 + 0.58);
         for z_offset in [-0.25, 0.0, 0.25] {
             seg.spawn(PbrBundle {
-                mesh: industrial.mesh_vent_panel.clone(),
+                mesh: industrial.mesh_arch_window_band.clone(),
                 material: panel_material.clone(),
                 transform: Transform::from_xyz(
-                    near_x - spec.side * 0.08,
+                    near_x - spec.side * 0.24,
                     y,
                     spec.z + spec.length * z_offset,
                 )
                 .with_scale(Vec3::new(
                     1.0,
-                    (floor_height / 1.2 * 0.34).max(0.7),
+                    (floor_height / 1.0 * 0.30).max(0.7),
                     1.0,
                 )),
                 ..default()
@@ -1919,13 +1962,19 @@ fn spawn_complete_industrial_building(
 
     let entrance_z = spec.z - spec.length * 0.32;
     seg.spawn(PbrBundle {
+        mesh: industrial.mesh_arch_entrance_recess.clone(),
+        material: industrial.mat_dark_steel.clone(),
+        transform: Transform::from_xyz(near_x - spec.side * 0.22, 1.95, entrance_z),
+        ..default()
+    });
+    seg.spawn(PbrBundle {
         mesh: if spec.loading_bays {
             industrial.mesh_loading_bay.clone()
         } else {
             industrial.mesh_service_door.clone()
         },
         material: industrial.mat_hazard.clone(),
-        transform: Transform::from_xyz(near_x - spec.side * 0.12, 1.35, entrance_z).with_scale(
+        transform: Transform::from_xyz(near_x - spec.side * 0.42, 1.35, entrance_z).with_scale(
             if spec.loading_bays {
                 Vec3::new(1.0, 1.0, 1.15)
             } else {
@@ -1939,7 +1988,7 @@ fn spawn_complete_industrial_building(
             mesh: industrial.mesh_loading_bay.clone(),
             material: industrial.mat_dark_steel.clone(),
             transform: Transform::from_xyz(
-                near_x - spec.side * 0.14,
+                near_x - spec.side * 0.42,
                 1.3,
                 spec.z + spec.length * 0.22,
             ),
@@ -1947,7 +1996,24 @@ fn spawn_complete_industrial_building(
         });
     }
 
-    let roof_y = spec.height + 1.0;
+    // Short roof trusses articulate the roofline and give the equipment a
+    // visible structural relationship instead of leaving it floating.
+    for z_offset in [-0.32, 0.0, 0.32] {
+        seg.spawn(PbrBundle {
+            mesh: industrial.mesh_reinforcement_beam.clone(),
+            material: roof_material.clone(),
+            transform: Transform::from_xyz(
+                x,
+                wall_base + spec.height + 0.72,
+                spec.z + spec.length * z_offset,
+            )
+            .with_rotation(Quat::from_rotation_y(std::f32::consts::FRAC_PI_2))
+            .with_scale(Vec3::new(1.0, 1.0, spec.depth / 7.0)),
+            ..default()
+        });
+    }
+
+    let roof_y = wall_base + spec.height + 1.0;
     for unit in 0..spec.roof_units {
         let centered = unit as f32 - (spec.roof_units.saturating_sub(1) as f32 * 0.5);
         seg.spawn(PbrBundle {
