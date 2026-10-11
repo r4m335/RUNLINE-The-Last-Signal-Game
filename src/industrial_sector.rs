@@ -636,14 +636,16 @@ fn spawn_near_industrial_features(
         mesh: industrial.mesh_large_pipe.clone(),
         material: industrial.mat_pipe.clone(),
         transform: Transform::from_xyz(opposite * 6.8, 2.65, 0.0)
-            .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
+            .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2))
+            .with_scale(Vec3::splat(0.72)),
         ..default()
     });
     seg.spawn(PbrBundle {
         mesh: industrial.mesh_pipe.clone(),
         material: industrial.mat_rusted_steel.clone(),
         transform: Transform::from_xyz(opposite * 7.1, 1.45, 0.0)
-            .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
+            .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2))
+            .with_scale(Vec3::splat(0.82)),
         ..default()
     });
     seg.spawn(PbrBundle {
@@ -718,8 +720,9 @@ fn spawn_mid_industrial_features(
             seg.spawn(PbrBundle {
                 mesh: industrial.mesh_large_pipe.clone(),
                 material: industrial.mat_pipe.clone(),
-                transform: Transform::from_xyz(0.0, 3.8, 0.0)
-                    .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
+                transform: Transform::from_xyz(0.0, 4.6, 0.0)
+                    .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2))
+                    .with_scale(Vec3::splat(0.65)),
                 ..default()
             });
             seg.spawn(PbrBundle {
@@ -765,9 +768,10 @@ fn spawn_mid_industrial_features(
             seg.spawn(PbrBundle {
                 mesh: industrial.mesh_large_pipe.clone(),
                 material: industrial.mat_rusted_steel.clone(),
-                transform: Transform::from_xyz(side * 5.3, 2.0, 0.0)
+                transform: Transform::from_xyz(side * 6.25, 2.35, 0.0)
                     .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2))
-                    .with_rotation(Quat::from_rotation_z(0.10 * side)),
+                    .with_rotation(Quat::from_rotation_z(0.10 * side))
+                    .with_scale(Vec3::splat(0.72)),
                 ..default()
             });
             if matches!(variant, IndustrialVariant::TransitionLeakingMain) {
@@ -836,6 +840,101 @@ fn spawn_far_industrial_features(
         spawn_steam_vent(seg, industrial, side * 12.0, 5.5, 4.0);
     }
     spawn_far_industrial_detail(seg, industrial, side, variant);
+    spawn_far_industrial_silhouette(seg, industrial, side, variant);
+}
+
+/// Adds one deliberately offset mid/far facility mass per chapter. The
+/// silhouette breaks the corridor effect without adding foreground clutter.
+fn spawn_far_industrial_silhouette(
+    seg: &mut ChildBuilder,
+    industrial: &IndustrialSectorAssets,
+    side: f32,
+    variant: IndustrialVariant,
+) {
+    let (center_x, height, z, length, style) = match variant {
+        IndustrialVariant::EntryPipeGallery
+        | IndustrialVariant::EntryServiceBlock
+        | IndustrialVariant::EntryWarningLine => {
+            (26.0, 8.0, -8.0, 30.0, IndustrialBuildingStyle::Entry)
+        }
+        IndustrialVariant::FreightContainerStack
+        | IndustrialVariant::FreightCraneBay
+        | IndustrialVariant::FreightLoadingPlatform => {
+            (28.0, 7.0, 6.0, 32.0, IndustrialBuildingStyle::Freight)
+        }
+        IndustrialVariant::ProcessingPressureRow
+        | IndustrialVariant::ProcessingSteamManifold
+        | IndustrialVariant::ProcessingCatwalk => {
+            (27.0, 10.0, -6.0, 30.0, IndustrialBuildingStyle::Processing)
+        }
+        IndustrialVariant::HeavyWorksConveyor
+        | IndustrialVariant::HeavyWorksVeyronGate
+        | IndustrialVariant::HeavyWorksCoolingArray => {
+            (29.0, 13.0, 0.0, 34.0, IndustrialBuildingStyle::HeavyWorks)
+        }
+        IndustrialVariant::TransitionLeakingMain
+        | IndustrialVariant::TransitionDamagedWorks
+        | IndustrialVariant::TransitionFloodApproach => {
+            (26.0, 9.0, 6.0, 30.0, IndustrialBuildingStyle::Transition)
+        }
+    };
+    let wall_material = if matches!(style, IndustrialBuildingStyle::Transition) {
+        industrial.mat_rusted_steel.clone()
+    } else {
+        industrial.mat_arch_wall.clone()
+    };
+    let roof_material = if matches!(style, IndustrialBuildingStyle::Transition) {
+        industrial.mat_rusted_steel.clone()
+    } else {
+        industrial.mat_arch_roof.clone()
+    };
+    let x = side * center_x;
+    let near_x = side * (center_x - 4.0);
+
+    seg.spawn(PbrBundle {
+        mesh: industrial.mesh_arch_front_wall.clone(),
+        material: wall_material,
+        transform: Transform::from_xyz(x, 0.45 + height * 0.5, z).with_scale(Vec3::new(
+            1.0,
+            height / 6.5,
+            length / 24.0,
+        )),
+        ..default()
+    });
+    for z_end in [z - length * 0.5, z + length * 0.5] {
+        seg.spawn(PbrBundle {
+            mesh: industrial.mesh_arch_side_wall.clone(),
+            material: industrial.mat_arch_wall.clone(),
+            transform: Transform::from_xyz(x, 0.45 + height * 0.5, z_end).with_scale(Vec3::new(
+                0.8,
+                height / 6.5,
+                1.0,
+            )),
+            ..default()
+        });
+    }
+    seg.spawn(PbrBundle {
+        mesh: industrial.mesh_arch_roof.clone(),
+        material: roof_material,
+        transform: Transform::from_xyz(x, 0.65 + height, z).with_scale(Vec3::new(
+            0.82,
+            1.0,
+            length / 24.8,
+        )),
+        ..default()
+    });
+    if matches!(
+        style,
+        IndustrialBuildingStyle::Processing | IndustrialBuildingStyle::HeavyWorks
+    ) {
+        seg.spawn(PbrBundle {
+            mesh: industrial.mesh_stack.clone(),
+            material: industrial.mat_pipe.clone(),
+            transform: Transform::from_xyz(near_x, height + 5.2, z - 4.0)
+                .with_scale(Vec3::splat(0.9)),
+            ..default()
+        });
+    }
 }
 
 fn spawn_crane(seg: &mut ChildBuilder, industrial: &IndustrialSectorAssets, x: f32) {
@@ -1019,7 +1118,8 @@ fn spawn_pipe_rack_detail(
             mesh: industrial.mesh_large_pipe.clone(),
             material,
             transform: Transform::from_xyz(side * 7.15, y, 0.0)
-                .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
+                .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2))
+                .with_scale(Vec3::splat(0.64)),
             ..default()
         });
     }
