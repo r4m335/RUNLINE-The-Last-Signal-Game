@@ -353,6 +353,8 @@ fn setup_main_menu(
                         ("ZONE 2 // NEON DISTRICT", 4, 7),
                         ("ZONE 3 // INDUSTRIAL SECTOR", 7, 12),
                         ("ZONE 4 // FLOODED METRO", 12, 13),
+                        ("ZONE 5 // SKY RAIL", 13, 18),
+                        ("ZONE 6 & 7 // CORE ANOMALY", 18, 20),
                     ];
 
                     for &(group_label, start, end) in &debug_groups {

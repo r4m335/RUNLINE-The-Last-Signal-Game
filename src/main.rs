@@ -83,6 +83,7 @@ fn main() {
             EnvironmentLightingPlugin,
             NeonDistrictPlugin,
             sky_rail::SkyRailPlugin,
+            debug_start::DebugStartPlugin,
         ))
         .add_systems(Startup, setup_scene)
         .add_systems(

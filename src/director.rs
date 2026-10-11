@@ -312,7 +312,10 @@ mod tests {
         app.init_resource::<RunDirector>();
         app.init_resource::<GameRunStats>();
         app.init_resource::<ActivePowerUps>();
-        app.insert_resource(DebugStartConfig { selected_preset: 9 });
+        app.insert_resource(DebugStartConfig {
+            selected_preset: 9,
+            autostart: false,
+        });
         app.add_systems(Update, handle_run_reset_director);
 
         app.world_mut().send_event(RunResetEvent);
