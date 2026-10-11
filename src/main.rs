@@ -18,6 +18,7 @@ mod old_metro_landmarks;
 mod patterns;
 mod player;
 mod pooling;
+mod sky_rail;
 mod story;
 mod track;
 mod types;
@@ -81,6 +82,7 @@ fn main() {
             EnvironmentPlugin,
             EnvironmentLightingPlugin,
             NeonDistrictPlugin,
+            sky_rail::SkyRailPlugin,
         ))
         .add_systems(Startup, setup_scene)
         .add_systems(

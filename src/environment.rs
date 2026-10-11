@@ -14,6 +14,7 @@ pub enum EnvironmentRoute {
     NeonDistrict,
     IndustrialSector,
     FloodedMetro,
+    SkyRail,
     Generic,
 }
 
@@ -26,6 +27,7 @@ pub fn environment_route_for_distance(distance: f32) -> EnvironmentRoute {
         2 => EnvironmentRoute::NeonDistrict,
         3 => EnvironmentRoute::IndustrialSector,
         4 => EnvironmentRoute::FloodedMetro,
+        5 => EnvironmentRoute::SkyRail,
         _ => EnvironmentRoute::Generic,
     }
 }
@@ -324,6 +326,7 @@ fn init_environment_assets(
         &mut materials,
     );
     crate::flooded_metro::init_flooded_metro_assets(&mut commands, &mut meshes, &mut materials);
+    crate::sky_rail::init_sky_rail_assets(&mut commands, &mut meshes, &mut materials);
 }
 
 fn animate_environment_fans(
@@ -344,6 +347,7 @@ pub fn spawn_modular_environment_slice(
     neon: Option<&crate::neon_district::NeonDistrictAssets>,
     industrial: Option<&crate::industrial_sector::IndustrialSectorAssets>,
     flooded: Option<&crate::flooded_metro::FloodedMetroAssets>,
+    sky_rail: Option<&crate::sky_rail::SkyRailAssets>,
     z_center: f32,
     length: f32,
     _distance: f32,
@@ -397,6 +401,18 @@ pub fn spawn_modular_environment_slice(
                     commands,
                     env,
                     flooded_ref,
+                    z_center,
+                    length,
+                    segment_dist,
+                );
+            }
+        }
+        EnvironmentRoute::SkyRail => {
+            if let Some(sky_ref) = sky_rail {
+                return crate::sky_rail::spawn_sky_rail_segment(
+                    commands,
+                    env,
+                    sky_ref,
                     z_center,
                     length,
                     segment_dist,
@@ -756,6 +772,11 @@ mod tests {
                     environment_route_for_distance(at),
                     EnvironmentRoute::FloodedMetro
                 );
+            } else if zone.id == 5 {
+                assert_eq!(
+                    environment_route_for_distance(at),
+                    EnvironmentRoute::SkyRail
+                );
             } else {
                 assert_eq!(
                     environment_route_for_distance(at),
@@ -796,6 +817,10 @@ mod tests {
         );
         assert_eq!(
             environment_route_for_distance(ZONES[4].start_distance),
+            EnvironmentRoute::SkyRail
+        );
+        assert_eq!(
+            environment_route_for_distance(ZONES[5].start_distance),
             EnvironmentRoute::Generic
         );
     }

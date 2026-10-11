@@ -6,7 +6,7 @@ pub struct DebugStartPreset {
     pub distance: f32,
 }
 
-pub const DEBUG_START_PRESETS: [DebugStartPreset; 13] = [
+pub const DEBUG_START_PRESETS: [DebugStartPreset; 18] = [
     DebugStartPreset {
         label: "NORMAL RUN",
         distance: 0.0,
@@ -59,6 +59,26 @@ pub const DEBUG_START_PRESETS: [DebugStartPreset; 13] = [
         label: "ZONE 4 // 6000M",
         distance: 6000.0,
     },
+    DebugStartPreset {
+        label: "ZONE 5 // SKY RAIL 8000M",
+        distance: 8000.0,
+    },
+    DebugStartPreset {
+        label: "ZONE 5 // UPPER AURELIA 8300M",
+        distance: 8300.0,
+    },
+    DebugStartPreset {
+        label: "ZONE 5 // STORM CORRIDOR 8700M",
+        distance: 8700.0,
+    },
+    DebugStartPreset {
+        label: "ZONE 5 // BROKEN SKYWAY 9200M",
+        distance: 9200.0,
+    },
+    DebugStartPreset {
+        label: "ZONE 5 // ECHO APPROACH 9650M",
+        distance: 9650.0,
+    },
 ];
 
 #[derive(bevy::prelude::Resource, Clone, Copy, Debug, PartialEq, Eq)]
@@ -104,16 +124,23 @@ mod tests {
             distances,
             vec![
                 0.0, 0.0, 1000.0, 1800.0, 2000.0, 3000.0, 3800.0, 4000.0, 4500.0, 5100.0, 5500.0,
-                5850.0, 6000.0
+                5850.0, 6000.0, 8000.0, 8300.0, 8700.0, 9200.0, 9650.0
             ]
         );
     }
 
     #[test]
     fn zone_four_preset_resolves_to_flooded_metro() {
-        let preset = DEBUG_START_PRESETS.last().unwrap();
+        let preset = &DEBUG_START_PRESETS[12];
         assert_eq!(preset.distance, 6000.0);
         assert_eq!(get_zone_for_distance(preset.distance).id, 4);
+    }
+
+    #[test]
+    fn zone_five_presets_resolve_to_sky_rail() {
+        for preset in &DEBUG_START_PRESETS[13..18] {
+            assert_eq!(get_zone_for_distance(preset.distance).id, 5);
+        }
     }
 
     #[test]
