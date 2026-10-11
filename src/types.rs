@@ -412,6 +412,12 @@ pub enum PoolType {
     NeonCheckpointPillar,
     NeonAutoVan,
     NeonCyberBus,
+    // Zone 3 Industrial Sector Dedicated Obstacles
+    IndustrialRoadBarrier,
+    IndustrialOverheadPipe,
+    IndustrialSupportPillar,
+    IndustrialFreightTransport,
+    IndustrialCargoTransport,
     EchoFragment,
     DataChip,
     PowerUp,

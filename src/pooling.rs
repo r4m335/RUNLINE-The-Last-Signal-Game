@@ -173,6 +173,24 @@ pub struct PoolAssets {
     pub mat_neon_checkpoint_armor: Handle<StandardMaterial>,
     pub mat_neon_checkpoint_red: Handle<StandardMaterial>,
     pub mat_neon_checkpoint_display: Handle<StandardMaterial>,
+
+    // Zone 3 Industrial Sector Dedicated Obstacles
+    pub mesh_industrial_barrier_frame: Handle<Mesh>,
+    pub mesh_industrial_barrier_stripe: Handle<Mesh>,
+    pub mesh_industrial_barrier_support: Handle<Mesh>,
+    pub mesh_industrial_pipe: Handle<Mesh>,
+    pub mesh_industrial_pipe_bundle: Handle<Mesh>,
+    pub mesh_industrial_clearance: Handle<Mesh>,
+    pub mesh_industrial_freight_body: Handle<Mesh>,
+    pub mesh_industrial_freight_cab: Handle<Mesh>,
+    pub mesh_industrial_freight_panel: Handle<Mesh>,
+    pub mesh_industrial_freight_wheel: Handle<Mesh>,
+    pub mat_industrial_steel: Handle<StandardMaterial>,
+    pub mat_industrial_hazard: Handle<StandardMaterial>,
+    pub mat_industrial_rust: Handle<StandardMaterial>,
+    pub mat_industrial_pipe: Handle<StandardMaterial>,
+    pub mat_industrial_warning: Handle<StandardMaterial>,
+    pub mat_industrial_glass: Handle<StandardMaterial>,
 }
 
 #[derive(Resource, Default)]
@@ -187,6 +205,11 @@ pub struct EntityPool {
     pub neon_pillars: Vec<Entity>,
     pub neon_vans: Vec<Entity>,
     pub neon_buses: Vec<Entity>,
+    pub industrial_barriers: Vec<Entity>,
+    pub industrial_pipes: Vec<Entity>,
+    pub industrial_pillars: Vec<Entity>,
+    pub industrial_freight: Vec<Entity>,
+    pub industrial_cargo: Vec<Entity>,
     pub fragments: Vec<Entity>,
     pub data_chips: Vec<Entity>,
     pub powerups: Vec<Entity>,
@@ -205,6 +228,11 @@ impl EntityPool {
             PoolType::NeonCheckpointPillar => self.neon_pillars.pop(),
             PoolType::NeonAutoVan => self.neon_vans.pop(),
             PoolType::NeonCyberBus => self.neon_buses.pop(),
+            PoolType::IndustrialRoadBarrier => self.industrial_barriers.pop(),
+            PoolType::IndustrialOverheadPipe => self.industrial_pipes.pop(),
+            PoolType::IndustrialSupportPillar => self.industrial_pillars.pop(),
+            PoolType::IndustrialFreightTransport => self.industrial_freight.pop(),
+            PoolType::IndustrialCargoTransport => self.industrial_cargo.pop(),
             PoolType::EchoFragment => self.fragments.pop(),
             PoolType::DataChip => self.data_chips.pop(),
             PoolType::PowerUp => self.powerups.pop(),
@@ -223,6 +251,11 @@ impl EntityPool {
             PoolType::NeonCheckpointPillar => self.neon_pillars.push(entity),
             PoolType::NeonAutoVan => self.neon_vans.push(entity),
             PoolType::NeonCyberBus => self.neon_buses.push(entity),
+            PoolType::IndustrialRoadBarrier => self.industrial_barriers.push(entity),
+            PoolType::IndustrialOverheadPipe => self.industrial_pipes.push(entity),
+            PoolType::IndustrialSupportPillar => self.industrial_pillars.push(entity),
+            PoolType::IndustrialFreightTransport => self.industrial_freight.push(entity),
+            PoolType::IndustrialCargoTransport => self.industrial_cargo.push(entity),
             PoolType::EchoFragment => self.fragments.push(entity),
             PoolType::DataChip => self.data_chips.push(entity),
             PoolType::PowerUp => self.powerups.push(entity),
@@ -240,6 +273,11 @@ impl EntityPool {
             + self.neon_pillars.len()
             + self.neon_vans.len()
             + self.neon_buses.len()
+            + self.industrial_barriers.len()
+            + self.industrial_pipes.len()
+            + self.industrial_pillars.len()
+            + self.industrial_freight.len()
+            + self.industrial_cargo.len()
             + self.fragments.len()
             + self.data_chips.len()
             + self.powerups.len()
@@ -683,6 +721,55 @@ fn init_pool_assets(
         mat_neon_checkpoint_display: materials.add(StandardMaterial {
             base_color: Color::srgb(1.0, 0.40, 0.05),
             emissive: LinearRgba::new(3.8, 1.5, 0.1, 1.0),
+            ..default()
+        }),
+
+        // Zone 3 Industrial Sector Dedicated Obstacles
+        mesh_industrial_barrier_frame: meshes.add(Cuboid::new(2.10, 0.34, 0.26)),
+        mesh_industrial_barrier_stripe: meshes.add(Cuboid::new(2.00, 0.18, 0.28)),
+        mesh_industrial_barrier_support: meshes.add(Cuboid::new(0.16, 0.74, 0.30)),
+        mesh_industrial_pipe: meshes.add(Cuboid::new(2.20, 0.30, 0.35)),
+        mesh_industrial_pipe_bundle: meshes.add(Cuboid::new(2.10, 0.16, 0.16)),
+        mesh_industrial_clearance: meshes.add(Cuboid::new(1.70, 0.12, 0.06)),
+        mesh_industrial_freight_body: meshes.add(Cuboid::new(2.20, 2.50, 12.0)),
+        mesh_industrial_freight_cab: meshes.add(Cuboid::new(1.80, 0.86, 2.10)),
+        mesh_industrial_freight_panel: meshes.add(Cuboid::new(0.06, 0.72, 2.40)),
+        mesh_industrial_freight_wheel: meshes.add(Cylinder::new(0.38, 0.20)),
+        mat_industrial_steel: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.18, 0.21, 0.21),
+            metallic: 0.91,
+            perceptual_roughness: 0.38,
+            ..default()
+        }),
+        mat_industrial_hazard: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.82, 0.46, 0.04),
+            emissive: LinearRgba::new(0.36, 0.12, 0.01, 1.0),
+            metallic: 0.42,
+            perceptual_roughness: 0.46,
+            ..default()
+        }),
+        mat_industrial_rust: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.28, 0.12, 0.06),
+            metallic: 0.58,
+            perceptual_roughness: 0.80,
+            ..default()
+        }),
+        mat_industrial_pipe: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.10, 0.14, 0.14),
+            metallic: 0.86,
+            perceptual_roughness: 0.42,
+            ..default()
+        }),
+        mat_industrial_warning: materials.add(StandardMaterial {
+            base_color: Color::srgb(1.0, 0.58, 0.08),
+            emissive: LinearRgba::new(3.0, 0.78, 0.03, 1.0),
+            ..default()
+        }),
+        mat_industrial_glass: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.06, 0.24, 0.26),
+            emissive: LinearRgba::new(0.04, 0.35, 0.38, 1.0),
+            metallic: 0.80,
+            perceptual_roughness: 0.12,
             ..default()
         }),
     };

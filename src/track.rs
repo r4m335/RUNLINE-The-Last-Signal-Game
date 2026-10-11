@@ -1,6 +1,6 @@
 use crate::director::RunDirector;
 use crate::obstacles::resolve_obstacle_pool_type;
-use crate::patterns::{select_validated_pattern, PatternChunk};
+use crate::patterns::{select_validated_pattern, ObstacleSpawnDef, PatternChunk};
 use crate::pooling::{EntityPool, PoolAssets};
 use crate::types::*;
 use bevy::prelude::*;
@@ -233,6 +233,14 @@ pub fn spawn_pattern_chunk(
                 | PoolType::NeonAutoVan
                 | PoolType::NeonCyberBus
         );
+        let is_zone_3 = matches!(
+            visual_pool_type,
+            PoolType::IndustrialRoadBarrier
+                | PoolType::IndustrialOverheadPipe
+                | PoolType::IndustrialSupportPillar
+                | PoolType::IndustrialFreightTransport
+                | PoolType::IndustrialCargoTransport
+        );
 
         match obs_def.obstacle_type {
             ObstacleType::LowBarrier => {
@@ -305,6 +313,8 @@ pub fn spawn_pattern_chunk(
                                 });
                             });
                     }
+                } else if is_zone_3 {
+                    spawn_industrial_barrier(commands, pool_assets, pool, *obs_def, world_z);
                 } else {
                     if let Some(entity) = pool.pop(PoolType::LowBarrier) {
                         commands.entity(entity).insert((
@@ -486,6 +496,8 @@ pub fn spawn_pattern_chunk(
                                 });
                             });
                     }
+                } else if is_zone_3 {
+                    spawn_industrial_overhead_pipe(commands, pool_assets, pool, *obs_def, world_z);
                 } else {
                     if let Some(entity) = pool.pop(PoolType::HighHangingWire) {
                         commands.entity(entity).insert((
@@ -667,6 +679,8 @@ pub fn spawn_pattern_chunk(
                                 });
                             });
                     }
+                } else if is_zone_3 {
+                    spawn_industrial_support_pillar(commands, pool_assets, pool, *obs_def, world_z);
                 } else {
                     if let Some(entity) = pool.pop(PoolType::TallPillar) {
                         commands.entity(entity).insert((
@@ -917,6 +931,14 @@ pub fn spawn_pattern_chunk(
                                 });
                             });
                     }
+                } else if is_zone_3 {
+                    spawn_industrial_freight_transport(
+                        commands,
+                        pool_assets,
+                        pool,
+                        *obs_def,
+                        world_z,
+                    );
                 } else {
                     if let Some(entity) = pool.pop(PoolType::StaticTrain) {
                         commands.entity(entity).insert((
@@ -1181,6 +1203,15 @@ pub fn spawn_pattern_chunk(
                                 });
                             });
                     }
+                } else if is_zone_3 {
+                    spawn_industrial_cargo_transport(
+                        commands,
+                        pool_assets,
+                        pool,
+                        *obs_def,
+                        world_z,
+                        speed,
+                    );
                 } else {
                     if let Some(entity) = pool.pop(PoolType::MovingTrain) {
                         commands.entity(entity).insert((
@@ -1636,6 +1667,370 @@ fn spawn_segment(
     );
 }
 
+fn industrial_active(
+    lane: Lane,
+    obstacle_type: ObstacleType,
+    size: Vec3,
+    world_z: f32,
+    pool_type: PoolType,
+) -> (ActiveObstacle, Despawnable, PooledItem) {
+    (
+        ActiveObstacle {
+            lane,
+            obstacle_type,
+            size,
+        },
+        Despawnable { z_center: world_z },
+        PooledItem {
+            pool_type,
+            is_active: true,
+        },
+    )
+}
+
+fn spawn_industrial_barrier(
+    commands: &mut Commands,
+    pool_assets: &PoolAssets,
+    pool: &mut EntityPool,
+    obs_def: ObstacleSpawnDef,
+    world_z: f32,
+) {
+    let active = industrial_active(
+        obs_def.lane,
+        ObstacleType::LowBarrier,
+        obs_def.size,
+        world_z,
+        PoolType::IndustrialRoadBarrier,
+    );
+    if let Some(entity) = pool.pop(PoolType::IndustrialRoadBarrier) {
+        commands.entity(entity).insert((
+            Transform::from_xyz(obs_def.lane.x_pos(), 0.42, world_z),
+            Visibility::Inherited,
+            active.0,
+            active.1,
+            active.2,
+        ));
+        return;
+    }
+    commands
+        .spawn((
+            PbrBundle {
+                mesh: pool_assets.mesh_industrial_barrier_frame.clone(),
+                material: pool_assets.mat_industrial_steel.clone(),
+                transform: Transform::from_xyz(obs_def.lane.x_pos(), 0.42, world_z),
+                ..default()
+            },
+            active.0,
+            active.1,
+            active.2,
+        ))
+        .with_children(|barrier| {
+            barrier.spawn(PbrBundle {
+                mesh: pool_assets.mesh_industrial_barrier_stripe.clone(),
+                material: pool_assets.mat_industrial_hazard.clone(),
+                transform: Transform::from_xyz(0.0, 0.0, 0.02),
+                ..default()
+            });
+            for x in [-0.94, 0.94] {
+                barrier.spawn(PbrBundle {
+                    mesh: pool_assets.mesh_industrial_barrier_support.clone(),
+                    material: pool_assets.mat_industrial_steel.clone(),
+                    transform: Transform::from_xyz(x, -0.03, 0.0),
+                    ..default()
+                });
+                barrier.spawn(PbrBundle {
+                    mesh: pool_assets.mesh_barrier_foot.clone(),
+                    material: pool_assets.mat_industrial_rust.clone(),
+                    transform: Transform::from_xyz(x, -0.40, 0.0),
+                    ..default()
+                });
+                barrier.spawn(PbrBundle {
+                    mesh: pool_assets.mesh_barrier_strobe.clone(),
+                    material: pool_assets.mat_industrial_warning.clone(),
+                    transform: Transform::from_xyz(x, 0.27, 0.0),
+                    ..default()
+                });
+            }
+        });
+}
+
+fn spawn_industrial_overhead_pipe(
+    commands: &mut Commands,
+    pool_assets: &PoolAssets,
+    pool: &mut EntityPool,
+    obs_def: ObstacleSpawnDef,
+    world_z: f32,
+) {
+    let active = industrial_active(
+        obs_def.lane,
+        ObstacleType::HighHangingWire,
+        obs_def.size,
+        world_z,
+        PoolType::IndustrialOverheadPipe,
+    );
+    if let Some(entity) = pool.pop(PoolType::IndustrialOverheadPipe) {
+        commands.entity(entity).insert((
+            Transform::from_xyz(obs_def.lane.x_pos(), 1.7, world_z),
+            Visibility::Inherited,
+            active.0,
+            active.1,
+            active.2,
+        ));
+        return;
+    }
+    commands
+        .spawn((
+            PbrBundle {
+                mesh: pool_assets.mesh_industrial_pipe.clone(),
+                material: pool_assets.mat_industrial_pipe.clone(),
+                transform: Transform::from_xyz(obs_def.lane.x_pos(), 1.7, world_z),
+                ..default()
+            },
+            active.0,
+            active.1,
+            active.2,
+        ))
+        .with_children(|pipe| {
+            pipe.spawn(PbrBundle {
+                mesh: pool_assets.mesh_industrial_pipe_bundle.clone(),
+                material: pool_assets.mat_industrial_rust.clone(),
+                transform: Transform::from_xyz(0.0, 0.16, 0.0),
+                ..default()
+            });
+            pipe.spawn(PbrBundle {
+                mesh: pool_assets.mesh_industrial_clearance.clone(),
+                material: pool_assets.mat_industrial_hazard.clone(),
+                transform: Transform::from_xyz(0.0, -0.18, 0.02),
+                ..default()
+            });
+            for x in [-1.04, 1.04] {
+                pipe.spawn(PbrBundle {
+                    mesh: pool_assets.mesh_wire_anchor.clone(),
+                    material: pool_assets.mat_industrial_steel.clone(),
+                    transform: Transform::from_xyz(x, 0.16, 0.0),
+                    ..default()
+                });
+            }
+        });
+}
+
+fn spawn_industrial_support_pillar(
+    commands: &mut Commands,
+    pool_assets: &PoolAssets,
+    pool: &mut EntityPool,
+    obs_def: ObstacleSpawnDef,
+    world_z: f32,
+) {
+    let active = industrial_active(
+        obs_def.lane,
+        ObstacleType::TallPillar,
+        obs_def.size,
+        world_z,
+        PoolType::IndustrialSupportPillar,
+    );
+    if let Some(entity) = pool.pop(PoolType::IndustrialSupportPillar) {
+        commands.entity(entity).insert((
+            Transform::from_xyz(obs_def.lane.x_pos(), 2.0, world_z),
+            Visibility::Inherited,
+            active.0,
+            active.1,
+            active.2,
+        ));
+        return;
+    }
+    commands
+        .spawn((
+            PbrBundle {
+                mesh: pool_assets.mesh_pillar_body.clone(),
+                material: pool_assets.mat_industrial_steel.clone(),
+                transform: Transform::from_xyz(obs_def.lane.x_pos(), 2.0, world_z),
+                ..default()
+            },
+            active.0,
+            active.1,
+            active.2,
+        ))
+        .with_children(|pillar| {
+            pillar.spawn(PbrBundle {
+                mesh: pool_assets.mesh_pillar_base.clone(),
+                material: pool_assets.mat_industrial_rust.clone(),
+                transform: Transform::from_xyz(0.0, -1.78, 0.0),
+                ..default()
+            });
+            pillar.spawn(PbrBundle {
+                mesh: pool_assets.mesh_pillar_collar.clone(),
+                material: pool_assets.mat_industrial_hazard.clone(),
+                transform: Transform::from_xyz(0.0, 0.95, 0.0),
+                ..default()
+            });
+            for x in [-0.55, 0.55] {
+                pillar.spawn(PbrBundle {
+                    mesh: pool_assets.mesh_pillar_trunk.clone(),
+                    material: pool_assets.mat_industrial_rust.clone(),
+                    transform: Transform::from_xyz(x, 0.0, 0.57),
+                    ..default()
+                });
+            }
+            pillar.spawn(PbrBundle {
+                mesh: pool_assets.mesh_pillar_placard.clone(),
+                material: pool_assets.mat_industrial_hazard.clone(),
+                transform: Transform::from_xyz(0.0, 0.35, 0.58),
+                ..default()
+            });
+            pillar.spawn(PbrBundle {
+                mesh: pool_assets.mesh_pillar_beacon.clone(),
+                material: pool_assets.mat_industrial_warning.clone(),
+                transform: Transform::from_xyz(0.0, 0.0, -0.58),
+                ..default()
+            });
+        });
+}
+
+fn spawn_industrial_freight_transport(
+    commands: &mut Commands,
+    pool_assets: &PoolAssets,
+    pool: &mut EntityPool,
+    obs_def: ObstacleSpawnDef,
+    world_z: f32,
+) {
+    let active = industrial_active(
+        obs_def.lane,
+        ObstacleType::StaticTrain,
+        obs_def.size,
+        world_z,
+        PoolType::IndustrialFreightTransport,
+    );
+    if let Some(entity) = pool.pop(PoolType::IndustrialFreightTransport) {
+        commands.entity(entity).insert((
+            Transform::from_xyz(obs_def.lane.x_pos(), 1.25, world_z),
+            Visibility::Inherited,
+            active.0,
+            active.1,
+            active.2,
+        ));
+        return;
+    }
+    commands
+        .spawn((
+            PbrBundle {
+                mesh: pool_assets.mesh_industrial_freight_body.clone(),
+                material: pool_assets.mat_industrial_steel.clone(),
+                transform: Transform::from_xyz(obs_def.lane.x_pos(), 1.25, world_z),
+                ..default()
+            },
+            active.0,
+            active.1,
+            active.2,
+        ))
+        .with_children(|freight| {
+            freight.spawn(PbrBundle {
+                mesh: pool_assets.mesh_industrial_freight_cab.clone(),
+                material: pool_assets.mat_industrial_glass.clone(),
+                transform: Transform::from_xyz(0.0, 0.55, 5.05),
+                ..default()
+            });
+            for x in [-1.08, 1.08] {
+                freight.spawn(PbrBundle {
+                    mesh: pool_assets.mesh_industrial_freight_panel.clone(),
+                    material: pool_assets.mat_industrial_rust.clone(),
+                    transform: Transform::from_xyz(x, 1.25, 0.0),
+                    ..default()
+                });
+                for z in [-4.2, 4.2] {
+                    freight.spawn(PbrBundle {
+                        mesh: pool_assets.mesh_industrial_freight_wheel.clone(),
+                        material: pool_assets.mat_industrial_rust.clone(),
+                        transform: Transform::from_xyz(x, -0.72, z)
+                            .with_rotation(Quat::from_rotation_z(std::f32::consts::FRAC_PI_2)),
+                        ..default()
+                    });
+                }
+            }
+            for x in [-0.70, 0.70] {
+                freight.spawn(PbrBundle {
+                    mesh: pool_assets.mesh_train_headlamp.clone(),
+                    material: pool_assets.mat_industrial_warning.clone(),
+                    transform: Transform::from_xyz(x, 0.10, 6.05),
+                    ..default()
+                });
+            }
+        });
+}
+
+fn spawn_industrial_cargo_transport(
+    commands: &mut Commands,
+    pool_assets: &PoolAssets,
+    pool: &mut EntityPool,
+    obs_def: ObstacleSpawnDef,
+    world_z: f32,
+    speed: f32,
+) {
+    let active = industrial_active(
+        obs_def.lane,
+        ObstacleType::MovingTrain { speed },
+        obs_def.size,
+        world_z,
+        PoolType::IndustrialCargoTransport,
+    );
+    if let Some(entity) = pool.pop(PoolType::IndustrialCargoTransport) {
+        commands.entity(entity).insert((
+            Transform::from_xyz(obs_def.lane.x_pos(), 1.25, world_z),
+            Visibility::Inherited,
+            active.0,
+            MovingObstacle { speed },
+            active.1,
+            active.2,
+        ));
+        return;
+    }
+    commands
+        .spawn((
+            PbrBundle {
+                mesh: pool_assets.mesh_industrial_freight_body.clone(),
+                material: pool_assets.mat_industrial_steel.clone(),
+                transform: Transform::from_xyz(obs_def.lane.x_pos(), 1.25, world_z),
+                ..default()
+            },
+            active.0,
+            MovingObstacle { speed },
+            active.1,
+            active.2,
+        ))
+        .with_children(|cargo| {
+            cargo.spawn(PbrBundle {
+                mesh: pool_assets.mesh_industrial_freight_cab.clone(),
+                material: pool_assets.mat_industrial_glass.clone(),
+                transform: Transform::from_xyz(0.0, 0.55, 6.05),
+                ..default()
+            });
+            for x in [-1.08, 1.08] {
+                cargo.spawn(PbrBundle {
+                    mesh: pool_assets.mesh_industrial_freight_panel.clone(),
+                    material: pool_assets.mat_industrial_hazard.clone(),
+                    transform: Transform::from_xyz(x, 1.25, -0.8),
+                    ..default()
+                });
+                for z in [-5.0, 5.0] {
+                    cargo.spawn(PbrBundle {
+                        mesh: pool_assets.mesh_industrial_freight_wheel.clone(),
+                        material: pool_assets.mat_industrial_rust.clone(),
+                        transform: Transform::from_xyz(x, -0.72, z)
+                            .with_rotation(Quat::from_rotation_z(std::f32::consts::FRAC_PI_2)),
+                        ..default()
+                    });
+                }
+            }
+            for x in [-0.70, 0.70] {
+                cargo.spawn(PbrBundle {
+                    mesh: pool_assets.mesh_train_headlamp.clone(),
+                    material: pool_assets.mat_industrial_warning.clone(),
+                    transform: Transform::from_xyz(x, 0.10, 7.05),
+                    ..default()
+                });
+            }
+        });
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1779,13 +2174,49 @@ mod tests {
     }
 
     #[test]
-    fn test_obstacle_visual_selection_zones_3_to_7_protected() {
+    fn test_obstacle_visual_selection_zone_3_industrial_sector() {
         let test_distances = [
-            ZONES[1].end_distance,
             ZONES[2].start_distance,
+            4500.0,
+            5200.0,
+            ZONES[2].end_distance - 0.001,
+        ];
+        for &dist in &test_distances {
+            assert_eq!(
+                resolve_obstacle_pool_type(ObstacleType::LowBarrier, dist),
+                PoolType::IndustrialRoadBarrier,
+                "Zone 3 must select an industrial road barrier at {dist}m"
+            );
+            assert_eq!(
+                resolve_obstacle_pool_type(ObstacleType::HighHangingWire, dist),
+                PoolType::IndustrialOverheadPipe,
+                "Zone 3 must select an industrial overhead pipe"
+            );
+            assert_eq!(
+                resolve_obstacle_pool_type(ObstacleType::TallPillar, dist),
+                PoolType::IndustrialSupportPillar,
+                "Zone 3 must select an industrial support pillar"
+            );
+            assert_eq!(
+                resolve_obstacle_pool_type(ObstacleType::StaticTrain, dist),
+                PoolType::IndustrialFreightTransport,
+                "Zone 3 must select an industrial freight transporter"
+            );
+            assert_eq!(
+                resolve_obstacle_pool_type(ObstacleType::MovingTrain { speed: 10.0 }, dist),
+                PoolType::IndustrialCargoTransport,
+                "Zone 3 must select an industrial cargo transporter"
+            );
+        }
+    }
+
+    #[test]
+    fn test_obstacle_visual_selection_zones_4_to_7_protected() {
+        let test_distances = [
             ZONES[3].start_distance,
             ZONES[4].start_distance,
             ZONES[5].start_distance,
+            ZONES[6].start_distance,
         ];
         for &dist in &test_distances {
             assert_eq!(
@@ -1834,6 +2265,11 @@ mod tests {
         let e_neon_van = Entity::from_raw(8);
         let e_metro_moving = Entity::from_raw(9);
         let e_neon_bus = Entity::from_raw(10);
+        let e_industrial_barrier = Entity::from_raw(11);
+        let e_industrial_pipe = Entity::from_raw(12);
+        let e_industrial_pillar = Entity::from_raw(13);
+        let e_industrial_freight = Entity::from_raw(14);
+        let e_industrial_cargo = Entity::from_raw(15);
 
         // Push all into respective pools
         pool.push(PoolType::LowBarrier, e_metro_barrier);
@@ -1846,6 +2282,11 @@ mod tests {
         pool.push(PoolType::NeonAutoVan, e_neon_van);
         pool.push(PoolType::MovingTrain, e_metro_moving);
         pool.push(PoolType::NeonCyberBus, e_neon_bus);
+        pool.push(PoolType::IndustrialRoadBarrier, e_industrial_barrier);
+        pool.push(PoolType::IndustrialOverheadPipe, e_industrial_pipe);
+        pool.push(PoolType::IndustrialSupportPillar, e_industrial_pillar);
+        pool.push(PoolType::IndustrialFreightTransport, e_industrial_freight);
+        pool.push(PoolType::IndustrialCargoTransport, e_industrial_cargo);
 
         // Verify vectors are isolated
         assert_eq!(pool.barriers.len(), 1);
@@ -1858,6 +2299,11 @@ mod tests {
         assert_eq!(pool.neon_vans.len(), 1);
         assert_eq!(pool.moving_trains.len(), 1);
         assert_eq!(pool.neon_buses.len(), 1);
+        assert_eq!(pool.industrial_barriers.len(), 1);
+        assert_eq!(pool.industrial_pipes.len(), 1);
+        assert_eq!(pool.industrial_pillars.len(), 1);
+        assert_eq!(pool.industrial_freight.len(), 1);
+        assert_eq!(pool.industrial_cargo.len(), 1);
 
         // Pop from Zone 2 pools
         assert_eq!(pool.pop(PoolType::NeonRoadBarrier), Some(e_neon_barrier));
@@ -1871,6 +2317,28 @@ mod tests {
         );
         assert_eq!(pool.pop(PoolType::NeonAutoVan), Some(e_neon_van));
         assert_eq!(pool.pop(PoolType::NeonCyberBus), Some(e_neon_bus));
+
+        // Zone 3 pools remain isolated from both Metro and Neon pools.
+        assert_eq!(
+            pool.pop(PoolType::IndustrialRoadBarrier),
+            Some(e_industrial_barrier)
+        );
+        assert_eq!(
+            pool.pop(PoolType::IndustrialOverheadPipe),
+            Some(e_industrial_pipe)
+        );
+        assert_eq!(
+            pool.pop(PoolType::IndustrialSupportPillar),
+            Some(e_industrial_pillar)
+        );
+        assert_eq!(
+            pool.pop(PoolType::IndustrialFreightTransport),
+            Some(e_industrial_freight)
+        );
+        assert_eq!(
+            pool.pop(PoolType::IndustrialCargoTransport),
+            Some(e_industrial_cargo)
+        );
 
         // Zone 1 pools remain fully intact
         assert_eq!(pool.pop(PoolType::LowBarrier), Some(e_metro_barrier));

@@ -11,6 +11,10 @@ pub struct SignageAssets {
     pub mat_graffiti_echo: Handle<StandardMaterial>,
     pub mat_security_placard: Handle<StandardMaterial>,
     pub mat_hazard_stripes: Handle<StandardMaterial>,
+    pub mat_industrial_corporate: Handle<StandardMaterial>,
+    pub mat_industrial_freight: Handle<StandardMaterial>,
+    pub mat_industrial_processing: Handle<StandardMaterial>,
+    pub mat_industrial_safety: Handle<StandardMaterial>,
 }
 
 pub fn init_signage_assets(
@@ -24,6 +28,26 @@ pub fn init_signage_assets(
     let img_graffiti = create_echo_graffiti_image();
     let img_security = create_security_placard_image();
     let img_stripes = create_hazard_stripes_image();
+    let img_industrial_corporate = create_industrial_sign_image(
+        "VEYRON HEAVY WORKS",
+        "INDUSTRIAL SECTOR 03",
+        [25, 190, 205, 255],
+    );
+    let img_industrial_freight = create_industrial_sign_image(
+        "FREIGHT YARD 03",
+        "AUTHORIZED PERSONNEL ONLY",
+        [242, 178, 35, 255],
+    );
+    let img_industrial_processing = create_industrial_sign_image(
+        "PROCESSING UNIT 07",
+        "HIGH PRESSURE // ACTIVE",
+        [236, 128, 32, 255],
+    );
+    let img_industrial_safety = create_industrial_sign_image(
+        "DANGER // RESTRICTED",
+        "HIGH VOLTAGE // EMERGENCY EXIT",
+        [248, 194, 38, 255],
+    );
 
     let h_entrance = images.add(img_entrance);
     let h_station = images.add(img_station);
@@ -31,6 +55,10 @@ pub fn init_signage_assets(
     let h_graffiti = images.add(img_graffiti);
     let h_security = images.add(img_security);
     let h_stripes = images.add(img_stripes);
+    let h_industrial_corporate = images.add(img_industrial_corporate);
+    let h_industrial_freight = images.add(img_industrial_freight);
+    let h_industrial_processing = images.add(img_industrial_processing);
+    let h_industrial_safety = images.add(img_industrial_safety);
 
     let signage = SignageAssets {
         mat_entrance_sign: materials.add(StandardMaterial {
@@ -81,6 +109,38 @@ pub fn init_signage_assets(
             metallic: 0.2,
             ..default()
         }),
+        mat_industrial_corporate: materials.add(StandardMaterial {
+            base_color_texture: Some(h_industrial_corporate.clone()),
+            emissive: LinearRgba::new(0.04, 0.32, 0.38, 1.0),
+            emissive_texture: Some(h_industrial_corporate),
+            perceptual_roughness: 0.42,
+            metallic: 0.35,
+            ..default()
+        }),
+        mat_industrial_freight: materials.add(StandardMaterial {
+            base_color_texture: Some(h_industrial_freight.clone()),
+            emissive: LinearRgba::new(0.40, 0.20, 0.02, 1.0),
+            emissive_texture: Some(h_industrial_freight),
+            perceptual_roughness: 0.48,
+            metallic: 0.30,
+            ..default()
+        }),
+        mat_industrial_processing: materials.add(StandardMaterial {
+            base_color_texture: Some(h_industrial_processing.clone()),
+            emissive: LinearRgba::new(0.35, 0.12, 0.02, 1.0),
+            emissive_texture: Some(h_industrial_processing),
+            perceptual_roughness: 0.46,
+            metallic: 0.30,
+            ..default()
+        }),
+        mat_industrial_safety: materials.add(StandardMaterial {
+            base_color_texture: Some(h_industrial_safety.clone()),
+            emissive: LinearRgba::new(0.45, 0.25, 0.03, 1.0),
+            emissive_texture: Some(h_industrial_safety),
+            perceptual_roughness: 0.50,
+            metallic: 0.25,
+            ..default()
+        }),
     };
 
     commands.insert_resource(signage);
@@ -89,6 +149,33 @@ pub fn init_signage_assets(
 // -----------------------------------------------------------------------------
 // TEXTURE GENERATION
 // -----------------------------------------------------------------------------
+
+fn create_industrial_sign_image(title: &str, subtitle: &str, accent: [u8; 4]) -> Image {
+    let w = 512;
+    let h = 128;
+    let mut buf = vec![0u8; w * h * 4];
+
+    for y in 0..h {
+        for x in 0..w {
+            let grime = ((x * 7 + y * 11) % 13) as u8;
+            let border = y < 8 || y >= h - 8 || x < 8 || x >= w - 8;
+            let color = if border {
+                if ((x + y) / 12) % 2 == 0 {
+                    accent
+                } else {
+                    [20, 22, 23, 255]
+                }
+            } else {
+                [24 + grime, 28 + grime, 30 + grime, 255]
+            };
+            set_pixel(&mut buf, w, x, y, color);
+        }
+    }
+
+    draw_string(&mut buf, w, h, title, 24, 28, 3, [242, 242, 226, 255]);
+    draw_string(&mut buf, w, h, subtitle, 24, 76, 2, accent);
+    make_image(w as u32, h as u32, buf)
+}
 
 fn create_entrance_sign_image() -> Image {
     let w = 512;

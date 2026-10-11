@@ -44,6 +44,13 @@ pub enum IndustrialLandmark {
     VeyronHeavyWorks,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct IndustrialTrackProfile {
+    pub lane_markings: bool,
+    pub service_conduits: bool,
+    pub distressed: bool,
+}
+
 #[derive(Resource)]
 pub struct IndustrialSectorAssets {
     pub mesh_factory_wall: Handle<Mesh>,
@@ -88,6 +95,13 @@ pub struct IndustrialSectorAssets {
     pub mesh_pallet: Handle<Mesh>,
     pub mesh_freight_platform: Handle<Mesh>,
     pub mesh_security_gate: Handle<Mesh>,
+    // Zone 3 heavy-road track modules.
+    pub mesh_track_plate: Handle<Mesh>,
+    pub mesh_track_seam: Handle<Mesh>,
+    pub mesh_track_lane_mark: Handle<Mesh>,
+    pub mesh_track_edge: Handle<Mesh>,
+    pub mesh_track_conduit: Handle<Mesh>,
+    pub mesh_track_grate: Handle<Mesh>,
     pub mat_factory: Handle<StandardMaterial>,
     pub mat_steel: Handle<StandardMaterial>,
     pub mat_rusted_steel: Handle<StandardMaterial>,
@@ -100,6 +114,11 @@ pub struct IndustrialSectorAssets {
     pub mat_water_leak: Handle<StandardMaterial>,
     pub mat_facade: Handle<StandardMaterial>,
     pub mat_dark_steel: Handle<StandardMaterial>,
+    pub mat_track_steel: Handle<StandardMaterial>,
+    pub mat_track_seam: Handle<StandardMaterial>,
+    pub mat_track_hazard: Handle<StandardMaterial>,
+    pub mat_track_conduit: Handle<StandardMaterial>,
+    pub mat_track_rust: Handle<StandardMaterial>,
 }
 
 pub fn init_industrial_sector_assets(
@@ -148,6 +167,12 @@ pub fn init_industrial_sector_assets(
         mesh_pallet: meshes.add(Cuboid::new(1.8, 0.25, 1.3)),
         mesh_freight_platform: meshes.add(Cuboid::new(4.0, 0.35, 6.0)),
         mesh_security_gate: meshes.add(Cuboid::new(0.42, 4.8, 0.42)),
+        mesh_track_plate: meshes.add(Cuboid::new(2.05, 0.07, 7.5)),
+        mesh_track_seam: meshes.add(Cuboid::new(2.05, 0.025, 0.08)),
+        mesh_track_lane_mark: meshes.add(Cuboid::new(0.08, 0.025, 2.0)),
+        mesh_track_edge: meshes.add(Cuboid::new(0.34, 0.10, 7.5)),
+        mesh_track_conduit: meshes.add(Cuboid::new(0.20, 0.18, 7.5)),
+        mesh_track_grate: meshes.add(Cuboid::new(0.52, 0.035, 1.2)),
         mat_factory: materials.add(StandardMaterial {
             base_color: Color::srgb(0.12, 0.13, 0.14),
             metallic: 0.65,
@@ -220,6 +245,38 @@ pub fn init_industrial_sector_assets(
             base_color: Color::srgb(0.07, 0.08, 0.09),
             metallic: 0.88,
             perceptual_roughness: 0.48,
+            ..default()
+        }),
+        mat_track_steel: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.20, 0.22, 0.23),
+            metallic: 0.92,
+            perceptual_roughness: 0.38,
+            ..default()
+        }),
+        mat_track_seam: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.045, 0.05, 0.055),
+            metallic: 0.72,
+            perceptual_roughness: 0.64,
+            ..default()
+        }),
+        mat_track_hazard: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.86, 0.52, 0.06),
+            emissive: LinearRgba::new(0.30, 0.12, 0.01, 1.0),
+            metallic: 0.40,
+            perceptual_roughness: 0.46,
+            ..default()
+        }),
+        mat_track_conduit: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.035, 0.16, 0.18),
+            emissive: LinearRgba::new(0.01, 0.12, 0.14, 1.0),
+            metallic: 0.76,
+            perceptual_roughness: 0.42,
+            ..default()
+        }),
+        mat_track_rust: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.28, 0.12, 0.06),
+            metallic: 0.58,
+            perceptual_roughness: 0.82,
             ..default()
         }),
     };
@@ -322,6 +379,7 @@ pub fn spawn_industrial_sector_segment(
     commands: &mut Commands,
     env: &EnvironmentAssets,
     industrial: &IndustrialSectorAssets,
+    signage: Option<&crate::environment_signage::SignageAssets>,
     z_center: f32,
     length: f32,
     distance: f32,
@@ -336,10 +394,11 @@ pub fn spawn_industrial_sector_segment(
             Despawnable { z_center },
         ))
         .with_children(|seg| {
-            spawn_industrial_track(seg, env, length);
+            spawn_industrial_track(seg, env, industrial, length, distance);
             spawn_near_industrial_features(seg, industrial, variant, even);
             spawn_mid_industrial_features(seg, industrial, variant, even);
             spawn_far_industrial_features(seg, industrial, variant, even);
+            spawn_industrial_signage(seg, industrial, signage, variant, even);
             spawn_industrial_landmark(
                 seg,
                 industrial,
@@ -350,7 +409,13 @@ pub fn spawn_industrial_sector_segment(
         .id()
 }
 
-fn spawn_industrial_track(seg: &mut ChildBuilder, env: &EnvironmentAssets, length: f32) {
+fn spawn_industrial_track(
+    seg: &mut ChildBuilder,
+    env: &EnvironmentAssets,
+    industrial: &IndustrialSectorAssets,
+    length: f32,
+    distance: f32,
+) {
     seg.spawn(PbrBundle {
         mesh: env.mesh_bed.clone(),
         material: env.mat_concrete_bed.clone(),
@@ -396,6 +461,109 @@ fn spawn_industrial_track(seg: &mut ChildBuilder, env: &EnvironmentAssets, lengt
                 ..default()
             });
         }
+    }
+
+    let track_profile = get_industrial_track_profile(distance);
+    let plate_material = if track_profile.distressed {
+        industrial.mat_track_rust.clone()
+    } else {
+        industrial.mat_track_steel.clone()
+    };
+    for lane_idx in -1..=1 {
+        let lane_x = Lane::from_index(lane_idx).x_pos();
+        for z in [-15.0, -7.0, 1.0, 9.0, 17.0] {
+            seg.spawn(PbrBundle {
+                mesh: industrial.mesh_track_plate.clone(),
+                material: plate_material.clone(),
+                transform: Transform::from_xyz(lane_x, 0.075, z),
+                ..default()
+            });
+        }
+        for z in [-11.25, -3.25, 4.75, 12.75, 19.75] {
+            seg.spawn(PbrBundle {
+                mesh: industrial.mesh_track_seam.clone(),
+                material: industrial.mat_track_seam.clone(),
+                transform: Transform::from_xyz(lane_x, 0.118, z),
+                ..default()
+            });
+        }
+    }
+
+    if track_profile.lane_markings {
+        for x in [-1.2, 1.2] {
+            for z in [-13.0, -5.0, 3.0, 11.0, 19.0] {
+                seg.spawn(PbrBundle {
+                    mesh: industrial.mesh_track_lane_mark.clone(),
+                    material: industrial.mat_track_hazard.clone(),
+                    transform: Transform::from_xyz(x, 0.13, z),
+                    ..default()
+                });
+            }
+        }
+    }
+
+    for x in [-3.72, 3.72] {
+        for z in [-15.0, -7.0, 1.0, 9.0, 17.0] {
+            seg.spawn(PbrBundle {
+                mesh: industrial.mesh_track_edge.clone(),
+                material: if track_profile.distressed {
+                    industrial.mat_track_rust.clone()
+                } else {
+                    industrial.mat_track_steel.clone()
+                },
+                transform: Transform::from_xyz(x, 0.15, z),
+                ..default()
+            });
+        }
+    }
+
+    if track_profile.service_conduits {
+        for x in [-3.42, 3.42] {
+            seg.spawn(PbrBundle {
+                mesh: industrial.mesh_track_conduit.clone(),
+                material: industrial.mat_track_conduit.clone(),
+                transform: Transform::from_xyz(x, 0.24, 0.0),
+                ..default()
+            });
+            for z in [-14.0, -2.0, 10.0] {
+                seg.spawn(PbrBundle {
+                    mesh: industrial.mesh_track_grate.clone(),
+                    material: industrial.mat_track_seam.clone(),
+                    transform: Transform::from_xyz(x, 0.34, z),
+                    ..default()
+                });
+            }
+        }
+    }
+}
+
+pub fn get_industrial_track_profile(distance: f32) -> IndustrialTrackProfile {
+    match get_industrial_sector_chapter(distance) {
+        IndustrialChapter::IndustrialEntry => IndustrialTrackProfile {
+            lane_markings: false,
+            service_conduits: false,
+            distressed: false,
+        },
+        IndustrialChapter::FreightYard => IndustrialTrackProfile {
+            lane_markings: true,
+            service_conduits: false,
+            distressed: false,
+        },
+        IndustrialChapter::ProcessingPlant => IndustrialTrackProfile {
+            lane_markings: false,
+            service_conduits: true,
+            distressed: false,
+        },
+        IndustrialChapter::VeyronHeavyWorks => IndustrialTrackProfile {
+            lane_markings: true,
+            service_conduits: true,
+            distressed: false,
+        },
+        IndustrialChapter::IndustrialTransition => IndustrialTrackProfile {
+            lane_markings: true,
+            service_conduits: true,
+            distressed: true,
+        },
     }
 }
 
@@ -655,6 +823,81 @@ fn spawn_steam_vent(
         transform: Transform::from_xyz(x, y, z).with_scale(Vec3::new(0.7, 1.4, 0.7)),
         ..default()
     });
+}
+
+fn spawn_industrial_signage(
+    seg: &mut ChildBuilder,
+    industrial: &IndustrialSectorAssets,
+    signage: Option<&crate::environment_signage::SignageAssets>,
+    variant: IndustrialVariant,
+    even: bool,
+) {
+    let side = if even { 1.0 } else { -1.0 };
+    let primary_material = match (signage, get_industrial_sector_chapter_from_variant(variant)) {
+        (Some(signage), IndustrialChapter::IndustrialEntry)
+        | (Some(signage), IndustrialChapter::VeyronHeavyWorks) => {
+            signage.mat_industrial_corporate.clone()
+        }
+        (Some(signage), IndustrialChapter::FreightYard) => signage.mat_industrial_freight.clone(),
+        (Some(signage), IndustrialChapter::ProcessingPlant) => {
+            signage.mat_industrial_processing.clone()
+        }
+        (Some(signage), IndustrialChapter::IndustrialTransition) => {
+            signage.mat_industrial_safety.clone()
+        }
+        (None, IndustrialChapter::IndustrialEntry)
+        | (None, IndustrialChapter::FreightYard)
+        | (None, IndustrialChapter::ProcessingPlant)
+        | (None, IndustrialChapter::VeyronHeavyWorks)
+        | (None, IndustrialChapter::IndustrialTransition) => industrial.mat_hazard.clone(),
+    };
+    seg.spawn(PbrBundle {
+        mesh: industrial.mesh_sign.clone(),
+        material: primary_material,
+        transform: Transform::from_xyz(side * 8.70, 5.15, -14.5)
+            .with_scale(Vec3::new(1.25, 1.0, 1.0)),
+        ..default()
+    });
+
+    if matches!(
+        variant,
+        IndustrialVariant::FreightCraneBay
+            | IndustrialVariant::ProcessingSteamManifold
+            | IndustrialVariant::HeavyWorksVeyronGate
+            | IndustrialVariant::TransitionDamagedWorks
+            | IndustrialVariant::TransitionFloodApproach
+    ) {
+        let safety_material = signage
+            .map(|assets| assets.mat_industrial_safety.clone())
+            .unwrap_or_else(|| industrial.mat_hazard.clone());
+        seg.spawn(PbrBundle {
+            mesh: industrial.mesh_sign.clone(),
+            material: safety_material,
+            transform: Transform::from_xyz(-side * 5.75, 2.85, -8.5)
+                .with_scale(Vec3::new(0.72, 0.72, 1.0)),
+            ..default()
+        });
+    }
+}
+
+fn get_industrial_sector_chapter_from_variant(variant: IndustrialVariant) -> IndustrialChapter {
+    match variant {
+        IndustrialVariant::EntryPipeGallery
+        | IndustrialVariant::EntryServiceBlock
+        | IndustrialVariant::EntryWarningLine => IndustrialChapter::IndustrialEntry,
+        IndustrialVariant::FreightContainerStack
+        | IndustrialVariant::FreightCraneBay
+        | IndustrialVariant::FreightLoadingPlatform => IndustrialChapter::FreightYard,
+        IndustrialVariant::ProcessingPressureRow
+        | IndustrialVariant::ProcessingSteamManifold
+        | IndustrialVariant::ProcessingCatwalk => IndustrialChapter::ProcessingPlant,
+        IndustrialVariant::HeavyWorksConveyor
+        | IndustrialVariant::HeavyWorksVeyronGate
+        | IndustrialVariant::HeavyWorksCoolingArray => IndustrialChapter::VeyronHeavyWorks,
+        IndustrialVariant::TransitionLeakingMain
+        | IndustrialVariant::TransitionDamagedWorks
+        | IndustrialVariant::TransitionFloodApproach => IndustrialChapter::IndustrialTransition,
+    }
 }
 
 /// Builds a small repeated facade module instead of treating a factory as one
@@ -1302,5 +1545,53 @@ mod tests {
                 "Chapter boundary should not create an accidental landmark at {distance}m"
             );
         }
+    }
+
+    #[test]
+    fn test_industrial_track_profile_follows_chapters_deterministically() {
+        assert_eq!(
+            get_industrial_track_profile(4200.0),
+            IndustrialTrackProfile {
+                lane_markings: false,
+                service_conduits: false,
+                distressed: false,
+            }
+        );
+        assert_eq!(
+            get_industrial_track_profile(4600.0),
+            IndustrialTrackProfile {
+                lane_markings: true,
+                service_conduits: false,
+                distressed: false,
+            }
+        );
+        assert_eq!(
+            get_industrial_track_profile(5000.0),
+            IndustrialTrackProfile {
+                lane_markings: false,
+                service_conduits: true,
+                distressed: false,
+            }
+        );
+        assert_eq!(
+            get_industrial_track_profile(5500.0),
+            IndustrialTrackProfile {
+                lane_markings: true,
+                service_conduits: true,
+                distressed: false,
+            }
+        );
+        assert_eq!(
+            get_industrial_track_profile(5900.0),
+            IndustrialTrackProfile {
+                lane_markings: true,
+                service_conduits: true,
+                distressed: true,
+            }
+        );
+        assert_eq!(
+            get_industrial_track_profile(5500.0),
+            get_industrial_track_profile(5500.0)
+        );
     }
 }

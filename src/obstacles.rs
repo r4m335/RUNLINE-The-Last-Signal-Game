@@ -22,12 +22,16 @@ impl Plugin for ObstaclePlugin {
 /// player reaches it, but its appearance must still match the zone it belongs
 /// to.
 pub fn resolve_obstacle_pool_type(obstacle_type: ObstacleType, distance: f32) -> PoolType {
-    let is_neon_district = get_zone_for_distance(distance).id == 2;
+    let zone_id = get_zone_for_distance(distance).id;
+    let is_neon_district = zone_id == 2;
+    let is_industrial_sector = zone_id == 3;
 
     match obstacle_type {
         ObstacleType::LowBarrier => {
             if is_neon_district {
                 PoolType::NeonRoadBarrier
+            } else if is_industrial_sector {
+                PoolType::IndustrialRoadBarrier
             } else {
                 PoolType::LowBarrier
             }
@@ -35,6 +39,8 @@ pub fn resolve_obstacle_pool_type(obstacle_type: ObstacleType, distance: f32) ->
         ObstacleType::HighHangingWire => {
             if is_neon_district {
                 PoolType::NeonOverheadScanner
+            } else if is_industrial_sector {
+                PoolType::IndustrialOverheadPipe
             } else {
                 PoolType::HighHangingWire
             }
@@ -42,6 +48,8 @@ pub fn resolve_obstacle_pool_type(obstacle_type: ObstacleType, distance: f32) ->
         ObstacleType::TallPillar => {
             if is_neon_district {
                 PoolType::NeonCheckpointPillar
+            } else if is_industrial_sector {
+                PoolType::IndustrialSupportPillar
             } else {
                 PoolType::TallPillar
             }
@@ -49,6 +57,8 @@ pub fn resolve_obstacle_pool_type(obstacle_type: ObstacleType, distance: f32) ->
         ObstacleType::StaticTrain => {
             if is_neon_district {
                 PoolType::NeonAutoVan
+            } else if is_industrial_sector {
+                PoolType::IndustrialFreightTransport
             } else {
                 PoolType::StaticTrain
             }
@@ -56,6 +66,8 @@ pub fn resolve_obstacle_pool_type(obstacle_type: ObstacleType, distance: f32) ->
         ObstacleType::MovingTrain { .. } => {
             if is_neon_district {
                 PoolType::NeonCyberBus
+            } else if is_industrial_sector {
+                PoolType::IndustrialCargoTransport
             } else {
                 PoolType::MovingTrain
             }
