@@ -195,6 +195,9 @@ pub struct PoolAssets {
     // Zone 4 Flooded Metro Dedicated Obstacles
     pub mesh_flooded_barrier_frame: Handle<Mesh>,
     pub mesh_flooded_barrier_plate: Handle<Mesh>,
+    pub mesh_flooded_barrier_top_rail: Handle<Mesh>,
+    pub mesh_flooded_barrier_stripe: Handle<Mesh>,
+    pub mesh_flooded_barrier_skirt: Handle<Mesh>,
     pub mesh_flooded_barrier_strobe: Handle<Mesh>,
     pub mesh_flooded_barrier_support: Handle<Mesh>,
     pub mesh_flooded_pipe_column: Handle<Mesh>,
@@ -203,6 +206,9 @@ pub struct PoolAssets {
     pub mesh_flooded_cable_bundle: Handle<Mesh>,
     pub mesh_flooded_cable_tag: Handle<Mesh>,
     pub mesh_flooded_cable_conduit: Handle<Mesh>,
+    pub mesh_flooded_gate_strip: Handle<Mesh>,
+    pub mesh_flooded_gate_foot: Handle<Mesh>,
+    pub mesh_flooded_gate_tooth: Handle<Mesh>,
     pub mesh_flooded_train_body: Handle<Mesh>,
     pub mesh_flooded_train_roof: Handle<Mesh>,
     pub mesh_flooded_train_window: Handle<Mesh>,
@@ -814,17 +820,24 @@ fn init_pool_assets(
             perceptual_roughness: 0.12,
             ..default()
         }),
-        // Zone 4 Flooded Metro Dedicated Obstacles (Readability Pass)
-        mesh_flooded_barrier_frame: meshes.add(Cuboid::new(2.10, 0.58, 0.35)),
-        mesh_flooded_barrier_plate: meshes.add(Cuboid::new(1.95, 0.44, 0.10)),
+        // Zone 4 Flooded Metro Dedicated Obstacles (Readability Pass - High-Visibility Jump Barrier)
+        mesh_flooded_barrier_frame: meshes.add(Cuboid::new(2.15, 0.76, 0.30)),
+        mesh_flooded_barrier_plate: meshes.add(Cuboid::new(2.10, 0.68, 0.12)),
+        mesh_flooded_barrier_top_rail: meshes.add(Cuboid::new(2.25, 0.12, 0.22)),
+        mesh_flooded_barrier_stripe: meshes.add(Cuboid::new(2.05, 0.16, 0.04)),
+        mesh_flooded_barrier_skirt: meshes.add(Cuboid::new(2.15, 0.14, 0.28)),
         mesh_flooded_barrier_strobe: meshes.add(Sphere::new(0.14)),
-        mesh_flooded_barrier_support: meshes.add(Cuboid::new(0.18, 0.78, 0.34)),
+        mesh_flooded_barrier_support: meshes.add(Cuboid::new(0.22, 0.82, 0.42)),
         mesh_flooded_pipe_column: meshes.add(Cylinder::new(0.58, 4.40)),
         mesh_flooded_column_collar: meshes.add(Cuboid::new(1.50, 0.75, 1.50)),
         mesh_flooded_column_valve: meshes.add(Cylinder::new(0.48, 0.14)),
-        mesh_flooded_cable_bundle: meshes.add(Cylinder::new(0.13, 2.40)),
-        mesh_flooded_cable_tag: meshes.add(Cuboid::new(0.45, 0.55, 0.05)),
-        mesh_flooded_cable_conduit: meshes.add(Cuboid::new(2.15, 0.22, 0.22)),
+        // Overhead Low-Clearance Hazard Gate
+        mesh_flooded_cable_conduit: meshes.add(Cuboid::new(2.40, 0.38, 0.32)),
+        mesh_flooded_cable_bundle: meshes.add(Cuboid::new(0.24, 2.10, 0.26)),
+        mesh_flooded_cable_tag: meshes.add(Cuboid::new(2.20, 0.32, 0.08)),
+        mesh_flooded_gate_strip: meshes.add(Cuboid::new(2.10, 0.10, 0.04)),
+        mesh_flooded_gate_foot: meshes.add(Cuboid::new(0.40, 0.24, 0.40)),
+        mesh_flooded_gate_tooth: meshes.add(Cuboid::new(0.12, 0.12, 0.04)),
         mesh_flooded_train_body: meshes.add(Cuboid::new(2.20, 2.50, 12.0)),
         mesh_flooded_train_roof: meshes.add(Cuboid::new(2.38, 0.38, 11.8)),
         mesh_flooded_train_window: meshes.add(Cuboid::new(0.06, 0.75, 2.40)),
@@ -837,9 +850,10 @@ fn init_pool_assets(
             ..default()
         }),
         mat_flooded_hazard: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.88, 0.65, 0.10),
-            metallic: 0.25,
-            perceptual_roughness: 0.35,
+            base_color: Color::srgb(0.98, 0.74, 0.05),
+            emissive: LinearRgba::new(0.80, 0.50, 0.02, 1.0),
+            metallic: 0.10,
+            perceptual_roughness: 0.28,
             ..default()
         }),
         mat_flooded_rust: materials.add(StandardMaterial {

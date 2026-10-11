@@ -2114,6 +2114,7 @@ fn spawn_flooded_barrier(
     }
     commands
         .spawn((
+            // Main barricade structural frame spanning the lane
             PbrBundle {
                 mesh: pool_assets.mesh_flooded_barrier_frame.clone(),
                 material: pool_assets.mat_flooded_steel.clone(),
@@ -2125,26 +2126,54 @@ fn spawn_flooded_barrier(
             active.2,
         ))
         .with_children(|barrier| {
-            // High-contrast hazard caution plate facing oncoming runner
+            // Full-height high-contrast hazard board (facing oncoming runner)
             barrier.spawn(PbrBundle {
                 mesh: pool_assets.mesh_flooded_barrier_plate.clone(),
                 material: pool_assets.mat_flooded_hazard.clone(),
-                transform: Transform::from_xyz(0.0, 0.04, 0.06),
+                transform: Transform::from_xyz(0.0, 0.0, 0.08),
                 ..default()
             });
-            // Dual heavy rusted A-frame support stanchions
-            for x in [-0.95, 0.95] {
+
+            // Prominent horizontal top hurdle rail - marks the jump clearance crest clearly!
+            barrier.spawn(PbrBundle {
+                mesh: pool_assets.mesh_flooded_barrier_top_rail.clone(),
+                material: pool_assets.mat_flooded_hazard.clone(),
+                transform: Transform::from_xyz(0.0, 0.38, 0.0),
+                ..default()
+            });
+
+            // Bold diagonal hazard contrast strip across the board face
+            barrier.spawn(PbrBundle {
+                mesh: pool_assets.mesh_flooded_barrier_stripe.clone(),
+                material: pool_assets.mat_flooded_rust.clone(),
+                transform: Transform::from_xyz(0.0, 0.04, 0.15),
+                ..default()
+            });
+
+            // Bottom splash guard seal resting on the transit causeway
+            barrier.spawn(PbrBundle {
+                mesh: pool_assets.mesh_flooded_barrier_skirt.clone(),
+                material: pool_assets.mat_flooded_rust.clone(),
+                transform: Transform::from_xyz(0.0, -0.34, 0.0),
+                ..default()
+            });
+
+            // Dual heavy rusted triangular A-frame stanchions on the ends
+            for x in [-1.02, 1.02] {
                 barrier.spawn(PbrBundle {
                     mesh: pool_assets.mesh_flooded_barrier_support.clone(),
                     material: pool_assets.mat_flooded_rust.clone(),
-                    transform: Transform::from_xyz(x, -0.04, 0.0),
+                    transform: Transform::from_xyz(x, 0.0, 0.0),
                     ..default()
                 });
-                // Amber warning reflector strobe caps on both stanchion heads
+            }
+
+            // Triple high-intensity amber warning strobes across the top crest
+            for x in [-1.02, 0.0, 1.02] {
                 barrier.spawn(PbrBundle {
                     mesh: pool_assets.mesh_flooded_barrier_strobe.clone(),
                     material: pool_assets.mat_flooded_amber.clone(),
-                    transform: Transform::from_xyz(x, 0.36, 0.0),
+                    transform: Transform::from_xyz(x, 0.44, 0.08),
                     ..default()
                 });
             }
@@ -2177,6 +2206,7 @@ fn spawn_flooded_power_cable(
     }
     commands
         .spawn((
+            // Main horizontal overhead gantry beam spanning the lane
             PbrBundle {
                 mesh: pool_assets.mesh_flooded_cable_conduit.clone(),
                 material: pool_assets.mat_flooded_steel.clone(),
@@ -2187,29 +2217,53 @@ fn spawn_flooded_power_cable(
             active.1,
             active.2,
         ))
-        .with_children(|cable| {
-            // Thick, heavily sagging cable bundle arc
-            cable.spawn(PbrBundle {
-                mesh: pool_assets.mesh_flooded_cable_bundle.clone(),
-                material: pool_assets.mat_flooded_cable.clone(),
-                transform: Transform::from_xyz(0.0, -0.12, 0.0)
-                    .with_rotation(Quat::from_rotation_z(std::f32::consts::FRAC_PI_2)),
-                ..default()
-            });
-            // Prominent high-voltage hazard warning tag hanging down
-            cable.spawn(PbrBundle {
+        .with_children(|gate| {
+            // Two substantial vertical support columns straddling the lane
+            for x in [-1.15, 1.15] {
+                gate.spawn(PbrBundle {
+                    mesh: pool_assets.mesh_flooded_cable_bundle.clone(),
+                    material: pool_assets.mat_flooded_rust.clone(),
+                    transform: Transform::from_xyz(x, -0.75, 0.0),
+                    ..default()
+                });
+                // Rusted column footing collars anchored into the transit slab
+                gate.spawn(PbrBundle {
+                    mesh: pool_assets.mesh_flooded_gate_foot.clone(),
+                    material: pool_assets.mat_flooded_steel.clone(),
+                    transform: Transform::from_xyz(x, -1.60, 0.0),
+                    ..default()
+                });
+                // Twin amber warning strobes atop the column junctions
+                gate.spawn(PbrBundle {
+                    mesh: pool_assets.mesh_flooded_barrier_strobe.clone(),
+                    material: pool_assets.mat_flooded_amber.clone(),
+                    transform: Transform::from_xyz(x, 0.26, 0.16),
+                    ..default()
+                });
+            }
+            // Large high-contrast hazard panel across the front of the beam
+            gate.spawn(PbrBundle {
                 mesh: pool_assets.mesh_flooded_cable_tag.clone(),
                 material: pool_assets.mat_flooded_hazard.clone(),
-                transform: Transform::from_xyz(0.25, -0.25, 0.0),
+                transform: Transform::from_xyz(0.0, 0.02, 0.16),
                 ..default()
             });
-            // Amber junction warning strobe
-            cable.spawn(PbrBundle {
-                mesh: pool_assets.mesh_flooded_barrier_strobe.clone(),
-                material: pool_assets.mat_flooded_amber.clone(),
-                transform: Transform::from_xyz(-0.35, -0.15, 0.0),
+            // Diagonal hazard contrast band along lower face of the panel
+            gate.spawn(PbrBundle {
+                mesh: pool_assets.mesh_flooded_gate_strip.clone(),
+                material: pool_assets.mat_flooded_rust.clone(),
+                transform: Transform::from_xyz(0.0, -0.08, 0.20),
                 ..default()
             });
+            // Downward pointing clearance indicator teeth marking the ducking threshold
+            for x in [-0.65, 0.0, 0.65] {
+                gate.spawn(PbrBundle {
+                    mesh: pool_assets.mesh_flooded_gate_tooth.clone(),
+                    material: pool_assets.mat_flooded_hazard.clone(),
+                    transform: Transform::from_xyz(x, -0.22, 0.16),
+                    ..default()
+                });
+            }
         });
 }
 

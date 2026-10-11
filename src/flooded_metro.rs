@@ -67,6 +67,16 @@ pub struct FloodedMetroAssets {
     pub mesh_canal_grate: Handle<Mesh>,
     pub mesh_faded_lane_marker: Handle<Mesh>,
     pub mesh_rail_puddle: Handle<Mesh>,
+    pub mesh_transit_lane_slab: Handle<Mesh>,
+    pub mesh_transit_curb_border: Handle<Mesh>,
+    pub mesh_transit_lane_tread: Handle<Mesh>,
+    pub mesh_inter_lane_water: Handle<Mesh>,
+    pub mesh_flank_water_reservoir: Handle<Mesh>,
+    pub mesh_submerged_bed_foundation: Handle<Mesh>,
+    pub mesh_submerged_transverse_beam: Handle<Mesh>,
+    pub mesh_channel_drain_grate: Handle<Mesh>,
+    pub mesh_transit_hazard_marker: Handle<Mesh>,
+    pub mesh_transit_puddle_sheet: Handle<Mesh>,
 
     // --- Structural Geometry ---
     pub mesh_wall_main: Handle<Mesh>,
@@ -206,6 +216,9 @@ pub struct FloodedMetroAssets {
     pub mat_submerged_sleeper: Handle<StandardMaterial>,
     pub mat_canal_wall: Handle<StandardMaterial>,
     pub mat_faded_lane_marker: Handle<StandardMaterial>,
+    pub mat_transit_slab: Handle<StandardMaterial>,
+    pub mat_transit_curb: Handle<StandardMaterial>,
+    pub mat_transit_tread: Handle<StandardMaterial>,
 
     // --- Background Silhouette Materials ---
     pub mat_bg_dark_structure: Handle<StandardMaterial>,
@@ -236,6 +249,16 @@ pub fn init_flooded_metro_assets(
         mesh_canal_grate: meshes.add(Cuboid::new(1.05, 0.08, 1.4)),
         mesh_faded_lane_marker: meshes.add(Cuboid::new(0.28, 0.04, 2.2)),
         mesh_rail_puddle: meshes.add(Cuboid::new(2.4, 0.04, 12.0)),
+        mesh_transit_lane_slab: meshes.add(Cuboid::new(1.80, 0.26, 40.0)),
+        mesh_transit_curb_border: meshes.add(Cuboid::new(0.12, 0.16, 40.0)),
+        mesh_transit_lane_tread: meshes.add(Cuboid::new(0.60, 0.03, 40.0)),
+        mesh_inter_lane_water: meshes.add(Cuboid::new(0.40, 0.04, 40.0)),
+        mesh_flank_water_reservoir: meshes.add(Cuboid::new(2.80, 0.04, 40.0)),
+        mesh_submerged_bed_foundation: meshes.add(Cuboid::new(12.0, 0.30, 40.0)),
+        mesh_submerged_transverse_beam: meshes.add(Cuboid::new(8.0, 0.22, 0.45)),
+        mesh_channel_drain_grate: meshes.add(Cuboid::new(0.40, 0.08, 1.2)),
+        mesh_transit_hazard_marker: meshes.add(Cuboid::new(0.35, 0.035, 2.4)),
+        mesh_transit_puddle_sheet: meshes.add(Cuboid::new(1.50, 0.02, 10.0)),
 
         // --- Structural Geometry ---
         mesh_wall_main: meshes.add(Cuboid::new(0.50, 8.6, 40.0)),
@@ -481,6 +504,24 @@ pub fn init_flooded_metro_assets(
             perceptual_roughness: 0.48,
             ..default()
         }),
+        mat_transit_slab: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.20, 0.23, 0.25),
+            metallic: 0.18,
+            perceptual_roughness: 0.34,
+            ..default()
+        }),
+        mat_transit_curb: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.38, 0.26, 0.20),
+            metallic: 0.90,
+            perceptual_roughness: 0.18,
+            ..default()
+        }),
+        mat_transit_tread: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.12, 0.14, 0.16),
+            metallic: 0.35,
+            perceptual_roughness: 0.48,
+            ..default()
+        }),
 
         // --- Background Silhouette Materials ---
         mat_bg_dark_structure: materials.add(StandardMaterial {
@@ -557,146 +598,109 @@ pub fn spawn_flooded_metro_segment(
 }
 
 // -------------------------------------------------------------
-// PILLAR B — DEDICATED SUBMERGED TRACK IDENTITY (READABILITY PASS)
+// PILLAR B — DEDICATED SUBMERGED TRANSIT LANES & WATER CHANNELS
 // -------------------------------------------------------------
 
-fn spawn_flooded_track(seg: &mut ChildBuilder, a: &FloodedMetroAssets, length: f32) {
-    // 1. Wet submerged ballast track bed
+fn spawn_flooded_track(seg: &mut ChildBuilder, a: &FloodedMetroAssets, _length: f32) {
+    // 1. Submerged route foundation base underneath the flooded bed
     seg.spawn(PbrBundle {
-        mesh: a.mesh_submerged_ballast_bed.clone(),
+        mesh: a.mesh_submerged_bed_foundation.clone(),
         material: a.mat_wet_ballast.clone(),
-        transform: Transform::from_xyz(0.0, -0.22, 0.0),
+        transform: Transform::from_xyz(0.0, -0.32, 0.0),
         ..default()
     });
 
-    // 2. Structured ballast berm shoulders flanking the track
-    for side in [-1.0, 1.0] {
-        seg.spawn(PbrBundle {
-            mesh: a.mesh_wet_ballast_berm.clone(),
-            material: a.mat_wet_ballast.clone(),
-            transform: Transform::from_xyz(side * 3.3, 0.02, 0.0),
-            ..default()
-        });
-    }
-
-    // 3. Continuous Trackside Drainage Canals (Lip -> Trough -> Water -> Grates)
-    for side in [-1.0, 1.0] {
-        let lip_x = side * 3.9;
-        let canal_x = side * 4.6;
-
-        // Raised concrete canal lip
-        seg.spawn(PbrBundle {
-            mesh: a.mesh_canal_lip.clone(),
-            material: a.mat_wet_concrete.clone(),
-            transform: Transform::from_xyz(lip_x, 0.08, 0.0),
-            ..default()
-        });
-
-        // Recessed canal trough
-        seg.spawn(PbrBundle {
-            mesh: a.mesh_canal_trough.clone(),
-            material: a.mat_canal_wall.clone(),
-            transform: Transform::from_xyz(canal_x, -0.06, 0.0),
-            ..default()
-        });
-
-        // Water surface inside the canal
-        seg.spawn(PbrBundle {
-            mesh: a.mesh_canal_water.clone(),
-            material: a.mat_water.clone(),
-            transform: Transform::from_xyz(canal_x, 0.04, 0.0),
-            ..default()
-        });
-
-        // Periodic rusted drainage grates along the canal every 8m
-        for z in [-14.0, -6.0, 2.0, 10.0, 18.0] {
-            seg.spawn(PbrBundle {
-                mesh: a.mesh_canal_grate.clone(),
-                material: a.mat_rusted_steel.clone(),
-                transform: Transform::from_xyz(canal_x, 0.10, z),
-                ..default()
-            });
-        }
-    }
-
-    // 4. Heavy submerged sleepers with water pooling fillets and tie plates
-    let sleeper_count = (length / 4.0) as i32;
-    for i in -sleeper_count / 2..=sleeper_count / 2 {
-        let z = i as f32 * 4.0;
-
-        // Shallow dark water pooling fillet beneath and around each sleeper
-        seg.spawn(PbrBundle {
-            mesh: a.mesh_sleeper_water_fillet.clone(),
-            material: a.mat_water.clone(),
-            transform: Transform::from_xyz(0.0, 0.015, z),
-            ..default()
-        });
-
-        // Heavy submerged sleeper standing out above the water
-        seg.spawn(PbrBundle {
-            mesh: a.mesh_submerged_heavy_sleeper.clone(),
-            material: a.mat_submerged_sleeper.clone(),
-            transform: Transform::from_xyz(0.0, 0.05, z),
-            ..default()
-        });
-
-        // Corroded iron tie plates clamping rails to sleeper
-        for lane_idx in -1..=1 {
-            let x = Lane::from_index(lane_idx).x_pos();
-            for rail_x in [x - 0.48, x + 0.48] {
-                seg.spawn(PbrBundle {
-                    mesh: a.mesh_sleeper_tie_plate.clone(),
-                    material: a.mat_rusted_steel.clone(),
-                    transform: Transform::from_xyz(rail_x, 0.09, z),
-                    ..default()
-                });
-            }
-        }
-    }
-
-    // 5. Corroded, wet, gleam-catching rails and high-contrast Flooded Metro lane markings
+    // 2. Three Dedicated Raised Submerged Transit Lanes (-1, 0, +1)
     for lane_idx in -1..=1 {
-        let x = Lane::from_index(lane_idx).x_pos();
+        let x = Lane::from_index(lane_idx).x_pos(); // -2.2, 0.0, +2.2
 
-        // 3D Corroded Rails with wet metallic sheen
-        for rail_x in [x - 0.48, x + 0.48] {
+        // A. Raised concrete/composite transit causeway slab
+        seg.spawn(PbrBundle {
+            mesh: a.mesh_transit_lane_slab.clone(),
+            material: a.mat_transit_slab.clone(),
+            transform: Transform::from_xyz(x, -0.07, 0.0),
+            ..default()
+        });
+
+        // B. Central directional traction runner tread
+        seg.spawn(PbrBundle {
+            mesh: a.mesh_transit_lane_tread.clone(),
+            material: a.mat_transit_tread.clone(),
+            transform: Transform::from_xyz(x, 0.065, 0.0),
+            ..default()
+        });
+
+        // C. Metallic corroded guide curbs flanking each individual lane
+        for side in [-1.0, 1.0] {
+            let curb_x = x + side * 0.90;
             seg.spawn(PbrBundle {
-                mesh: a.mesh_corroded_rail_base.clone(),
-                material: a.mat_corroded_rail.clone(),
-                transform: Transform::from_xyz(rail_x, 0.07, 0.0),
-                ..default()
-            });
-            seg.spawn(PbrBundle {
-                mesh: a.mesh_corroded_rail_crown.clone(),
-                material: a.mat_corroded_rail.clone(),
-                transform: Transform::from_xyz(rail_x, 0.14, 0.0),
+                mesh: a.mesh_transit_curb_border.clone(),
+                material: a.mat_transit_curb.clone(),
+                transform: Transform::from_xyz(curb_x, 0.10, 0.0),
                 ..default()
             });
         }
 
-        // Flooded Metro lane markings: readable industrial yellow hazard markers at lane centers
+        // D. Directional industrial hazard markers down lane center
         for i in -4..=4 {
-            if (i + lane_idx).abs() % 5 != 0 {
+            if (i + lane_idx).abs() % 4 != 0 {
                 seg.spawn(PbrBundle {
-                    mesh: a.mesh_faded_lane_marker.clone(),
-                    material: if (i + lane_idx) % 2 == 0 {
-                        a.mat_faded_lane_marker.clone()
-                    } else {
-                        a.mat_hazard_stripe.clone()
-                    },
-                    transform: Transform::from_xyz(x, 0.08, i as f32 * 4.5),
+                    mesh: a.mesh_transit_hazard_marker.clone(),
+                    material: a.mat_faded_lane_marker.clone(),
+                    transform: Transform::from_xyz(x, 0.075, i as f32 * 4.5),
                     ..default()
                 });
             }
         }
+
+        // E. Shallow wet puddle accumulation on the transit slab
+        for z in [-11.0, 7.0] {
+            seg.spawn(PbrBundle {
+                mesh: a.mesh_transit_puddle_sheet.clone(),
+                material: a.mat_water_puddle.clone(),
+                transform: Transform::from_xyz(x, 0.072, z),
+                ..default()
+            });
+        }
     }
 
-    // 6. Standing reflective water puddles along track corridor
-    for z in [-12.0, 6.0] {
+    // 3. Flooded inter-lane water channels (in the 0.40m gaps between slabs)
+    for gap_x in [-1.1, 1.1] {
         seg.spawn(PbrBundle {
-            mesh: a.mesh_rail_puddle.clone(),
-            material: a.mat_water_puddle.clone(),
-            transform: Transform::from_xyz(0.0, 0.03, z),
+            mesh: a.mesh_inter_lane_water.clone(),
+            material: a.mat_water.clone(),
+            transform: Transform::from_xyz(gap_x, -0.04, 0.0),
+            ..default()
+        });
+
+        // Periodic overflow drainage grates spanning the gap
+        for z in [-12.0, 0.0, 12.0] {
+            seg.spawn(PbrBundle {
+                mesh: a.mesh_channel_drain_grate.clone(),
+                material: a.mat_rusted_steel.clone(),
+                transform: Transform::from_xyz(gap_x, 0.04, z),
+                ..default()
+            });
+        }
+    }
+
+    // 4. Wide flooded flank reservoirs extending to the tunnel walls
+    for flank_side in [-1.0, 1.0] {
+        let flank_x = flank_side * 4.6;
+        seg.spawn(PbrBundle {
+            mesh: a.mesh_flank_water_reservoir.clone(),
+            material: a.mat_water.clone(),
+            transform: Transform::from_xyz(flank_x, -0.04, 0.0),
+            ..default()
+        });
+    }
+
+    // 5. Heavy transverse structural tie beams connecting the causeways beneath the water
+    for z in [-18.0, -10.0, -2.0, 6.0, 14.0] {
+        seg.spawn(PbrBundle {
+            mesh: a.mesh_submerged_transverse_beam.clone(),
+            material: a.mat_steel.clone(),
+            transform: Transform::from_xyz(0.0, -0.09, z),
             ..default()
         });
     }
