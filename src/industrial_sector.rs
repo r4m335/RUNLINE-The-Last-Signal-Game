@@ -122,6 +122,10 @@ pub struct IndustrialSectorAssets {
     pub mat_steam: Handle<StandardMaterial>,
     pub mat_water_leak: Handle<StandardMaterial>,
     pub mat_facade: Handle<StandardMaterial>,
+    pub mat_arch_wall: Handle<StandardMaterial>,
+    pub mat_arch_roof: Handle<StandardMaterial>,
+    pub mat_arch_frame: Handle<StandardMaterial>,
+    pub mat_arch_glass: Handle<StandardMaterial>,
     pub mat_dark_steel: Handle<StandardMaterial>,
     pub mat_track_steel: Handle<StandardMaterial>,
     pub mat_track_seam: Handle<StandardMaterial>,
@@ -190,7 +194,8 @@ pub fn init_industrial_sector_assets(
         mesh_track_conduit: meshes.add(Cuboid::new(0.20, 0.18, 7.5)),
         mesh_track_grate: meshes.add(Cuboid::new(0.52, 0.035, 1.2)),
         mat_factory: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.12, 0.13, 0.14),
+            base_color: Color::srgb(0.20, 0.22, 0.23),
+            emissive: LinearRgba::new(0.006, 0.007, 0.008, 1.0),
             metallic: 0.65,
             perceptual_roughness: 0.72,
             ..default()
@@ -252,9 +257,36 @@ pub fn init_industrial_sector_assets(
             ..default()
         }),
         mat_facade: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.16, 0.17, 0.18),
+            base_color: Color::srgb(0.24, 0.26, 0.27),
             metallic: 0.72,
             perceptual_roughness: 0.58,
+            ..default()
+        }),
+        mat_arch_wall: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.34, 0.37, 0.38),
+            emissive: LinearRgba::new(0.010, 0.012, 0.013, 1.0),
+            metallic: 0.68,
+            perceptual_roughness: 0.56,
+            ..default()
+        }),
+        mat_arch_roof: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.065, 0.075, 0.085),
+            metallic: 0.82,
+            perceptual_roughness: 0.46,
+            ..default()
+        }),
+        mat_arch_frame: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.46, 0.27, 0.12),
+            emissive: LinearRgba::new(0.012, 0.005, 0.002, 1.0),
+            metallic: 0.58,
+            perceptual_roughness: 0.68,
+            ..default()
+        }),
+        mat_arch_glass: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.06, 0.20, 0.23),
+            emissive: LinearRgba::new(0.015, 0.08, 0.095, 1.0),
+            metallic: 0.42,
+            perceptual_roughness: 0.30,
             ..default()
         }),
         mat_dark_steel: materials.add(StandardMaterial {
@@ -603,14 +635,14 @@ fn spawn_near_industrial_features(
     seg.spawn(PbrBundle {
         mesh: industrial.mesh_large_pipe.clone(),
         material: industrial.mat_pipe.clone(),
-        transform: Transform::from_xyz(opposite * 5.0, 2.5, 0.0)
+        transform: Transform::from_xyz(opposite * 6.8, 2.65, 0.0)
             .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
         ..default()
     });
     seg.spawn(PbrBundle {
         mesh: industrial.mesh_pipe.clone(),
         material: industrial.mat_rusted_steel.clone(),
-        transform: Transform::from_xyz(opposite * 5.35, 1.35, 0.0)
+        transform: Transform::from_xyz(opposite * 7.1, 1.45, 0.0)
             .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
         ..default()
     });
@@ -986,7 +1018,7 @@ fn spawn_pipe_rack_detail(
         seg.spawn(PbrBundle {
             mesh: industrial.mesh_large_pipe.clone(),
             material,
-            transform: Transform::from_xyz(side * 5.2, y, 0.0)
+            transform: Transform::from_xyz(side * 7.15, y, 0.0)
                 .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
             ..default()
         });
@@ -995,13 +1027,13 @@ fn spawn_pipe_rack_detail(
         seg.spawn(PbrBundle {
             mesh: industrial.mesh_structural_column.clone(),
             material: industrial.mat_dark_steel.clone(),
-            transform: Transform::from_xyz(side * 5.25, 3.05, z),
+            transform: Transform::from_xyz(side * 7.2, 3.05, z),
             ..default()
         });
         seg.spawn(PbrBundle {
             mesh: industrial.mesh_pipe_junction.clone(),
             material: industrial.mat_pipe.clone(),
-            transform: Transform::from_xyz(side * 5.2, 2.35, z),
+            transform: Transform::from_xyz(side * 7.15, 2.35, z),
             ..default()
         });
     }
@@ -1009,14 +1041,14 @@ fn spawn_pipe_rack_detail(
         seg.spawn(PbrBundle {
             mesh: industrial.mesh_valve.clone(),
             material: industrial.mat_hazard.clone(),
-            transform: Transform::from_xyz(side * 5.2, 2.35, -6.0)
+            transform: Transform::from_xyz(side * 7.15, 2.35, -6.0)
                 .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
             ..default()
         });
         seg.spawn(PbrBundle {
             mesh: industrial.mesh_pressure_gauge.clone(),
             material: industrial.mat_amber.clone(),
-            transform: Transform::from_xyz(side * 5.2, 3.05, 6.0)
+            transform: Transform::from_xyz(side * 7.15, 3.05, 6.0)
                 .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
             ..default()
         });
@@ -1842,23 +1874,23 @@ fn spawn_complete_industrial_building(
     spec: CompleteBuildingSpec,
 ) {
     let front_material = match spec.style {
-        IndustrialBuildingStyle::Entry => industrial.mat_factory.clone(),
-        IndustrialBuildingStyle::Freight => industrial.mat_facade.clone(),
-        IndustrialBuildingStyle::Processing => industrial.mat_steel.clone(),
-        IndustrialBuildingStyle::HeavyWorks => industrial.mat_dark_steel.clone(),
+        IndustrialBuildingStyle::Entry => industrial.mat_arch_wall.clone(),
+        IndustrialBuildingStyle::Freight => industrial.mat_arch_wall.clone(),
+        IndustrialBuildingStyle::Processing => industrial.mat_arch_wall.clone(),
+        IndustrialBuildingStyle::HeavyWorks => industrial.mat_arch_wall.clone(),
         IndustrialBuildingStyle::Transition => industrial.mat_rusted_steel.clone(),
     };
     let panel_material = match spec.style {
-        IndustrialBuildingStyle::Entry => industrial.mat_veyron.clone(),
-        IndustrialBuildingStyle::Freight => industrial.mat_rusted_steel.clone(),
-        IndustrialBuildingStyle::Processing => industrial.mat_cooling.clone(),
-        IndustrialBuildingStyle::HeavyWorks => industrial.mat_veyron.clone(),
+        IndustrialBuildingStyle::Entry => industrial.mat_arch_glass.clone(),
+        IndustrialBuildingStyle::Freight => industrial.mat_arch_glass.clone(),
+        IndustrialBuildingStyle::Processing => industrial.mat_arch_glass.clone(),
+        IndustrialBuildingStyle::HeavyWorks => industrial.mat_arch_glass.clone(),
         IndustrialBuildingStyle::Transition => industrial.mat_facade.clone(),
     };
     let roof_material = if spec.distressed {
         industrial.mat_rusted_steel.clone()
     } else {
-        industrial.mat_dark_steel.clone()
+        industrial.mat_arch_roof.clone()
     };
     let x = spec.side * spec.center_x;
     let near_x = spec.side * (spec.center_x - spec.depth * 0.5);
@@ -1898,7 +1930,7 @@ fn spawn_complete_industrial_building(
     for z_end in [spec.z - spec.length * 0.5, spec.z + spec.length * 0.5] {
         seg.spawn(PbrBundle {
             mesh: industrial.mesh_arch_side_wall.clone(),
-            material: roof_material.clone(),
+            material: industrial.mat_arch_wall.clone(),
             transform: Transform::from_xyz(x, wall_center_y, z_end).with_scale(Vec3::new(
                 spec.depth / 10.0,
                 spec.height / 6.5,
@@ -1928,7 +1960,7 @@ fn spawn_complete_industrial_building(
     for z_offset in [-0.38, 0.0, 0.38] {
         seg.spawn(PbrBundle {
             mesh: industrial.mesh_arch_frame.clone(),
-            material: roof_material.clone(),
+            material: industrial.mat_arch_frame.clone(),
             transform: Transform::from_xyz(
                 near_x - spec.side * 0.24,
                 wall_center_y,
@@ -1959,6 +1991,20 @@ fn spawn_complete_industrial_building(
             });
         }
     }
+
+    // A high clerestory band makes the roofline readable from the low camera
+    // and distinguishes a factory hall from a featureless dark wall.
+    seg.spawn(PbrBundle {
+        mesh: industrial.mesh_arch_window_band.clone(),
+        material: panel_material.clone(),
+        transform: Transform::from_xyz(
+            near_x - spec.side * 0.25,
+            wall_base + spec.height - 0.72,
+            spec.z,
+        )
+        .with_scale(Vec3::new(1.0, 0.72, spec.length / 10.0)),
+        ..default()
+    });
 
     let entrance_z = spec.z - spec.length * 0.32;
     seg.spawn(PbrBundle {
@@ -2001,7 +2047,7 @@ fn spawn_complete_industrial_building(
     for z_offset in [-0.32, 0.0, 0.32] {
         seg.spawn(PbrBundle {
             mesh: industrial.mesh_reinforcement_beam.clone(),
-            material: roof_material.clone(),
+            material: industrial.mat_arch_frame.clone(),
             transform: Transform::from_xyz(
                 x,
                 wall_base + spec.height + 0.72,
