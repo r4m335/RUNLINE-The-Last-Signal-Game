@@ -379,6 +379,7 @@ pub fn spawn_industrial_sector_segment(
     commands: &mut Commands,
     env: &EnvironmentAssets,
     industrial: &IndustrialSectorAssets,
+    props: Option<&crate::environment_props::PropAssets>,
     signage: Option<&crate::environment_signage::SignageAssets>,
     z_center: f32,
     length: f32,
@@ -399,6 +400,7 @@ pub fn spawn_industrial_sector_segment(
             spawn_mid_industrial_features(seg, industrial, variant, even);
             spawn_far_industrial_features(seg, industrial, variant, even);
             spawn_industrial_signage(seg, industrial, signage, variant, even);
+            spawn_industrial_background_detail(seg, industrial, props, signage, variant, even);
             spawn_industrial_landmark(
                 seg,
                 industrial,
@@ -1215,6 +1217,410 @@ fn spawn_far_industrial_detail(
         IndustrialVariant::TransitionDamagedWorks | IndustrialVariant::TransitionFloodApproach
     ) {
         spawn_steam_vent(seg, industrial, -side * 17.0, 5.3, -8.0);
+    }
+}
+
+/// Adds a restrained third layer of industrial storytelling to each authored
+/// variant. These are static children of the rolling segment, use shared
+/// handles, and intentionally stay on the service shoulders or above the
+/// camera/player clearance envelope.
+fn spawn_industrial_background_detail(
+    seg: &mut ChildBuilder,
+    industrial: &IndustrialSectorAssets,
+    props: Option<&crate::environment_props::PropAssets>,
+    signage: Option<&crate::environment_signage::SignageAssets>,
+    variant: IndustrialVariant,
+    even: bool,
+) {
+    let side = if even { 1.0 } else { -1.0 };
+
+    match variant {
+        IndustrialVariant::EntryPipeGallery => {
+            spawn_wall_control_box(seg, industrial, props, side, 1.45, -8.0);
+            spawn_wall_camera(seg, industrial, props, side, 4.75, 6.0);
+            spawn_wall_cable(seg, props, side, 3.0, -1.0);
+            spawn_small_sign(seg, industrial, signage, side, 2.75, -8.0, |assets| {
+                assets.mat_industrial_entry_detail.clone()
+            });
+            spawn_indicator(seg, industrial, props, side * 8.58, 2.1, -8.55, false);
+        }
+        IndustrialVariant::EntryServiceBlock => {
+            spawn_wall_control_box(seg, industrial, props, side, 1.35, 5.5);
+            spawn_wall_cable(seg, props, side, 2.7, 5.5);
+            spawn_small_sign(seg, industrial, signage, side, 2.7, 5.5, |assets| {
+                assets.mat_industrial_entry_detail.clone()
+            });
+            spawn_indicator(seg, industrial, props, side * 8.58, 2.05, 6.25, true);
+        }
+        IndustrialVariant::EntryWarningLine => {
+            spawn_wall_control_box(seg, industrial, props, side, 1.55, -2.0);
+            spawn_wall_camera(seg, industrial, props, side, 4.85, -6.0);
+            spawn_wall_cable(seg, props, side, 3.15, -2.0);
+            spawn_indicator(seg, industrial, props, side * 8.58, 2.1, -2.55, true);
+        }
+        IndustrialVariant::FreightContainerStack => {
+            spawn_freight_ground_detail(seg, industrial, props, side, -7.0);
+            spawn_small_sign(seg, industrial, signage, side, 2.45, -7.0, |assets| {
+                assets.mat_industrial_loading_detail.clone()
+            });
+        }
+        IndustrialVariant::FreightCraneBay => {
+            spawn_freight_ground_detail(seg, industrial, props, side, 6.0);
+            spawn_overhead_bridge(seg, industrial, props, 0.0, 6.45, 0.0);
+            spawn_small_sign(seg, industrial, signage, side, 3.0, 6.0, |assets| {
+                assets.mat_industrial_loading_detail.clone()
+            });
+        }
+        IndustrialVariant::FreightLoadingPlatform => {
+            spawn_freight_ground_detail(seg, industrial, props, side, 7.0);
+            spawn_wall_control_box(seg, industrial, props, -side, 1.25, -6.0);
+            spawn_overhead_bridge(seg, industrial, props, 0.0, 6.35, 8.0);
+            spawn_small_sign(seg, industrial, signage, -side, 2.35, -6.0, |assets| {
+                assets.mat_industrial_loading_detail.clone()
+            });
+        }
+        IndustrialVariant::ProcessingPressureRow => {
+            spawn_processing_control_detail(seg, industrial, props, signage, side, -8.0);
+        }
+        IndustrialVariant::ProcessingSteamManifold => {
+            spawn_processing_control_detail(seg, industrial, props, signage, side, 8.0);
+            spawn_overhead_pipe_bridge(seg, industrial, props, side, 6.55, -4.0);
+        }
+        IndustrialVariant::ProcessingCatwalk => {
+            spawn_processing_control_detail(seg, industrial, props, signage, -side, -6.0);
+            spawn_overhead_pipe_bridge(seg, industrial, props, -side, 6.35, 5.0);
+        }
+        IndustrialVariant::HeavyWorksConveyor => {
+            spawn_heavy_works_detail(seg, industrial, props, signage, side, -8.0);
+            spawn_overhead_bridge(seg, industrial, props, 0.0, 6.7, -5.0);
+        }
+        IndustrialVariant::HeavyWorksVeyronGate => {
+            spawn_heavy_works_detail(seg, industrial, props, signage, side, 5.0);
+            spawn_overhead_bridge(seg, industrial, props, 0.0, 6.85, 5.0);
+        }
+        IndustrialVariant::HeavyWorksCoolingArray => {
+            spawn_heavy_works_detail(seg, industrial, props, signage, -side, -5.0);
+            spawn_overhead_pipe_bridge(seg, industrial, props, side, 6.4, 0.0);
+        }
+        IndustrialVariant::TransitionLeakingMain => {
+            spawn_transition_failure_detail(seg, industrial, props, signage, side, -7.0);
+        }
+        IndustrialVariant::TransitionDamagedWorks => {
+            spawn_transition_failure_detail(seg, industrial, props, signage, -side, 6.0);
+            spawn_overhead_bridge(seg, industrial, props, 0.0, 6.35, 0.0);
+        }
+        IndustrialVariant::TransitionFloodApproach => {
+            spawn_transition_failure_detail(seg, industrial, props, signage, side, 5.0);
+            spawn_wall_cable(seg, props, -side, 2.5, -7.0);
+        }
+    }
+}
+
+fn spawn_wall_control_box(
+    seg: &mut ChildBuilder,
+    industrial: &IndustrialSectorAssets,
+    props: Option<&crate::environment_props::PropAssets>,
+    side: f32,
+    y: f32,
+    z: f32,
+) {
+    let mesh = props
+        .map(|assets| assets.mesh_breaker_cabinet.clone())
+        .unwrap_or_else(|| industrial.mesh_transformer.clone());
+    seg.spawn(PbrBundle {
+        mesh,
+        material: industrial.mat_dark_steel.clone(),
+        transform: Transform::from_xyz(side * 8.62, y, z),
+        ..default()
+    });
+    seg.spawn(PbrBundle {
+        mesh: industrial.mesh_reinforcement_beam.clone(),
+        material: industrial.mat_rusted_steel.clone(),
+        transform: Transform::from_xyz(side * 8.54, y + 0.05, z)
+            .with_scale(Vec3::new(0.35, 0.65, 0.12)),
+        ..default()
+    });
+}
+
+fn spawn_wall_camera(
+    seg: &mut ChildBuilder,
+    industrial: &IndustrialSectorAssets,
+    props: Option<&crate::environment_props::PropAssets>,
+    side: f32,
+    y: f32,
+    z: f32,
+) {
+    let Some(props) = props else {
+        return;
+    };
+    seg.spawn(PbrBundle {
+        mesh: props.mesh_camera_mount.clone(),
+        material: industrial.mat_dark_steel.clone(),
+        transform: Transform::from_xyz(side * 8.55, y, z),
+        ..default()
+    });
+    seg.spawn(PbrBundle {
+        mesh: props.mesh_camera_housing.clone(),
+        material: industrial.mat_steel.clone(),
+        transform: Transform::from_xyz(side * 8.72, y - 0.18, z),
+        ..default()
+    });
+    seg.spawn(PbrBundle {
+        mesh: props.mesh_camera_lens.clone(),
+        material: props.mat_security_red_led.clone(),
+        transform: Transform::from_xyz(side * 8.94, y - 0.18, z),
+        ..default()
+    });
+}
+
+fn spawn_wall_cable(
+    seg: &mut ChildBuilder,
+    props: Option<&crate::environment_props::PropAssets>,
+    side: f32,
+    y: f32,
+    z: f32,
+) {
+    let Some(props) = props else {
+        return;
+    };
+    seg.spawn(PbrBundle {
+        mesh: props.mesh_pipe_small.clone(),
+        material: props.mat_pipe_dark.clone(),
+        transform: Transform::from_xyz(side * 8.58, y, z).with_scale(Vec3::new(1.0, 0.12, 1.0)),
+        ..default()
+    });
+}
+
+fn spawn_small_sign<F>(
+    seg: &mut ChildBuilder,
+    industrial: &IndustrialSectorAssets,
+    signage: Option<&crate::environment_signage::SignageAssets>,
+    side: f32,
+    y: f32,
+    z: f32,
+    material: F,
+) where
+    F: FnOnce(&crate::environment_signage::SignageAssets) -> Handle<StandardMaterial>,
+{
+    let Some(signage) = signage else {
+        return;
+    };
+    seg.spawn(PbrBundle {
+        mesh: industrial.mesh_sign.clone(),
+        material: material(signage),
+        transform: Transform::from_xyz(side * 8.76, y, z).with_scale(Vec3::new(0.62, 0.42, 0.80)),
+        ..default()
+    });
+}
+
+fn spawn_indicator(
+    seg: &mut ChildBuilder,
+    industrial: &IndustrialSectorAssets,
+    props: Option<&crate::environment_props::PropAssets>,
+    x: f32,
+    y: f32,
+    z: f32,
+    red: bool,
+) {
+    let material = if red {
+        props
+            .map(|assets| assets.mat_security_red_led.clone())
+            .unwrap_or_else(|| industrial.mat_amber.clone())
+    } else {
+        props
+            .map(|assets| assets.mat_graffiti_cyan.clone())
+            .unwrap_or_else(|| industrial.mat_amber.clone())
+    };
+    seg.spawn(PbrBundle {
+        mesh: industrial.mesh_warning_light.clone(),
+        material,
+        transform: Transform::from_xyz(x, y, z).with_scale(Vec3::splat(0.7)),
+        ..default()
+    });
+}
+
+fn spawn_freight_ground_detail(
+    seg: &mut ChildBuilder,
+    industrial: &IndustrialSectorAssets,
+    props: Option<&crate::environment_props::PropAssets>,
+    side: f32,
+    z: f32,
+) {
+    if let Some(props) = props {
+        seg.spawn(PbrBundle {
+            mesh: props.mesh_cable_spool.clone(),
+            material: props.mat_pipe_dark.clone(),
+            transform: Transform::from_xyz(-side * 6.8, 0.72, z),
+            ..default()
+        });
+        seg.spawn(PbrBundle {
+            mesh: props.mesh_toolbox.clone(),
+            material: industrial.mat_hazard.clone(),
+            transform: Transform::from_xyz(-side * 7.45, 0.42, z + 1.25),
+            ..default()
+        });
+    }
+    spawn_indicator(seg, industrial, props, -side * 6.1, 1.5, z - 1.2, false);
+}
+
+fn spawn_processing_control_detail(
+    seg: &mut ChildBuilder,
+    industrial: &IndustrialSectorAssets,
+    props: Option<&crate::environment_props::PropAssets>,
+    signage: Option<&crate::environment_signage::SignageAssets>,
+    side: f32,
+    z: f32,
+) {
+    spawn_wall_control_box(seg, industrial, props, side, 1.35, z);
+    spawn_indicator(seg, industrial, props, side * 8.58, 2.0, z - 0.65, false);
+    spawn_small_sign(seg, industrial, signage, side, 2.6, z, |assets| {
+        assets.mat_industrial_coolant_detail.clone()
+    });
+    for (pipe_z, pipe_y) in [(z - 2.0, 2.45), (z + 2.0, 3.15)] {
+        seg.spawn(PbrBundle {
+            mesh: industrial.mesh_pipe_junction.clone(),
+            material: industrial.mat_pipe.clone(),
+            transform: Transform::from_xyz(side * 5.2, pipe_y, pipe_z),
+            ..default()
+        });
+        if let Some(props) = props {
+            seg.spawn(PbrBundle {
+                mesh: props.mesh_pipe_flange.clone(),
+                material: props.mat_pipe_flange.clone(),
+                transform: Transform::from_xyz(side * 5.2, pipe_y, pipe_z)
+                    .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
+                ..default()
+            });
+        }
+    }
+}
+
+fn spawn_heavy_works_detail(
+    seg: &mut ChildBuilder,
+    industrial: &IndustrialSectorAssets,
+    props: Option<&crate::environment_props::PropAssets>,
+    signage: Option<&crate::environment_signage::SignageAssets>,
+    side: f32,
+    z: f32,
+) {
+    spawn_wall_control_box(seg, industrial, props, side, 1.45, z);
+    spawn_wall_camera(seg, industrial, props, side, 4.8, z + 4.0);
+    spawn_indicator(seg, industrial, props, side * 8.58, 2.1, z - 0.7, true);
+    spawn_small_sign(seg, industrial, signage, side, 3.0, z, |assets| {
+        assets.mat_industrial_heavy_detail.clone()
+    });
+    if let Some(props) = props {
+        seg.spawn(PbrBundle {
+            mesh: props.mesh_transformer_body.clone(),
+            material: props.mat_transformer_metal.clone(),
+            transform: Transform::from_xyz(-side * 7.0, 1.25, z),
+            ..default()
+        });
+        seg.spawn(PbrBundle {
+            mesh: props.mesh_breaker_cabinet.clone(),
+            material: props.mat_security_black.clone(),
+            transform: Transform::from_xyz(-side * 7.8, 1.0, z + 2.2),
+            ..default()
+        });
+    }
+}
+
+fn spawn_overhead_bridge(
+    seg: &mut ChildBuilder,
+    industrial: &IndustrialSectorAssets,
+    props: Option<&crate::environment_props::PropAssets>,
+    x: f32,
+    y: f32,
+    z: f32,
+) {
+    seg.spawn(PbrBundle {
+        mesh: industrial.mesh_reinforcement_beam.clone(),
+        material: industrial.mat_dark_steel.clone(),
+        transform: Transform::from_xyz(x, y, z)
+            .with_rotation(Quat::from_rotation_y(std::f32::consts::FRAC_PI_2))
+            .with_scale(Vec3::new(1.0, 1.0, 1.25)),
+        ..default()
+    });
+    for support_x in [-4.0, 4.0] {
+        seg.spawn(PbrBundle {
+            mesh: industrial.mesh_security_gate.clone(),
+            material: industrial.mat_steel.clone(),
+            transform: Transform::from_xyz(support_x, y * 0.58, z),
+            ..default()
+        });
+    }
+    if let Some(props) = props {
+        seg.spawn(PbrBundle {
+            mesh: props.mesh_pipe_small.clone(),
+            material: props.mat_pipe_dark.clone(),
+            transform: Transform::from_xyz(0.0, y - 0.42, z)
+                .with_rotation(Quat::from_rotation_z(std::f32::consts::FRAC_PI_2))
+                .with_scale(Vec3::new(1.0, 0.08, 1.0)),
+            ..default()
+        });
+    }
+    spawn_indicator(seg, industrial, props, x, y - 0.38, z - 0.3, true);
+}
+
+fn spawn_overhead_pipe_bridge(
+    seg: &mut ChildBuilder,
+    industrial: &IndustrialSectorAssets,
+    props: Option<&crate::environment_props::PropAssets>,
+    side: f32,
+    y: f32,
+    z: f32,
+) {
+    seg.spawn(PbrBundle {
+        mesh: industrial.mesh_duct.clone(),
+        material: industrial.mat_pipe.clone(),
+        transform: Transform::from_xyz(0.0, y, z)
+            .with_rotation(Quat::from_rotation_z(std::f32::consts::FRAC_PI_2))
+            .with_scale(Vec3::new(1.0, 1.25, 1.0)),
+        ..default()
+    });
+    for x in [side * 4.8, side * 7.6] {
+        seg.spawn(PbrBundle {
+            mesh: industrial.mesh_pipe_junction.clone(),
+            material: industrial.mat_steel.clone(),
+            transform: Transform::from_xyz(x, y, z),
+            ..default()
+        });
+    }
+    spawn_indicator(seg, industrial, props, side * 5.0, y - 0.35, z, false);
+}
+
+fn spawn_transition_failure_detail(
+    seg: &mut ChildBuilder,
+    industrial: &IndustrialSectorAssets,
+    props: Option<&crate::environment_props::PropAssets>,
+    signage: Option<&crate::environment_signage::SignageAssets>,
+    side: f32,
+    z: f32,
+) {
+    spawn_wall_control_box(seg, industrial, props, side, 1.25, z);
+    spawn_indicator(seg, industrial, props, side * 8.58, 2.0, z, true);
+    spawn_small_sign(seg, industrial, signage, side, 2.65, z, |assets| {
+        assets.mat_industrial_failure_detail.clone()
+    });
+    if let Some(props) = props {
+        for (x, y, debris_z) in [(-side * 6.4, 0.32, z - 1.8), (-side * 7.1, 0.25, z + 1.5)] {
+            seg.spawn(PbrBundle {
+                mesh: props.mesh_rubble_chunk_med.clone(),
+                material: props.mat_rubble_concrete.clone(),
+                transform: Transform::from_xyz(x, y, debris_z)
+                    .with_rotation(Quat::from_rotation_y(0.3 * side)),
+                ..default()
+            });
+        }
+        if z < -6.0 {
+            seg.spawn(PbrBundle {
+                mesh: props.mesh_electric_arc.clone(),
+                material: props.mat_arc_spark.clone(),
+                transform: Transform::from_xyz(side * 6.4, 1.65, z + 1.2)
+                    .with_rotation(Quat::from_rotation_x(0.35)),
+                ..default()
+            });
+        }
     }
 }
 

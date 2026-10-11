@@ -15,6 +15,11 @@ pub struct SignageAssets {
     pub mat_industrial_freight: Handle<StandardMaterial>,
     pub mat_industrial_processing: Handle<StandardMaterial>,
     pub mat_industrial_safety: Handle<StandardMaterial>,
+    pub mat_industrial_entry_detail: Handle<StandardMaterial>,
+    pub mat_industrial_loading_detail: Handle<StandardMaterial>,
+    pub mat_industrial_coolant_detail: Handle<StandardMaterial>,
+    pub mat_industrial_heavy_detail: Handle<StandardMaterial>,
+    pub mat_industrial_failure_detail: Handle<StandardMaterial>,
 }
 
 pub fn init_signage_assets(
@@ -48,6 +53,28 @@ pub fn init_signage_assets(
         "HIGH VOLTAGE // EMERGENCY EXIT",
         [248, 194, 38, 255],
     );
+    let img_industrial_entry_detail = create_industrial_sign_image(
+        "VEYRON DYNAMICS",
+        "SECTOR 03 // ACCESS RESTRICTED",
+        [25, 190, 205, 255],
+    );
+    let img_industrial_loading_detail =
+        create_industrial_sign_image("LOADING BAY 04", "CRANE LIMIT 80T", [242, 178, 35, 255]);
+    let img_industrial_coolant_detail = create_industrial_sign_image(
+        "COOLANT FLOW",
+        "HIGH PRESSURE // ACTIVE",
+        [80, 190, 215, 255],
+    );
+    let img_industrial_heavy_detail = create_industrial_sign_image(
+        "VEYRON HEAVY WORKS",
+        "AUTHORIZED PERSONNEL ONLY",
+        [25, 190, 205, 255],
+    );
+    let img_industrial_failure_detail = create_industrial_sign_image(
+        "STRUCTURAL FAILURE",
+        "EVACUATION ROUTE // POWER CRITICAL",
+        [248, 194, 38, 255],
+    );
 
     let h_entrance = images.add(img_entrance);
     let h_station = images.add(img_station);
@@ -59,6 +86,11 @@ pub fn init_signage_assets(
     let h_industrial_freight = images.add(img_industrial_freight);
     let h_industrial_processing = images.add(img_industrial_processing);
     let h_industrial_safety = images.add(img_industrial_safety);
+    let h_industrial_entry_detail = images.add(img_industrial_entry_detail);
+    let h_industrial_loading_detail = images.add(img_industrial_loading_detail);
+    let h_industrial_coolant_detail = images.add(img_industrial_coolant_detail);
+    let h_industrial_heavy_detail = images.add(img_industrial_heavy_detail);
+    let h_industrial_failure_detail = images.add(img_industrial_failure_detail);
 
     let signage = SignageAssets {
         mat_entrance_sign: materials.add(StandardMaterial {
@@ -137,6 +169,46 @@ pub fn init_signage_assets(
             base_color_texture: Some(h_industrial_safety.clone()),
             emissive: LinearRgba::new(0.45, 0.25, 0.03, 1.0),
             emissive_texture: Some(h_industrial_safety),
+            perceptual_roughness: 0.50,
+            metallic: 0.25,
+            ..default()
+        }),
+        mat_industrial_entry_detail: materials.add(StandardMaterial {
+            base_color_texture: Some(h_industrial_entry_detail.clone()),
+            emissive: LinearRgba::new(0.04, 0.32, 0.38, 1.0),
+            emissive_texture: Some(h_industrial_entry_detail),
+            perceptual_roughness: 0.42,
+            metallic: 0.35,
+            ..default()
+        }),
+        mat_industrial_loading_detail: materials.add(StandardMaterial {
+            base_color_texture: Some(h_industrial_loading_detail.clone()),
+            emissive: LinearRgba::new(0.40, 0.20, 0.02, 1.0),
+            emissive_texture: Some(h_industrial_loading_detail),
+            perceptual_roughness: 0.48,
+            metallic: 0.30,
+            ..default()
+        }),
+        mat_industrial_coolant_detail: materials.add(StandardMaterial {
+            base_color_texture: Some(h_industrial_coolant_detail.clone()),
+            emissive: LinearRgba::new(0.04, 0.30, 0.36, 1.0),
+            emissive_texture: Some(h_industrial_coolant_detail),
+            perceptual_roughness: 0.46,
+            metallic: 0.30,
+            ..default()
+        }),
+        mat_industrial_heavy_detail: materials.add(StandardMaterial {
+            base_color_texture: Some(h_industrial_heavy_detail.clone()),
+            emissive: LinearRgba::new(0.04, 0.32, 0.38, 1.0),
+            emissive_texture: Some(h_industrial_heavy_detail),
+            perceptual_roughness: 0.42,
+            metallic: 0.35,
+            ..default()
+        }),
+        mat_industrial_failure_detail: materials.add(StandardMaterial {
+            base_color_texture: Some(h_industrial_failure_detail.clone()),
+            emissive: LinearRgba::new(0.45, 0.25, 0.03, 1.0),
+            emissive_texture: Some(h_industrial_failure_detail),
             perceptual_roughness: 0.50,
             metallic: 0.25,
             ..default()

@@ -374,6 +374,7 @@ pub fn spawn_modular_environment_slice(
                     commands,
                     env,
                     industrial_ref,
+                    props,
                     signage,
                     z_center,
                     length,
