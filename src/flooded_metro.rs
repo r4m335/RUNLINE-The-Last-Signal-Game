@@ -55,10 +55,13 @@ pub struct FloodedMetroAssets {
     // --- Submerged Track & Drainage Canals ---
     pub mesh_submerged_ballast_bed: Handle<Mesh>,
     pub mesh_wet_ballast_strip: Handle<Mesh>,
+    pub mesh_wet_ballast_berm: Handle<Mesh>,
     pub mesh_corroded_rail_base: Handle<Mesh>,
     pub mesh_corroded_rail_crown: Handle<Mesh>,
     pub mesh_submerged_heavy_sleeper: Handle<Mesh>,
+    pub mesh_sleeper_water_fillet: Handle<Mesh>,
     pub mesh_sleeper_tie_plate: Handle<Mesh>,
+    pub mesh_canal_lip: Handle<Mesh>,
     pub mesh_canal_trough: Handle<Mesh>,
     pub mesh_canal_water: Handle<Mesh>,
     pub mesh_canal_grate: Handle<Mesh>,
@@ -221,15 +224,18 @@ pub fn init_flooded_metro_assets(
         // --- Dedicated Submerged Track & Drainage Canals ---
         mesh_submerged_ballast_bed: meshes.add(Cuboid::new(9.2, 0.44, 40.0)),
         mesh_wet_ballast_strip: meshes.add(Cuboid::new(1.1, 0.16, 40.0)),
-        mesh_corroded_rail_base: meshes.add(Cuboid::new(0.16, 0.07, 40.0)),
-        mesh_corroded_rail_crown: meshes.add(Cuboid::new(0.11, 0.08, 40.0)),
-        mesh_submerged_heavy_sleeper: meshes.add(Cuboid::new(7.6, 0.20, 0.50)),
-        mesh_sleeper_tie_plate: meshes.add(Cuboid::new(0.32, 0.04, 0.40)),
-        mesh_canal_trough: meshes.add(Cuboid::new(0.85, 0.32, 40.0)),
-        mesh_canal_water: meshes.add(Cuboid::new(0.68, 0.05, 40.0)),
-        mesh_canal_grate: meshes.add(Cuboid::new(0.82, 0.06, 1.2)),
-        mesh_faded_lane_marker: meshes.add(Cuboid::new(0.22, 0.03, 1.8)),
-        mesh_rail_puddle: meshes.add(Cuboid::new(1.2, 0.03, 6.0)),
+        mesh_wet_ballast_berm: meshes.add(Cuboid::new(1.3, 0.22, 40.0)),
+        mesh_corroded_rail_base: meshes.add(Cuboid::new(0.22, 0.08, 40.0)),
+        mesh_corroded_rail_crown: meshes.add(Cuboid::new(0.14, 0.12, 40.0)),
+        mesh_submerged_heavy_sleeper: meshes.add(Cuboid::new(7.8, 0.24, 0.56)),
+        mesh_sleeper_water_fillet: meshes.add(Cuboid::new(7.6, 0.025, 0.72)),
+        mesh_sleeper_tie_plate: meshes.add(Cuboid::new(0.44, 0.06, 0.46)),
+        mesh_canal_lip: meshes.add(Cuboid::new(0.35, 0.28, 40.0)),
+        mesh_canal_trough: meshes.add(Cuboid::new(1.10, 0.40, 40.0)),
+        mesh_canal_water: meshes.add(Cuboid::new(0.95, 0.05, 40.0)),
+        mesh_canal_grate: meshes.add(Cuboid::new(1.05, 0.08, 1.4)),
+        mesh_faded_lane_marker: meshes.add(Cuboid::new(0.28, 0.04, 2.2)),
+        mesh_rail_puddle: meshes.add(Cuboid::new(2.4, 0.04, 12.0)),
 
         // --- Structural Geometry ---
         mesh_wall_main: meshes.add(Cuboid::new(0.50, 8.6, 40.0)),
@@ -343,7 +349,7 @@ pub fn init_flooded_metro_assets(
         mesh_bg_blast_door_panel: meshes.add(Cuboid::new(11.0, 16.0, 1.2)),
 
         // --- WaterDrip Geometry ---
-        mesh_water_droplet: meshes.add(Cuboid::new(0.04, 0.32, 0.04)),
+        mesh_water_droplet: meshes.add(Cuboid::new(0.045, 0.36, 0.045)),
 
         // --- Materials ---
         mat_concrete: materials.add(StandardMaterial {
@@ -352,149 +358,150 @@ pub fn init_flooded_metro_assets(
             ..default()
         }),
         mat_wet_concrete: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.06, 0.085, 0.10),
-            metallic: 0.18,
-            perceptual_roughness: 0.36,
-            ..default()
-        }),
-        mat_steel: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.15, 0.20, 0.22),
-            metallic: 0.88,
-            perceptual_roughness: 0.32,
-            ..default()
-        }),
-        mat_rusted_steel: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.24, 0.15, 0.11),
-            metallic: 0.55,
-            perceptual_roughness: 0.78,
-            ..default()
-        }),
-        mat_corroded_copper: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.07, 0.18, 0.16),
-            metallic: 0.32,
-            perceptual_roughness: 0.72,
-            ..default()
-        }),
-        mat_water: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.012, 0.14, 0.18),
-            emissive: LinearRgba::new(0.003, 0.07, 0.09, 1.0),
-            metallic: 0.22,
-            perceptual_roughness: 0.14,
-            ..default()
-        }),
-        mat_water_puddle: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.018, 0.11, 0.14),
-            metallic: 0.30,
-            perceptual_roughness: 0.06,
-            ..default()
-        }),
-        mat_water_stain: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.022, 0.065, 0.075),
-            metallic: 0.06,
-            perceptual_roughness: 0.94,
-            ..default()
-        }),
-        mat_cable: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.032, 0.040, 0.045),
-            metallic: 0.35,
-            perceptual_roughness: 0.74,
-            ..default()
-        }),
-        mat_teal_glow: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.02, 0.45, 0.52),
-            emissive: LinearRgba::new(0.04, 0.85, 1.05, 1.0),
+            base_color: Color::srgb(0.09, 0.12, 0.14),
             metallic: 0.25,
             perceptual_roughness: 0.28,
             ..default()
         }),
+        mat_steel: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.18, 0.22, 0.25),
+            metallic: 0.88,
+            perceptual_roughness: 0.30,
+            ..default()
+        }),
+        mat_rusted_steel: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.32, 0.18, 0.12),
+            metallic: 0.55,
+            perceptual_roughness: 0.68,
+            ..default()
+        }),
+        mat_corroded_copper: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.08, 0.22, 0.18),
+            metallic: 0.35,
+            perceptual_roughness: 0.65,
+            ..default()
+        }),
+        mat_water: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.015, 0.16, 0.20),
+            emissive: LinearRgba::new(0.004, 0.04, 0.05, 1.0),
+            metallic: 0.35,
+            perceptual_roughness: 0.06,
+            ..default()
+        }),
+        mat_water_puddle: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.018, 0.14, 0.18),
+            metallic: 0.45,
+            perceptual_roughness: 0.03,
+            ..default()
+        }),
+        mat_water_stain: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.030, 0.080, 0.095),
+            metallic: 0.10,
+            perceptual_roughness: 0.85,
+            ..default()
+        }),
+        mat_cable: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.045, 0.052, 0.060),
+            metallic: 0.40,
+            perceptual_roughness: 0.65,
+            ..default()
+        }),
+        mat_teal_glow: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.02, 0.45, 0.52),
+            emissive: LinearRgba::new(0.06, 1.10, 1.35, 1.0),
+            metallic: 0.25,
+            perceptual_roughness: 0.25,
+            ..default()
+        }),
         mat_warning_amber: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.85, 0.36, 0.08),
-            emissive: LinearRgba::new(0.95, 0.22, 0.02, 1.0),
-            perceptual_roughness: 0.40,
+            base_color: Color::srgb(0.92, 0.45, 0.06),
+            emissive: LinearRgba::new(1.80, 0.55, 0.02, 1.0),
+            perceptual_roughness: 0.35,
             ..default()
         }),
         mat_emergency_red: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.85, 0.10, 0.05),
-            emissive: LinearRgba::new(1.10, 0.05, 0.02, 1.0),
-            perceptual_roughness: 0.45,
+            base_color: Color::srgb(0.90, 0.12, 0.06),
+            emissive: LinearRgba::new(1.60, 0.08, 0.02, 1.0),
+            perceptual_roughness: 0.40,
             ..default()
         }),
         mat_hazard_stripe: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.70, 0.56, 0.08),
-            perceptual_roughness: 0.52,
+            base_color: Color::srgb(0.85, 0.65, 0.12),
+            metallic: 0.20,
+            perceptual_roughness: 0.40,
             ..default()
         }),
         mat_train_body: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.085, 0.115, 0.135),
-            metallic: 0.70,
-            perceptual_roughness: 0.44,
+            base_color: Color::srgb(0.10, 0.13, 0.15),
+            metallic: 0.75,
+            perceptual_roughness: 0.38,
             ..default()
         }),
         mat_train_window: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.02, 0.08, 0.10),
-            emissive: LinearRgba::new(0.01, 0.18, 0.22, 1.0),
-            metallic: 0.30,
-            perceptual_roughness: 0.20,
+            base_color: Color::srgb(0.03, 0.12, 0.15),
+            emissive: LinearRgba::new(0.02, 0.28, 0.35, 1.0),
+            metallic: 0.45,
+            perceptual_roughness: 0.15,
             ..default()
         }),
         mat_submerged_wood: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.12, 0.09, 0.065),
-            perceptual_roughness: 0.88,
+            base_color: Color::srgb(0.14, 0.11, 0.08),
+            perceptual_roughness: 0.82,
             ..default()
         }),
 
         // --- Dedicated Submerged Track Materials ---
         mat_wet_ballast: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.045, 0.055, 0.062),
-            metallic: 0.18,
-            perceptual_roughness: 0.34,
+            base_color: Color::srgb(0.065, 0.080, 0.090),
+            metallic: 0.22,
+            perceptual_roughness: 0.32,
             ..default()
         }),
         mat_corroded_rail: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.18, 0.115, 0.09),
-            metallic: 0.68,
-            perceptual_roughness: 0.62,
+            base_color: Color::srgb(0.38, 0.24, 0.18),
+            metallic: 0.88,
+            perceptual_roughness: 0.20,
             ..default()
         }),
         mat_submerged_sleeper: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.065, 0.075, 0.080),
-            metallic: 0.10,
-            perceptual_roughness: 0.76,
+            base_color: Color::srgb(0.14, 0.16, 0.17),
+            metallic: 0.15,
+            perceptual_roughness: 0.40,
             ..default()
         }),
         mat_canal_wall: materials.add(StandardMaterial {
             base_color: Color::srgb(0.07, 0.085, 0.095),
-            metallic: 0.25,
-            perceptual_roughness: 0.55,
+            metallic: 0.30,
+            perceptual_roughness: 0.50,
             ..default()
         }),
         mat_faded_lane_marker: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.52, 0.40, 0.12),
-            metallic: 0.10,
-            perceptual_roughness: 0.82,
+            base_color: Color::srgb(0.82, 0.64, 0.14),
+            metallic: 0.20,
+            perceptual_roughness: 0.48,
             ..default()
         }),
 
         // --- Background Silhouette Materials ---
         mat_bg_dark_structure: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.045, 0.06, 0.07),
-            metallic: 0.30,
-            perceptual_roughness: 0.82,
+            base_color: Color::srgb(0.09, 0.12, 0.14),
+            metallic: 0.35,
+            perceptual_roughness: 0.65,
             ..default()
         }),
         mat_bg_metal_structure: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.08, 0.09, 0.10),
-            metallic: 0.50,
-            perceptual_roughness: 0.70,
+            base_color: Color::srgb(0.15, 0.18, 0.22),
+            metallic: 0.65,
+            perceptual_roughness: 0.45,
             ..default()
         }),
 
         // --- WaterDrip Material ---
         mat_water_droplet: materials.add(StandardMaterial {
-            base_color: Color::srgba(0.20, 0.60, 0.70, 0.85),
-            emissive: LinearRgba::new(0.015, 0.08, 0.10, 1.0),
-            metallic: 0.10,
-            perceptual_roughness: 0.12,
+            base_color: Color::srgba(0.25, 0.68, 0.78, 0.90),
+            emissive: LinearRgba::new(0.03, 0.15, 0.18, 1.0),
+            metallic: 0.15,
+            perceptual_roughness: 0.08,
             ..default()
         }),
     };
@@ -521,7 +528,7 @@ pub fn spawn_flooded_metro_segment(
             Despawnable { z_center },
         ))
         .with_children(|seg| {
-            // PILLAR B: Dedicated Submerged Track Identity
+            // PILLAR B: Dedicated Submerged Track Identity (High Readability)
             spawn_flooded_track(seg, flooded, length);
 
             // PILLAR D: Lightweight WaterDrip System
@@ -550,7 +557,7 @@ pub fn spawn_flooded_metro_segment(
 }
 
 // -------------------------------------------------------------
-// PILLAR B — DEDICATED SUBMERGED TRACK IDENTITY
+// PILLAR B — DEDICATED SUBMERGED TRACK IDENTITY (READABILITY PASS)
 // -------------------------------------------------------------
 
 fn spawn_flooded_track(seg: &mut ChildBuilder, a: &FloodedMetroAssets, length: f32) {
@@ -562,24 +569,46 @@ fn spawn_flooded_track(seg: &mut ChildBuilder, a: &FloodedMetroAssets, length: f
         ..default()
     });
 
-    // 2. Continuous Trackside Drainage Canals along both shoulders (x = -4.3, +4.3)
+    // 2. Structured ballast berm shoulders flanking the track
     for side in [-1.0, 1.0] {
-        let canal_x = side * 4.3;
-        // Canal concrete/steel trough recessed into the floor
+        seg.spawn(PbrBundle {
+            mesh: a.mesh_wet_ballast_berm.clone(),
+            material: a.mat_wet_ballast.clone(),
+            transform: Transform::from_xyz(side * 3.3, 0.02, 0.0),
+            ..default()
+        });
+    }
+
+    // 3. Continuous Trackside Drainage Canals (Lip -> Trough -> Water -> Grates)
+    for side in [-1.0, 1.0] {
+        let lip_x = side * 3.9;
+        let canal_x = side * 4.6;
+
+        // Raised concrete canal lip
+        seg.spawn(PbrBundle {
+            mesh: a.mesh_canal_lip.clone(),
+            material: a.mat_wet_concrete.clone(),
+            transform: Transform::from_xyz(lip_x, 0.08, 0.0),
+            ..default()
+        });
+
+        // Recessed canal trough
         seg.spawn(PbrBundle {
             mesh: a.mesh_canal_trough.clone(),
             material: a.mat_canal_wall.clone(),
             transform: Transform::from_xyz(canal_x, -0.06, 0.0),
             ..default()
         });
-        // Recessed water surface inside the canal
+
+        // Water surface inside the canal
         seg.spawn(PbrBundle {
             mesh: a.mesh_canal_water.clone(),
             material: a.mat_water.clone(),
             transform: Transform::from_xyz(canal_x, 0.04, 0.0),
             ..default()
         });
-        // Periodic drainage grates along the canal
+
+        // Periodic rusted drainage grates along the canal every 8m
         for z in [-14.0, -6.0, 2.0, 10.0, 18.0] {
             seg.spawn(PbrBundle {
                 mesh: a.mesh_canal_grate.clone(),
@@ -588,58 +617,64 @@ fn spawn_flooded_track(seg: &mut ChildBuilder, a: &FloodedMetroAssets, length: f
                 ..default()
             });
         }
-        // Wet ballast curb strip between track and canal
-        seg.spawn(PbrBundle {
-            mesh: a.mesh_wet_ballast_strip.clone(),
-            material: a.mat_wet_ballast.clone(),
-            transform: Transform::from_xyz(side * 3.4, 0.02, 0.0),
-            ..default()
-        });
     }
 
-    // 3. Heavy submerged sleepers with corroded tie plates
+    // 4. Heavy submerged sleepers with water pooling fillets and tie plates
     let sleeper_count = (length / 4.0) as i32;
     for i in -sleeper_count / 2..=sleeper_count / 2 {
         let z = i as f32 * 4.0;
+
+        // Shallow dark water pooling fillet beneath and around each sleeper
+        seg.spawn(PbrBundle {
+            mesh: a.mesh_sleeper_water_fillet.clone(),
+            material: a.mat_water.clone(),
+            transform: Transform::from_xyz(0.0, 0.015, z),
+            ..default()
+        });
+
+        // Heavy submerged sleeper standing out above the water
         seg.spawn(PbrBundle {
             mesh: a.mesh_submerged_heavy_sleeper.clone(),
             material: a.mat_submerged_sleeper.clone(),
-            transform: Transform::from_xyz(0.0, 0.02, z),
+            transform: Transform::from_xyz(0.0, 0.05, z),
             ..default()
         });
-        // Corroded tie plates at rail intersections for all 3 lanes
+
+        // Corroded iron tie plates clamping rails to sleeper
         for lane_idx in -1..=1 {
             let x = Lane::from_index(lane_idx).x_pos();
             for rail_x in [x - 0.48, x + 0.48] {
                 seg.spawn(PbrBundle {
                     mesh: a.mesh_sleeper_tie_plate.clone(),
                     material: a.mat_rusted_steel.clone(),
-                    transform: Transform::from_xyz(rail_x, 0.07, z),
+                    transform: Transform::from_xyz(rail_x, 0.09, z),
                     ..default()
                 });
             }
         }
     }
 
-    // 4. Corroded, dark, wet rails and damaged Flooded Metro lane markings
+    // 5. Corroded, wet, gleam-catching rails and high-contrast Flooded Metro lane markings
     for lane_idx in -1..=1 {
         let x = Lane::from_index(lane_idx).x_pos();
-        // Corroded Rails
+
+        // 3D Corroded Rails with wet metallic sheen
         for rail_x in [x - 0.48, x + 0.48] {
             seg.spawn(PbrBundle {
                 mesh: a.mesh_corroded_rail_base.clone(),
                 material: a.mat_corroded_rail.clone(),
-                transform: Transform::from_xyz(rail_x, 0.05, 0.0),
+                transform: Transform::from_xyz(rail_x, 0.07, 0.0),
                 ..default()
             });
             seg.spawn(PbrBundle {
                 mesh: a.mesh_corroded_rail_crown.clone(),
                 material: a.mat_corroded_rail.clone(),
-                transform: Transform::from_xyz(rail_x, 0.10, 0.0),
+                transform: Transform::from_xyz(rail_x, 0.14, 0.0),
                 ..default()
             });
         }
-        // Flooded Metro lane markings: damaged, water-washed hazard plates
+
+        // Flooded Metro lane markings: readable industrial yellow hazard markers at lane centers
         for i in -4..=4 {
             if (i + lane_idx).abs() % 5 != 0 {
                 seg.spawn(PbrBundle {
@@ -649,19 +684,19 @@ fn spawn_flooded_track(seg: &mut ChildBuilder, a: &FloodedMetroAssets, length: f
                     } else {
                         a.mat_hazard_stripe.clone()
                     },
-                    transform: Transform::from_xyz(x, 0.06, i as f32 * 4.5),
+                    transform: Transform::from_xyz(x, 0.08, i as f32 * 4.5),
                     ..default()
                 });
             }
         }
     }
 
-    // 5. Standing shallow water / puddles along track floor
-    for z in [-11.0, 7.0] {
+    // 6. Standing reflective water puddles along track corridor
+    for z in [-12.0, 6.0] {
         seg.spawn(PbrBundle {
             mesh: a.mesh_rail_puddle.clone(),
             material: a.mat_water_puddle.clone(),
-            transform: Transform::from_xyz(0.0, 0.025, z),
+            transform: Transform::from_xyz(0.0, 0.03, z),
             ..default()
         });
     }
@@ -1190,7 +1225,6 @@ fn spawn_floodgate_descent_segment(
     variant: u8,
     landmark: FloodedMetroLandmark,
 ) {
-    // Immediate foreground and midground tunnel walls
     spawn_tunnel_shell(seg, a, 9.0, 8.6, false);
     spawn_concrete_arch_ribs(seg, a, 8.6, &[-14.0, 14.0]);
     spawn_ceiling_infrastructure(seg, a, variant, false);
@@ -1305,7 +1339,6 @@ fn spawn_submerged_station_segment(
     spawn_background_vent_shaft(seg, a, platform_side * 34.0, 0.0, 5.0);
     spawn_distant_train_silhouette(seg, a, -platform_side * 28.0, 0.0, 12.0, 0.0);
 
-    // Elevated passenger station platform on one flank
     let plat_x = platform_side * 6.5;
     spawn_mesh(
         seg,
@@ -1415,7 +1448,6 @@ fn spawn_reservoir_crossing_segment(
     variant: u8,
     landmark: FloodedMetroLandmark,
 ) {
-    // Vast Cavern Shell: pushed out to 21 meters with 16m high walls
     spawn_tunnel_shell(seg, a, 21.0, 16.0, true);
     spawn_ceiling_infrastructure(seg, a, variant, true);
     spawn_water_elements(seg, a, 1.0, true);
@@ -1428,7 +1460,6 @@ fn spawn_reservoir_crossing_segment(
     spawn_background_pump_tower(seg, a, 36.0, -2.0, 12.0);
     spawn_background_maintenance_bridge(seg, a, 0.0, 17.0, 14.0);
 
-    // Massive concrete bridge piers plunging down into deep water
     for side in [-1.0, 1.0] {
         for z in [-14.0, 14.0] {
             spawn_mesh(
@@ -1552,10 +1583,8 @@ fn spawn_sunken_transit_segment(
     spawn_background_tunnel_arch(seg, a, 0.0, 7.5, 18.0, Vec3::new(1.05, 1.0, 1.0));
     spawn_background_vent_shaft(seg, a, -siding_side * 28.0, 0.0, -10.0);
 
-    // Stalled abandoned train carriage on flooded siding
     spawn_train_carriage(seg, a, siding_side, 0.0, false);
 
-    // Mangled track fragments and wheel bogies in floodwater
     spawn_mesh(
         seg,
         &a.mesh_mangled_rail,
@@ -1781,7 +1810,7 @@ fn spawn_landmark_deep_bulkhead_portal(seg: &mut ChildBuilder, a: &FloodedMetroA
 }
 
 // -------------------------------------------------------------
-// PILLAR D — LIGHTWEIGHT WATERDRIP SYSTEM
+// PILLAR D — LIGHTWEIGHT WATERDRIP SYSTEM (ROBUST BEVY 0.14)
 // -------------------------------------------------------------
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -1812,6 +1841,7 @@ pub struct WaterDripEmitter {
 pub struct WaterDripDroplet {
     pub speed: f32,
     pub floor_y: f32,
+    pub emitter: Entity,
 }
 
 pub fn spawn_water_drip_emitter(
@@ -1959,12 +1989,12 @@ pub fn update_water_drip_emitters(
     mut commands: Commands,
     time: Res<Time>,
     flooded: Option<Res<FloodedMetroAssets>>,
-    mut emitter_query: Query<(Entity, &mut WaterDripEmitter)>,
+    mut emitter_query: Query<(Entity, &GlobalTransform, &mut WaterDripEmitter)>,
 ) {
     let Some(flooded) = flooded else { return };
     let dt = time.delta_seconds();
 
-    for (emitter_entity, mut emitter) in emitter_query.iter_mut() {
+    for (emitter_entity, global_transform, mut emitter) in emitter_query.iter_mut() {
         emitter.timer += dt;
         if emitter.timer >= emitter.interval {
             emitter.timer = 0.0;
@@ -1978,21 +2008,25 @@ pub fn update_water_drip_emitters(
                 let drop_mat = flooded.mat_water_droplet.clone();
                 let droplet_speed = emitter.droplet_speed;
                 let floor_y = emitter.floor_y;
+                let origin = global_transform.translation();
+                let spawn_pos = origin + Vec3::new(offset_x, 0.0, offset_z);
 
-                commands.entity(emitter_entity).with_children(|children| {
-                    children.spawn((
-                        PbrBundle {
-                            mesh: drop_mesh,
-                            material: drop_mat,
-                            transform: Transform::from_xyz(offset_x, 0.0, offset_z),
-                            ..default()
-                        },
-                        WaterDripDroplet {
-                            speed: droplet_speed,
-                            floor_y,
-                        },
-                    ));
-                });
+                commands.spawn((
+                    PbrBundle {
+                        mesh: drop_mesh,
+                        material: drop_mat,
+                        transform: Transform::from_translation(spawn_pos),
+                        ..default()
+                    },
+                    WaterDripDroplet {
+                        speed: droplet_speed,
+                        floor_y,
+                        emitter: emitter_entity,
+                    },
+                    Despawnable {
+                        z_center: spawn_pos.z,
+                    },
+                ));
             }
         }
     }
@@ -2001,17 +2035,19 @@ pub fn update_water_drip_emitters(
 pub fn update_water_drips(
     mut commands: Commands,
     time: Res<Time>,
-    mut droplet_query: Query<(Entity, &Parent, &mut Transform, &WaterDripDroplet)>,
+    mut droplet_query: Query<(Entity, &mut Transform, &WaterDripDroplet)>,
     mut emitter_query: Query<&mut WaterDripEmitter>,
 ) {
     let dt = time.delta_seconds();
-    for (entity, parent, mut transform, droplet) in droplet_query.iter_mut() {
+    for (entity, mut transform, droplet) in droplet_query.iter_mut() {
         transform.translation.y -= droplet.speed * dt;
         if transform.translation.y <= droplet.floor_y {
-            if let Ok(mut emitter) = emitter_query.get_mut(parent.get()) {
+            if let Ok(mut emitter) = emitter_query.get_mut(droplet.emitter) {
                 emitter.active_count = emitter.active_count.saturating_sub(1);
             }
-            commands.entity(entity).despawn();
+            if let Some(mut entity_cmd) = commands.get_entity(entity) {
+                entity_cmd.despawn();
+            }
         }
     }
 }

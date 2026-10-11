@@ -2112,7 +2112,6 @@ fn spawn_flooded_barrier(
         ));
         return;
     }
-    let variant = ((world_z.abs() / 40.0) as usize) % 3;
     commands
         .spawn((
             PbrBundle {
@@ -2126,27 +2125,28 @@ fn spawn_flooded_barrier(
             active.2,
         ))
         .with_children(|barrier| {
+            // High-contrast hazard caution plate facing oncoming runner
             barrier.spawn(PbrBundle {
                 mesh: pool_assets.mesh_flooded_barrier_plate.clone(),
                 material: pool_assets.mat_flooded_hazard.clone(),
-                transform: Transform::from_xyz(0.0, 0.0, 0.03),
+                transform: Transform::from_xyz(0.0, 0.04, 0.06),
                 ..default()
             });
-            for x in [-0.92, 0.92] {
+            // Dual heavy rusted A-frame support stanchions
+            for x in [-0.95, 0.95] {
                 barrier.spawn(PbrBundle {
                     mesh: pool_assets.mesh_flooded_barrier_support.clone(),
                     material: pool_assets.mat_flooded_rust.clone(),
-                    transform: Transform::from_xyz(x, -0.05, 0.0),
+                    transform: Transform::from_xyz(x, -0.04, 0.0),
                     ..default()
                 });
-                if variant != 1 {
-                    barrier.spawn(PbrBundle {
-                        mesh: pool_assets.mesh_flooded_barrier_strobe.clone(),
-                        material: pool_assets.mat_flooded_amber.clone(),
-                        transform: Transform::from_xyz(x, 0.28, 0.0),
-                        ..default()
-                    });
-                }
+                // Amber warning reflector strobe caps on both stanchion heads
+                barrier.spawn(PbrBundle {
+                    mesh: pool_assets.mesh_flooded_barrier_strobe.clone(),
+                    material: pool_assets.mat_flooded_amber.clone(),
+                    transform: Transform::from_xyz(x, 0.36, 0.0),
+                    ..default()
+                });
             }
         });
 }
@@ -2167,7 +2167,7 @@ fn spawn_flooded_power_cable(
     );
     if let Some(entity) = pool.pop(PoolType::FloodedPowerCable) {
         commands.entity(entity).insert((
-            Transform::from_xyz(obs_def.lane.x_pos(), 1.7, world_z),
+            Transform::from_xyz(obs_def.lane.x_pos(), 1.70, world_z),
             Visibility::Inherited,
             active.0,
             active.1,
@@ -2175,13 +2175,12 @@ fn spawn_flooded_power_cable(
         ));
         return;
     }
-    let variant = ((world_z.abs() / 40.0) as usize) % 3;
     commands
         .spawn((
             PbrBundle {
                 mesh: pool_assets.mesh_flooded_cable_conduit.clone(),
                 material: pool_assets.mat_flooded_steel.clone(),
-                transform: Transform::from_xyz(obs_def.lane.x_pos(), 1.7, world_z),
+                transform: Transform::from_xyz(obs_def.lane.x_pos(), 1.70, world_z),
                 ..default()
             },
             active.0,
@@ -2189,28 +2188,28 @@ fn spawn_flooded_power_cable(
             active.2,
         ))
         .with_children(|cable| {
+            // Thick, heavily sagging cable bundle arc
             cable.spawn(PbrBundle {
                 mesh: pool_assets.mesh_flooded_cable_bundle.clone(),
                 material: pool_assets.mat_flooded_cable.clone(),
-                transform: Transform::from_xyz(0.0, -0.15, 0.0)
+                transform: Transform::from_xyz(0.0, -0.12, 0.0)
                     .with_rotation(Quat::from_rotation_z(std::f32::consts::FRAC_PI_2)),
                 ..default()
             });
-            if variant == 0 {
-                cable.spawn(PbrBundle {
-                    mesh: pool_assets.mesh_flooded_cable_tag.clone(),
-                    material: pool_assets.mat_flooded_hazard.clone(),
-                    transform: Transform::from_xyz(0.35, -0.32, 0.0),
-                    ..default()
-                });
-            } else if variant == 1 {
-                cable.spawn(PbrBundle {
-                    mesh: pool_assets.mesh_wire_spark.clone(),
-                    material: pool_assets.mat_wire_spark.clone(),
-                    transform: Transform::from_xyz(-0.25, -0.22, 0.0),
-                    ..default()
-                });
-            }
+            // Prominent high-voltage hazard warning tag hanging down
+            cable.spawn(PbrBundle {
+                mesh: pool_assets.mesh_flooded_cable_tag.clone(),
+                material: pool_assets.mat_flooded_hazard.clone(),
+                transform: Transform::from_xyz(0.25, -0.25, 0.0),
+                ..default()
+            });
+            // Amber junction warning strobe
+            cable.spawn(PbrBundle {
+                mesh: pool_assets.mesh_flooded_barrier_strobe.clone(),
+                material: pool_assets.mat_flooded_amber.clone(),
+                transform: Transform::from_xyz(-0.35, -0.15, 0.0),
+                ..default()
+            });
         });
 }
 
@@ -2238,7 +2237,6 @@ fn spawn_flooded_pump_column(
         ));
         return;
     }
-    let variant = ((world_z.abs() / 40.0) as usize) % 3;
     commands
         .spawn((
             PbrBundle {
@@ -2252,21 +2250,28 @@ fn spawn_flooded_pump_column(
             active.2,
         ))
         .with_children(|pillar| {
+            // Heavy base mounting collar anchored in water
             pillar.spawn(PbrBundle {
                 mesh: pool_assets.mesh_flooded_column_collar.clone(),
                 material: pool_assets.mat_flooded_rust.clone(),
                 transform: Transform::from_xyz(0.0, -1.6, 0.0),
                 ..default()
             });
-            if variant != 1 {
-                pillar.spawn(PbrBundle {
-                    mesh: pool_assets.mesh_flooded_column_valve.clone(),
-                    material: pool_assets.mat_flooded_amber.clone(),
-                    transform: Transform::from_xyz(0.0, 0.2, 0.52)
-                        .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
-                    ..default()
-                });
-            }
+            // High-pressure emergency shut-off valve wheel
+            pillar.spawn(PbrBundle {
+                mesh: pool_assets.mesh_flooded_column_valve.clone(),
+                material: pool_assets.mat_flooded_amber.clone(),
+                transform: Transform::from_xyz(0.0, 0.15, 0.62)
+                    .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
+                ..default()
+            });
+            // Hazard caution plate on the column face
+            pillar.spawn(PbrBundle {
+                mesh: pool_assets.mesh_flooded_cable_tag.clone(),
+                material: pool_assets.mat_flooded_hazard.clone(),
+                transform: Transform::from_xyz(0.0, -0.65, 0.62),
+                ..default()
+            });
         });
 }
 
@@ -2307,12 +2312,14 @@ fn spawn_flooded_submerged_train(
             active.2,
         ))
         .with_children(|train| {
+            // Corrugated rusted roof cowl
             train.spawn(PbrBundle {
                 mesh: pool_assets.mesh_flooded_train_roof.clone(),
                 material: pool_assets.mat_flooded_rust.clone(),
                 transform: Transform::from_xyz(0.0, 1.35, 0.0),
                 ..default()
             });
+            // Broken passenger windows with murky teal glass highlights
             for x in [-1.12, 1.12] {
                 train.spawn(PbrBundle {
                     mesh: pool_assets.mesh_flooded_train_window.clone(),
@@ -2321,10 +2328,18 @@ fn spawn_flooded_submerged_train(
                     ..default()
                 });
             }
+            // Front heavy crash bumper
             train.spawn(PbrBundle {
                 mesh: pool_assets.mesh_train_bumper.clone(),
-                material: pool_assets.mat_flooded_hazard.clone(),
+                material: pool_assets.mat_flooded_rust.clone(),
                 transform: Transform::from_xyz(0.0, -0.65, 6.05),
+                ..default()
+            });
+            // Front bold diagonal hazard warning plate
+            train.spawn(PbrBundle {
+                mesh: pool_assets.mesh_flooded_barrier_plate.clone(),
+                material: pool_assets.mat_flooded_hazard.clone(),
+                transform: Transform::from_xyz(0.0, -0.15, 6.08),
                 ..default()
             });
         });
@@ -2370,6 +2385,7 @@ fn spawn_flooded_moving_train(
             active.2,
         ))
         .with_children(|service| {
+            // Rusted cab roof
             service.spawn(PbrBundle {
                 mesh: pool_assets.mesh_flooded_train_roof.clone(),
                 material: pool_assets.mat_flooded_rust.clone(),
@@ -2377,7 +2393,8 @@ fn spawn_flooded_moving_train(
                     .with_scale(Vec3::new(0.95, 1.0, 0.72)),
                 ..default()
             });
-            for x in [-0.72, 0.72] {
+            // High-intensity amber transit headlamps piercing forward
+            for x in [-0.75, 0.75] {
                 service.spawn(PbrBundle {
                     mesh: pool_assets.mesh_flooded_service_light.clone(),
                     material: pool_assets.mat_flooded_amber.clone(),
@@ -2385,10 +2402,11 @@ fn spawn_flooded_moving_train(
                     ..default()
                 });
             }
+            // Bold full-width front hazard caution plate
             service.spawn(PbrBundle {
                 mesh: pool_assets.mesh_flooded_barrier_plate.clone(),
                 material: pool_assets.mat_flooded_hazard.clone(),
-                transform: Transform::from_xyz(0.0, -0.45, 4.28),
+                transform: Transform::from_xyz(0.0, -0.45, 4.32),
                 ..default()
             });
         });

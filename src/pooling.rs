@@ -814,49 +814,49 @@ fn init_pool_assets(
             perceptual_roughness: 0.12,
             ..default()
         }),
-        // Zone 4 Flooded Metro Dedicated Obstacles
-        mesh_flooded_barrier_frame: meshes.add(Cuboid::new(2.10, 0.45, 0.35)),
-        mesh_flooded_barrier_plate: meshes.add(Cuboid::new(1.90, 0.32, 0.08)),
-        mesh_flooded_barrier_strobe: meshes.add(Sphere::new(0.12)),
-        mesh_flooded_barrier_support: meshes.add(Cuboid::new(0.16, 0.74, 0.30)),
-        mesh_flooded_pipe_column: meshes.add(Cylinder::new(0.48, 4.40)),
-        mesh_flooded_column_collar: meshes.add(Cuboid::new(1.40, 0.65, 1.40)),
-        mesh_flooded_column_valve: meshes.add(Cylinder::new(0.42, 0.12)),
-        mesh_flooded_cable_bundle: meshes.add(Cylinder::new(0.09, 2.40)),
-        mesh_flooded_cable_tag: meshes.add(Cuboid::new(0.35, 0.45, 0.04)),
-        mesh_flooded_cable_conduit: meshes.add(Cuboid::new(2.10, 0.16, 0.16)),
+        // Zone 4 Flooded Metro Dedicated Obstacles (Readability Pass)
+        mesh_flooded_barrier_frame: meshes.add(Cuboid::new(2.10, 0.58, 0.35)),
+        mesh_flooded_barrier_plate: meshes.add(Cuboid::new(1.95, 0.44, 0.10)),
+        mesh_flooded_barrier_strobe: meshes.add(Sphere::new(0.14)),
+        mesh_flooded_barrier_support: meshes.add(Cuboid::new(0.18, 0.78, 0.34)),
+        mesh_flooded_pipe_column: meshes.add(Cylinder::new(0.58, 4.40)),
+        mesh_flooded_column_collar: meshes.add(Cuboid::new(1.50, 0.75, 1.50)),
+        mesh_flooded_column_valve: meshes.add(Cylinder::new(0.48, 0.14)),
+        mesh_flooded_cable_bundle: meshes.add(Cylinder::new(0.13, 2.40)),
+        mesh_flooded_cable_tag: meshes.add(Cuboid::new(0.45, 0.55, 0.05)),
+        mesh_flooded_cable_conduit: meshes.add(Cuboid::new(2.15, 0.22, 0.22)),
         mesh_flooded_train_body: meshes.add(Cuboid::new(2.20, 2.50, 12.0)),
-        mesh_flooded_train_roof: meshes.add(Cuboid::new(2.35, 0.32, 11.8)),
+        mesh_flooded_train_roof: meshes.add(Cuboid::new(2.38, 0.38, 11.8)),
         mesh_flooded_train_window: meshes.add(Cuboid::new(0.06, 0.75, 2.40)),
         mesh_flooded_service_body: meshes.add(Cuboid::new(2.20, 2.30, 8.5)),
-        mesh_flooded_service_light: meshes.add(Sphere::new(0.18)),
+        mesh_flooded_service_light: meshes.add(Sphere::new(0.22)),
         mat_flooded_steel: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.14, 0.18, 0.20),
-            metallic: 0.88,
-            perceptual_roughness: 0.36,
+            base_color: Color::srgb(0.24, 0.28, 0.32),
+            metallic: 0.85,
+            perceptual_roughness: 0.28,
             ..default()
         }),
         mat_flooded_hazard: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.72, 0.48, 0.08),
-            metallic: 0.35,
-            perceptual_roughness: 0.52,
+            base_color: Color::srgb(0.88, 0.65, 0.10),
+            metallic: 0.25,
+            perceptual_roughness: 0.35,
             ..default()
         }),
         mat_flooded_rust: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.24, 0.12, 0.06),
-            metallic: 0.55,
-            perceptual_roughness: 0.82,
+            base_color: Color::srgb(0.35, 0.18, 0.10),
+            metallic: 0.50,
+            perceptual_roughness: 0.65,
             ..default()
         }),
         mat_flooded_amber: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.95, 0.42, 0.05),
-            emissive: LinearRgba::new(2.2, 0.65, 0.02, 1.0),
+            base_color: Color::srgb(1.0, 0.50, 0.05),
+            emissive: LinearRgba::new(4.5, 1.5, 0.05, 1.0),
             ..default()
         }),
         mat_flooded_cable: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.035, 0.040, 0.045),
-            metallic: 0.30,
-            perceptual_roughness: 0.75,
+            base_color: Color::srgb(0.05, 0.06, 0.07),
+            metallic: 0.40,
+            perceptual_roughness: 0.55,
             ..default()
         }),
     };
