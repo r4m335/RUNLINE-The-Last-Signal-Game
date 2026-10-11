@@ -157,9 +157,10 @@ fn setup_main_menu(
                     width: Val::Percent(100.0),
                     height: Val::Percent(100.0),
                     flex_direction: FlexDirection::Column,
-                    justify_content: JustifyContent::SpaceBetween,
+                    justify_content: JustifyContent::FlexStart,
                     align_items: AlignItems::Center,
-                    padding: UiRect::all(Val::Px(40.0)),
+                    padding: UiRect::all(Val::Px(20.0)),
+                    row_gap: Val::Px(6.0),
                     ..default()
                 },
                 background_color: BackgroundColor(Color::srgba(0.04, 0.05, 0.08, 0.95)),
@@ -305,7 +306,8 @@ fn setup_main_menu(
                         align_items: AlignItems::Center,
                         padding: UiRect::all(Val::Px(8.0)),
                         border: UiRect::all(Val::Px(1.0)),
-                        width: Val::Px(620.0),
+                        width: Val::Percent(100.0),
+                        max_width: Val::Px(640.0),
                         margin: UiRect::bottom(Val::Px(10.0)),
                         ..default()
                     },
@@ -314,6 +316,14 @@ fn setup_main_menu(
                     ..default()
                 })
                 .with_children(|selector| {
+                    selector.spawn(TextBundle::from_section(
+                        "DEVELOPMENT START // DEBUG BUILD",
+                        TextStyle {
+                            font_size: 13.0,
+                            color: Color::srgb(1.0, 0.55, 0.15),
+                            ..default()
+                        },
+                    ));
                     selector.spawn((
                         TextBundle::from_section(
                             format!(
@@ -329,60 +339,107 @@ fn setup_main_menu(
                         ),
                         DebugStartSelectionText,
                     ));
-                    selector
-                        .spawn(NodeBundle {
-                            style: Style {
-                                width: Val::Percent(100.0),
-                                flex_direction: FlexDirection::Row,
-                                flex_wrap: FlexWrap::Wrap,
-                                justify_content: JustifyContent::Center,
-                                column_gap: Val::Px(5.0),
-                                row_gap: Val::Px(4.0),
-                                margin: UiRect::top(Val::Px(6.0)),
-                                ..default()
-                            },
+                    selector.spawn(TextBundle::from_section(
+                        "CLICK A PRESET, THEN INITIALIZE RUN",
+                        TextStyle {
+                            font_size: 10.0,
+                            color: Color::srgb(0.65, 0.7, 0.78),
                             ..default()
-                        })
-                        .with_children(|buttons| {
-                            for (preset_idx, preset) in DEBUG_START_PRESETS.iter().enumerate() {
-                                buttons
-                                    .spawn((
-                                        ButtonBundle {
-                                            style: Style {
-                                                width: Val::Px(145.0),
-                                                padding: UiRect::axes(
-                                                    Val::Px(4.0),
-                                                    Val::Px(3.0),
-                                                ),
-                                                border: UiRect::all(Val::Px(1.0)),
-                                                ..default()
-                                            },
-                                            background_color: BackgroundColor(
-                                                if preset_idx == debug_start.selected_preset {
-                                                    Color::srgb(0.55, 0.28, 0.08)
-                                                } else {
-                                                    Color::srgb(0.12, 0.16, 0.22)
-                                                },
-                                            ),
-                                            border_color: BorderColor(Color::srgb(
-                                                0.85, 0.55, 0.15,
-                                            )),
+                        },
+                    ));
+
+                    let debug_groups = [
+                        ("NORMAL / ZONE 1", 0, 4),
+                        ("ZONE 2 // NEON DISTRICT", 4, 7),
+                        ("ZONE 3 // INDUSTRIAL SECTOR", 7, 12),
+                        ("ZONE 4 // FLOODED METRO", 12, 13),
+                    ];
+
+                    for &(group_label, start, end) in &debug_groups {
+                        selector
+                            .spawn(NodeBundle {
+                                style: Style {
+                                    width: Val::Percent(100.0),
+                                    flex_direction: FlexDirection::Column,
+                                    align_items: AlignItems::Center,
+                                    margin: UiRect::top(Val::Px(3.0)),
+                                    ..default()
+                                },
+                                ..default()
+                            })
+                            .with_children(|group| {
+                                group.spawn(TextBundle::from_section(
+                                    group_label,
+                                    TextStyle {
+                                        font_size: 10.0,
+                                        color: Color::srgb(0.8, 0.85, 0.92),
+                                        ..default()
+                                    },
+                                ));
+                                group
+                                    .spawn(NodeBundle {
+                                        style: Style {
+                                            width: Val::Percent(100.0),
+                                            flex_direction: FlexDirection::Row,
+                                            flex_wrap: FlexWrap::Wrap,
+                                            justify_content: JustifyContent::Center,
+                                            column_gap: Val::Px(4.0),
+                                            row_gap: Val::Px(3.0),
+                                            margin: UiRect::top(Val::Px(2.0)),
                                             ..default()
                                         },
-                                        DebugStartPresetButton { preset_idx },
-                                    ))
-                                    .with_children(|button| {
-                                        button.spawn(TextBundle::from_section(
-                                            preset.label,
-                                            TextStyle {
-                                                font_size: 11.0,
-                                                color: Color::WHITE,
-                                                ..default()
-                                            },
-                                        ));
+                                        ..default()
+                                    })
+                                    .with_children(|buttons| {
+                                        for (preset_idx, preset) in DEBUG_START_PRESETS
+                                            .iter()
+                                            .enumerate()
+                                            .skip(start)
+                                            .take(end - start)
+                                        {
+                                            buttons
+                                                .spawn((
+                                                    ButtonBundle {
+                                                        style: Style {
+                                                            width: Val::Px(116.0),
+                                                            min_height: Val::Px(24.0),
+                                                            padding: UiRect::axes(
+                                                                Val::Px(3.0),
+                                                                Val::Px(2.0),
+                                                            ),
+                                                            border: UiRect::all(Val::Px(1.0)),
+                                                            ..default()
+                                                        },
+                                                        background_color: BackgroundColor(
+                                                            if preset_idx
+                                                                == debug_start.selected_preset
+                                                            {
+                                                                Color::srgb(0.55, 0.28, 0.08)
+                                                            } else {
+                                                                Color::srgb(0.12, 0.16, 0.22)
+                                                            },
+                                                        ),
+                                                        border_color: BorderColor(Color::srgb(
+                                                            0.85, 0.55, 0.15,
+                                                        )),
+                                                        ..default()
+                                                    },
+                                                    DebugStartPresetButton { preset_idx },
+                                                ))
+                                                .with_children(|button| {
+                                                    button.spawn(TextBundle::from_section(
+                                                        preset.label,
+                                                        TextStyle {
+                                                            font_size: 10.0,
+                                                            color: Color::WHITE,
+                                                            ..default()
+                                                        },
+                                                    ));
+                                                });
+                                        }
                                     });
-                            }
-                        });
+                            });
+                    }
                 });
             }
 
