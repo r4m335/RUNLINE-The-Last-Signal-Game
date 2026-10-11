@@ -33,6 +33,17 @@ pub enum IndustrialVariant {
     TransitionFloodApproach,
 }
 
+/// A small number of authored landmarks give Zone 3 memorable spatial beats
+/// without turning every rolling chunk into the same set piece.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum IndustrialLandmark {
+    None,
+    IndustrialEntryGate,
+    FreightGantry,
+    ProcessingTower,
+    VeyronHeavyWorks,
+}
+
 #[derive(Resource)]
 pub struct IndustrialSectorAssets {
     pub mesh_factory_wall: Handle<Mesh>,
@@ -284,6 +295,29 @@ pub fn get_industrial_sector_variant(distance: f32) -> IndustrialVariant {
     variants[(local * 3.0) as usize]
 }
 
+/// Returns the authored landmark for a chunk distance. Windows are expressed
+/// as normalized Zone 3 progress so they stay tied to the chapter layout
+/// rather than duplicating the global 2,000m zone boundaries.
+pub fn get_industrial_sector_landmark(distance: f32) -> IndustrialLandmark {
+    let progress = normalized_zone_progress(3, distance);
+    let chapter = get_industrial_sector_chapter(distance);
+    match chapter {
+        IndustrialChapter::IndustrialEntry if (0.085..0.105).contains(&progress) => {
+            IndustrialLandmark::IndustrialEntryGate
+        }
+        IndustrialChapter::FreightYard if (0.325..0.345).contains(&progress) => {
+            IndustrialLandmark::FreightGantry
+        }
+        IndustrialChapter::ProcessingPlant if (0.565..0.585).contains(&progress) => {
+            IndustrialLandmark::ProcessingTower
+        }
+        IndustrialChapter::VeyronHeavyWorks if (0.785..0.805).contains(&progress) => {
+            IndustrialLandmark::VeyronHeavyWorks
+        }
+        _ => IndustrialLandmark::None,
+    }
+}
+
 pub fn spawn_industrial_sector_segment(
     commands: &mut Commands,
     env: &EnvironmentAssets,
@@ -306,6 +340,12 @@ pub fn spawn_industrial_sector_segment(
             spawn_near_industrial_features(seg, industrial, variant, even);
             spawn_mid_industrial_features(seg, industrial, variant, even);
             spawn_far_industrial_features(seg, industrial, variant, even);
+            spawn_industrial_landmark(
+                seg,
+                industrial,
+                get_industrial_sector_landmark(distance),
+                even,
+            );
         })
         .id()
 }
@@ -935,6 +975,227 @@ fn spawn_far_industrial_detail(
     }
 }
 
+fn spawn_industrial_landmark(
+    seg: &mut ChildBuilder,
+    industrial: &IndustrialSectorAssets,
+    landmark: IndustrialLandmark,
+    even: bool,
+) {
+    let side = if even { 1.0 } else { -1.0 };
+    match landmark {
+        IndustrialLandmark::None => {}
+        IndustrialLandmark::IndustrialEntryGate => spawn_entry_gate_landmark(seg, industrial),
+        IndustrialLandmark::FreightGantry => spawn_freight_gantry_landmark(seg, industrial, side),
+        IndustrialLandmark::ProcessingTower => {
+            spawn_processing_tower_landmark(seg, industrial, side)
+        }
+        IndustrialLandmark::VeyronHeavyWorks => {
+            spawn_veyron_heavy_works_landmark(seg, industrial, side)
+        }
+    }
+}
+
+fn spawn_entry_gate_landmark(seg: &mut ChildBuilder, industrial: &IndustrialSectorAssets) {
+    for x in [-6.8, 6.8] {
+        seg.spawn(PbrBundle {
+            mesh: industrial.mesh_security_gate.clone(),
+            material: industrial.mat_veyron.clone(),
+            transform: Transform::from_xyz(x, 2.5, 0.0).with_scale(Vec3::new(1.4, 1.0, 1.4)),
+            ..default()
+        });
+    }
+    seg.spawn(PbrBundle {
+        mesh: industrial.mesh_crane_beam.clone(),
+        material: industrial.mat_dark_steel.clone(),
+        transform: Transform::from_xyz(0.0, 5.05, 0.0).with_scale(Vec3::new(1.35, 1.0, 1.0)),
+        ..default()
+    });
+    seg.spawn(PbrBundle {
+        mesh: industrial.mesh_sign.clone(),
+        material: industrial.mat_veyron.clone(),
+        transform: Transform::from_xyz(0.0, 4.45, -0.08).with_scale(Vec3::new(1.35, 1.0, 1.0)),
+        ..default()
+    });
+    for x in [-5.6, 5.6] {
+        seg.spawn(PbrBundle {
+            mesh: industrial.mesh_warning_light.clone(),
+            material: industrial.mat_amber.clone(),
+            transform: Transform::from_xyz(x, 4.3, -0.28),
+            ..default()
+        });
+    }
+    for x in [-5.0, 5.0] {
+        seg.spawn(PbrBundle {
+            mesh: industrial.mesh_large_pipe.clone(),
+            material: industrial.mat_pipe.clone(),
+            transform: Transform::from_xyz(x, 2.2, 0.0)
+                .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
+            ..default()
+        });
+    }
+}
+
+fn spawn_freight_gantry_landmark(
+    seg: &mut ChildBuilder,
+    industrial: &IndustrialSectorAssets,
+    side: f32,
+) {
+    for z in [-11.0, 11.0] {
+        seg.spawn(PbrBundle {
+            mesh: industrial.mesh_crane_column.clone(),
+            material: industrial.mat_steel.clone(),
+            transform: Transform::from_xyz(side * 7.2, 3.3, z)
+                .with_scale(Vec3::new(1.35, 1.3, 1.35)),
+            ..default()
+        });
+    }
+    seg.spawn(PbrBundle {
+        mesh: industrial.mesh_crane_beam.clone(),
+        material: industrial.mat_hazard.clone(),
+        transform: Transform::from_xyz(side * 7.2, 6.2, 0.0).with_scale(Vec3::new(1.35, 1.2, 1.2)),
+        ..default()
+    });
+    seg.spawn(PbrBundle {
+        mesh: industrial.mesh_machine.clone(),
+        material: industrial.mat_dark_steel.clone(),
+        transform: Transform::from_xyz(side * 3.0, 5.7, 0.0),
+        ..default()
+    });
+    seg.spawn(PbrBundle {
+        mesh: industrial.mesh_crane_hook.clone(),
+        material: industrial.mat_hazard.clone(),
+        transform: Transform::from_xyz(side * 3.0, 4.85, 0.0).with_scale(Vec3::new(1.2, 1.6, 1.2)),
+        ..default()
+    });
+    seg.spawn(PbrBundle {
+        mesh: industrial.mesh_sign.clone(),
+        material: industrial.mat_hazard.clone(),
+        transform: Transform::from_xyz(side * 7.2, 4.65, -11.25),
+        ..default()
+    });
+    seg.spawn(PbrBundle {
+        mesh: industrial.mesh_freight_platform.clone(),
+        material: industrial.mat_dark_steel.clone(),
+        transform: Transform::from_xyz(-side * 6.4, 0.7, 0.0),
+        ..default()
+    });
+}
+
+fn spawn_processing_tower_landmark(
+    seg: &mut ChildBuilder,
+    industrial: &IndustrialSectorAssets,
+    side: f32,
+) {
+    seg.spawn(PbrBundle {
+        mesh: industrial.mesh_processing_tower.clone(),
+        material: industrial.mat_steel.clone(),
+        transform: Transform::from_xyz(side * 9.0, 5.2, 0.0)
+            .with_scale(Vec3::new(1.25, 1.35, 1.25)),
+        ..default()
+    });
+    for y in [2.0, 4.0, 6.0] {
+        seg.spawn(PbrBundle {
+            mesh: industrial.mesh_platform.clone(),
+            material: industrial.mat_dark_steel.clone(),
+            transform: Transform::from_xyz(side * 8.2, y, 0.0),
+            ..default()
+        });
+        for x in [side * 6.8, side * 9.7] {
+            seg.spawn(PbrBundle {
+                mesh: industrial.mesh_railing.clone(),
+                material: industrial.mat_hazard.clone(),
+                transform: Transform::from_xyz(x, y + 0.45, 0.0),
+                ..default()
+            });
+        }
+    }
+    for z in [-8.0, 8.0] {
+        seg.spawn(PbrBundle {
+            mesh: industrial.mesh_pressure_vessel.clone(),
+            material: industrial.mat_rusted_steel.clone(),
+            transform: Transform::from_xyz(-side * 8.0, 2.4, z)
+                .with_scale(Vec3::new(1.15, 1.15, 1.15)),
+            ..default()
+        });
+        seg.spawn(PbrBundle {
+            mesh: industrial.mesh_pipe_junction.clone(),
+            material: industrial.mat_pipe.clone(),
+            transform: Transform::from_xyz(-side * 8.0, 4.35, z),
+            ..default()
+        });
+    }
+    seg.spawn(PbrBundle {
+        mesh: industrial.mesh_large_pipe.clone(),
+        material: industrial.mat_pipe.clone(),
+        transform: Transform::from_xyz(0.0, 4.2, 0.0)
+            .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
+        ..default()
+    });
+    seg.spawn(PbrBundle {
+        mesh: industrial.mesh_steam.clone(),
+        material: industrial.mat_steam.clone(),
+        transform: Transform::from_xyz(side * 9.0, 9.8, 0.0).with_scale(Vec3::new(1.2, 1.7, 1.2)),
+        ..default()
+    });
+}
+
+fn spawn_veyron_heavy_works_landmark(
+    seg: &mut ChildBuilder,
+    industrial: &IndustrialSectorAssets,
+    side: f32,
+) {
+    for (x, z) in [(side * 10.5, 0.0), (-side * 13.0, 0.0)] {
+        seg.spawn(PbrBundle {
+            mesh: industrial.mesh_factory_wall.clone(),
+            material: industrial.mat_factory.clone(),
+            transform: Transform::from_xyz(x, 5.0, z).with_scale(Vec3::new(1.0, 1.8, 0.9)),
+            ..default()
+        });
+    }
+    seg.spawn(PbrBundle {
+        mesh: industrial.mesh_conveyor.clone(),
+        material: industrial.mat_steel.clone(),
+        transform: Transform::from_xyz(side * 7.6, 6.75, 0.0).with_scale(Vec3::new(1.25, 1.0, 1.0)),
+        ..default()
+    });
+    for z in [-9.0, 9.0] {
+        seg.spawn(PbrBundle {
+            mesh: industrial.mesh_security_gate.clone(),
+            material: industrial.mat_veyron.clone(),
+            transform: Transform::from_xyz(side * 7.6, 3.2, z)
+                .with_scale(Vec3::new(1.5, 1.35, 1.5)),
+            ..default()
+        });
+    }
+    seg.spawn(PbrBundle {
+        mesh: industrial.mesh_duct.clone(),
+        material: industrial.mat_pipe.clone(),
+        transform: Transform::from_xyz(0.0, 7.4, 0.0)
+            .with_rotation(Quat::from_rotation_z(std::f32::consts::FRAC_PI_2))
+            .with_scale(Vec3::new(1.0, 1.5, 1.0)),
+        ..default()
+    });
+    seg.spawn(PbrBundle {
+        mesh: industrial.mesh_processing_tower.clone(),
+        material: industrial.mat_cooling.clone(),
+        transform: Transform::from_xyz(-side * 8.5, 5.2, 0.0).with_scale(Vec3::new(1.4, 1.3, 1.4)),
+        ..default()
+    });
+    seg.spawn(PbrBundle {
+        mesh: industrial.mesh_sign.clone(),
+        material: industrial.mat_veyron.clone(),
+        transform: Transform::from_xyz(side * 10.5, 7.0, -0.12)
+            .with_scale(Vec3::new(1.6, 1.1, 1.0)),
+        ..default()
+    });
+    seg.spawn(PbrBundle {
+        mesh: industrial.mesh_warning_light.clone(),
+        material: industrial.mat_amber.clone(),
+        transform: Transform::from_xyz(side * 7.6, 5.8, 0.0),
+        ..default()
+    });
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1012,6 +1273,33 @@ mod tests {
                 get_industrial_sector_variant(distance),
                 get_industrial_sector_variant(distance),
                 "Industrial variant must be deterministic at {distance}m"
+            );
+        }
+    }
+
+    #[test]
+    fn test_signature_landmarks_are_deterministic_and_sparse() {
+        let checkpoints = [
+            (4180.0, IndustrialLandmark::IndustrialEntryGate),
+            (4660.0, IndustrialLandmark::FreightGantry),
+            (5140.0, IndustrialLandmark::ProcessingTower),
+            (5580.0, IndustrialLandmark::VeyronHeavyWorks),
+        ];
+
+        for (distance, expected) in checkpoints {
+            assert_eq!(get_industrial_sector_landmark(distance), expected);
+            assert_eq!(
+                get_industrial_sector_landmark(distance),
+                get_industrial_sector_landmark(distance),
+                "Landmark selection must be deterministic at {distance}m"
+            );
+        }
+
+        for distance in [4000.0, 4400.0, 4900.0, 5400.0, 5800.0, 5999.0] {
+            assert_eq!(
+                get_industrial_sector_landmark(distance),
+                IndustrialLandmark::None,
+                "Chapter boundary should not create an accidental landmark at {distance}m"
             );
         }
     }
