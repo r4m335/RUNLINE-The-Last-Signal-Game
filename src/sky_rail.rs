@@ -1,5 +1,5 @@
 use crate::environment::EnvironmentAssets;
-use crate::types::{Despawnable, TrackSegmentMarker};
+use crate::types::{Despawnable, Lane, TrackSegmentMarker};
 use bevy::prelude::*;
 
 // -------------------------------------------------------------
@@ -88,7 +88,22 @@ pub struct SkyRailAssets {
     pub mesh_cable_bundle_elevated: Handle<Mesh>,
     pub mesh_hazard_reflector: Handle<Mesh>,
 
-    // Materials
+    // Skyline Megastructure Meshes (Aurelia dark skyline)
+    pub mesh_tower_colossus: Handle<Mesh>,
+    pub mesh_tower_obelisk: Handle<Mesh>,
+    pub mesh_tower_slab: Handle<Mesh>,
+    pub mesh_tower_stepped_crown: Handle<Mesh>,
+    pub mesh_tower_antenna_spire: Handle<Mesh>,
+    pub mesh_tower_window_slit_v: Handle<Mesh>,
+    pub mesh_tower_window_slit_h: Handle<Mesh>,
+    pub mesh_sky_bridge_span: Handle<Mesh>,
+
+    // Cloud Abyss & Atmospheric Depth Meshes (850m Altitude)
+    pub mesh_cloud_deck_vast: Handle<Mesh>,
+    pub mesh_cloud_strata_low: Handle<Mesh>,
+    pub mesh_cloud_ceiling_storm: Handle<Mesh>,
+
+    // Track & Infrastructure Materials
     pub mat_sky_steel: Handle<StandardMaterial>,
     pub mat_sky_tread: Handle<StandardMaterial>,
     pub mat_sky_mag_strip: Handle<StandardMaterial>,
@@ -98,6 +113,15 @@ pub struct SkyRailAssets {
     pub mat_sky_pylon: Handle<StandardMaterial>,
     pub mat_sky_cyan_glow: Handle<StandardMaterial>,
     pub mat_sky_storm_composite: Handle<StandardMaterial>,
+
+    // Skyline & Cloud Abyss Materials (90% darkness, 10% light)
+    pub mat_sky_tower_dark: Handle<StandardMaterial>,
+    pub mat_sky_tower_distant: Handle<StandardMaterial>,
+    pub mat_sky_window_dim: Handle<StandardMaterial>,
+    pub mat_sky_window_amber_dim: Handle<StandardMaterial>,
+    pub mat_sky_antenna_red: Handle<StandardMaterial>,
+    pub mat_sky_cloud_abyss: Handle<StandardMaterial>,
+    pub mat_sky_cloud_ceiling: Handle<StandardMaterial>,
 }
 
 pub fn init_sky_rail_assets(
@@ -133,6 +157,21 @@ pub fn init_sky_rail_assets(
         mesh_relay_spire: meshes.add(Cylinder::new(0.18, 6.0)),
         mesh_cable_bundle_elevated: meshes.add(Cylinder::new(0.08, 40.0)),
         mesh_hazard_reflector: meshes.add(Cuboid::new(0.15, 0.25, 0.05)),
+
+        // Skyline Megastructure Meshes (Low-poly brutalist silhouettes for integrated GPUs)
+        mesh_tower_colossus: meshes.add(Cuboid::new(34.0, 190.0, 36.0)),
+        mesh_tower_obelisk: meshes.add(Cuboid::new(18.0, 220.0, 18.0)),
+        mesh_tower_slab: meshes.add(Cuboid::new(52.0, 150.0, 26.0)),
+        mesh_tower_stepped_crown: meshes.add(Cuboid::new(22.0, 32.0, 24.0)),
+        mesh_tower_antenna_spire: meshes.add(Cylinder::new(0.35, 38.0)),
+        mesh_tower_window_slit_v: meshes.add(Cuboid::new(0.5, 36.0, 10.0)),
+        mesh_tower_window_slit_h: meshes.add(Cuboid::new(18.0, 0.6, 0.5)),
+        mesh_sky_bridge_span: meshes.add(Cuboid::new(76.0, 3.6, 4.6)),
+
+        // Cloud Abyss & Atmospheric Depth Meshes
+        mesh_cloud_deck_vast: meshes.add(Cuboid::new(380.0, 12.0, 40.0)),
+        mesh_cloud_strata_low: meshes.add(Cuboid::new(440.0, 14.0, 40.0)),
+        mesh_cloud_ceiling_storm: meshes.add(Cuboid::new(360.0, 10.0, 40.0)),
 
         // Materials Palette
         mat_sky_steel: materials.add(StandardMaterial {
@@ -190,6 +229,50 @@ pub fn init_sky_rail_assets(
             perceptual_roughness: 0.42,
             ..default()
         }),
+
+        // Skyline & Cloud Abyss Materials (90% darkness, 10% light)
+        mat_sky_tower_dark: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.045, 0.055, 0.075),
+            metallic: 0.85,
+            perceptual_roughness: 0.38,
+            ..default()
+        }),
+        mat_sky_tower_distant: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.025, 0.035, 0.05),
+            metallic: 0.70,
+            perceptual_roughness: 0.55,
+            ..default()
+        }),
+        mat_sky_window_dim: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.06, 0.18, 0.26),
+            emissive: LinearRgba::new(0.06, 0.28, 0.42, 1.0),
+            perceptual_roughness: 0.35,
+            ..default()
+        }),
+        mat_sky_window_amber_dim: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.25, 0.14, 0.04),
+            emissive: LinearRgba::new(0.45, 0.22, 0.03, 1.0),
+            perceptual_roughness: 0.40,
+            ..default()
+        }),
+        mat_sky_antenna_red: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.85, 0.06, 0.06),
+            emissive: LinearRgba::new(1.85, 0.08, 0.05, 1.0),
+            perceptual_roughness: 0.20,
+            ..default()
+        }),
+        mat_sky_cloud_abyss: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.02, 0.028, 0.042),
+            perceptual_roughness: 0.96,
+            metallic: 0.0,
+            ..default()
+        }),
+        mat_sky_cloud_ceiling: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.014, 0.02, 0.03),
+            perceptual_roughness: 0.98,
+            metallic: 0.0,
+            ..default()
+        }),
     };
 
     commands.insert_resource(assets);
@@ -221,7 +304,7 @@ pub fn spawn_sky_rail_segment(
             // 1. Viaduct Slab Bed & Underside Abyss Foundation
             spawn_elevated_viaduct_slab(seg, sky, length);
 
-            // 2. High-Readability 3 Elevated Running Lanes
+            // 2. High-Readability 3 Elevated Running Lanes (Authoritative Lane::SPACING)
             spawn_three_elevated_lanes(seg, sky, chapter, variant);
 
             // 3. Side Parapets & Storm Deflection Aerodynamic Barriers
@@ -230,7 +313,13 @@ pub fn spawn_sky_rail_segment(
             // 4. Underside Support Pylons into 850m Abyss
             spawn_abyss_pylons(seg, sky);
 
-            // 5. Chapter-Specific Visual Dressing
+            // 5. Cloud Abyss Ocean & Storm Cloud Ceiling (850m Altitude)
+            spawn_cloud_abyss(seg, sky);
+
+            // 6. Aurelia Megatower Skyline Silhouettes (Dark Cyberpunk Megastructures)
+            spawn_skyline_megatowers(seg, sky, distance);
+
+            // 7. Chapter-Specific Visual Dressing
             match chapter {
                 SkyRailChapter::SkyRailEmergence => {
                     spawn_emergence_dressing(seg, sky, variant);
@@ -249,7 +338,7 @@ pub fn spawn_sky_rail_segment(
                 }
             }
 
-            // 6. Landmark Feature (if active in this segment window)
+            // 8. Landmark Feature (if active in this segment window)
             if landmark != SkyRailLandmark::None {
                 spawn_sky_rail_landmark(seg, sky, landmark);
             }
@@ -297,8 +386,8 @@ fn spawn_three_elevated_lanes(
     _chapter: SkyRailChapter,
     _variant: u8,
 ) {
-    // Exact gameplay lane centers: x = -2.2, 0.0, 2.2
-    for lane_x in [-2.2, 0.0, 2.2] {
+    // Exact gameplay lane centers: x = -Lane::SPACING, 0.0, Lane::SPACING (-2.4, 0.0, 2.4)
+    for lane_x in [-Lane::SPACING, 0.0, Lane::SPACING] {
         // Raised lane structural bed (y = 0.06m)
         seg.spawn(PbrBundle {
             mesh: sky.mesh_lane_bed.clone(),
@@ -326,8 +415,8 @@ fn spawn_three_elevated_lanes(
         }
     }
 
-    // Inter-lane expansion & drainage troughs between lanes (x = -1.1, 1.1)
-    for trough_x in [-1.1, 1.1] {
+    // Inter-lane expansion & drainage troughs between lanes (x = -1.2, 1.2)
+    for trough_x in [-Lane::SPACING * 0.5, Lane::SPACING * 0.5] {
         seg.spawn(PbrBundle {
             mesh: sky.mesh_interlane_trough.clone(),
             material: sky.mat_sky_grate.clone(),
@@ -406,6 +495,276 @@ fn spawn_abyss_pylons(seg: &mut ChildBuilder, sky: &SkyRailAssets) {
         transform: Transform::from_xyz(0.0, -42.0, 0.0),
         ..default()
     });
+}
+
+// -------------------------------------------------------------
+// CLOUD ABYSS & STORMY ATMOSPHERE (850M ALTITUDE)
+// -------------------------------------------------------------
+
+fn spawn_cloud_abyss(seg: &mut ChildBuilder, sky: &SkyRailAssets) {
+    // 1. Primary Lower Cloud Deck (churning storm ocean beneath track at y = -42.0m)
+    // Support pylons plunge through this deck, establishing the 850m altitude
+    seg.spawn(PbrBundle {
+        mesh: sky.mesh_cloud_deck_vast.clone(),
+        material: sky.mat_sky_cloud_abyss.clone(),
+        transform: Transform::from_xyz(0.0, -42.0, 0.0),
+        ..default()
+    });
+
+    // 2. Secondary Deeper Strata Haze (y = -58.0m, swallowing invisible city below)
+    seg.spawn(PbrBundle {
+        mesh: sky.mesh_cloud_strata_low.clone(),
+        material: sky.mat_sky_cloud_abyss.clone(),
+        transform: Transform::from_xyz(0.0, -58.0, 0.0),
+        ..default()
+    });
+
+    // 3. Heavy Overhead Storm Cloud Ceiling (oppressive dark canopy at y = 56.0m)
+    seg.spawn(PbrBundle {
+        mesh: sky.mesh_cloud_ceiling_storm.clone(),
+        material: sky.mat_sky_cloud_ceiling.clone(),
+        transform: Transform::from_xyz(0.0, 56.0, 0.0),
+        ..default()
+    });
+}
+
+// -------------------------------------------------------------
+// DARK CITY SKYLINE (AURELIA MEGATOWERS & MONOLITHS)
+// -------------------------------------------------------------
+
+fn spawn_skyline_megatowers(seg: &mut ChildBuilder, sky: &SkyRailAssets, distance: f32) {
+    let seg_idx = (distance / 40.0).floor() as i32;
+    let h1 = ((seg_idx.wrapping_mul(19) + 5).rem_euclid(100)) as f32 / 100.0;
+    let h2 = ((seg_idx.wrapping_mul(37) + 13).rem_euclid(100)) as f32 / 100.0;
+    let h3 = ((seg_idx.wrapping_mul(59) + 23).rem_euclid(100)) as f32 / 100.0;
+    let h4 = ((seg_idx.wrapping_mul(83) + 31).rem_euclid(100)) as f32 / 100.0;
+
+    // -------------------------------------------------------------
+    // LAYER 1: LEFT FLANK MIDGROUND MEGATOWERS (|X| in [42.0, 68.0]m)
+    // -------------------------------------------------------------
+    let left_x = -44.0 - h1 * 22.0;
+    let left_z = -12.0 + h2 * 24.0;
+    let left_type = (seg_idx.rem_euclid(3)) as usize;
+
+    match left_type {
+        0 => {
+            // Monolithic Slab rising from cloud abyss into upper storm sky
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_tower_slab.clone(),
+                material: sky.mat_sky_tower_dark.clone(),
+                transform: Transform::from_xyz(left_x, 25.0, left_z),
+                ..default()
+            });
+            // Horizontal dim window slits on inward face
+            if h2 > 0.25 {
+                let win_mat = if h1 > 0.5 {
+                    sky.mat_sky_window_dim.clone()
+                } else {
+                    sky.mat_sky_window_amber_dim.clone()
+                };
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_tower_window_slit_h.clone(),
+                    material: win_mat,
+                    transform: Transform::from_xyz(left_x + 25.0, 32.0, left_z),
+                    ..default()
+                });
+            }
+            // Rooftop pinnacle warning beacon
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_tower_antenna_spire.clone(),
+                material: sky.mat_sky_steel.clone(),
+                transform: Transform::from_xyz(left_x, 100.0 + 19.0, left_z),
+                ..default()
+            });
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_hazard_reflector.clone(),
+                material: sky.mat_sky_antenna_red.clone(),
+                transform: Transform::from_xyz(left_x, 100.0 + 38.0, left_z),
+                ..default()
+            });
+        }
+        1 => {
+            // Colossus Block with stepped crown
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_tower_colossus.clone(),
+                material: sky.mat_sky_tower_dark.clone(),
+                transform: Transform::from_xyz(left_x, 35.0, left_z),
+                ..default()
+            });
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_tower_stepped_crown.clone(),
+                material: sky.mat_sky_steel.clone(),
+                transform: Transform::from_xyz(left_x, 35.0 + 95.0 + 16.0, left_z),
+                ..default()
+            });
+            // Vertical dim window slit
+            if h2 > 0.20 {
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_tower_window_slit_v.clone(),
+                    material: sky.mat_sky_window_dim.clone(),
+                    transform: Transform::from_xyz(left_x + 16.0, 42.0, left_z),
+                    ..default()
+                });
+            }
+            // Pinnacle beacon atop crown
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_hazard_reflector.clone(),
+                material: sky.mat_sky_antenna_red.clone(),
+                transform: Transform::from_xyz(left_x, 35.0 + 95.0 + 32.0 + 1.0, left_z),
+                ..default()
+            });
+        }
+        _ => {
+            // Tall needle Obelisk
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_tower_obelisk.clone(),
+                material: sky.mat_sky_tower_dark.clone(),
+                transform: Transform::from_xyz(left_x, 45.0, left_z),
+                ..default()
+            });
+            // Spire beacon
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_tower_antenna_spire.clone(),
+                material: sky.mat_sky_steel.clone(),
+                transform: Transform::from_xyz(left_x, 45.0 + 110.0 + 19.0, left_z),
+                ..default()
+            });
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_hazard_reflector.clone(),
+                material: sky.mat_sky_antenna_red.clone(),
+                transform: Transform::from_xyz(left_x, 45.0 + 110.0 + 38.0, left_z),
+                ..default()
+            });
+        }
+    }
+
+    // -------------------------------------------------------------
+    // LAYER 2: RIGHT FLANK MIDGROUND MEGATOWERS (|X| in [44.0, 72.0]m)
+    // -------------------------------------------------------------
+    let right_x = 46.0 + h3 * 22.0;
+    let right_z = 10.0 - h4 * 24.0;
+    let right_type = ((seg_idx + 1).rem_euclid(3)) as usize;
+
+    match right_type {
+        0 => {
+            // Colossus Block with vertical slit
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_tower_colossus.clone(),
+                material: sky.mat_sky_tower_dark.clone(),
+                transform: Transform::from_xyz(right_x, 30.0, right_z),
+                ..default()
+            });
+            if h4 > 0.25 {
+                let win_mat = if h3 > 0.5 {
+                    sky.mat_sky_window_amber_dim.clone()
+                } else {
+                    sky.mat_sky_window_dim.clone()
+                };
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_tower_window_slit_v.clone(),
+                    material: win_mat,
+                    transform: Transform::from_xyz(right_x - 16.0, 36.0, right_z),
+                    ..default()
+                });
+            }
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_tower_antenna_spire.clone(),
+                material: sky.mat_sky_steel.clone(),
+                transform: Transform::from_xyz(right_x, 30.0 + 95.0 + 19.0, right_z),
+                ..default()
+            });
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_hazard_reflector.clone(),
+                material: sky.mat_sky_antenna_red.clone(),
+                transform: Transform::from_xyz(right_x, 30.0 + 95.0 + 38.0, right_z),
+                ..default()
+            });
+        }
+        1 => {
+            // Obelisk Spire
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_tower_obelisk.clone(),
+                material: sky.mat_sky_tower_dark.clone(),
+                transform: Transform::from_xyz(right_x, 50.0, right_z),
+                ..default()
+            });
+            if h3 > 0.30 {
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_tower_window_slit_v.clone(),
+                    material: sky.mat_sky_window_dim.clone(),
+                    transform: Transform::from_xyz(right_x - 8.5, 52.0, right_z),
+                    ..default()
+                });
+            }
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_hazard_reflector.clone(),
+                material: sky.mat_sky_antenna_red.clone(),
+                transform: Transform::from_xyz(right_x, 50.0 + 110.0 + 1.0, right_z),
+                ..default()
+            });
+        }
+        _ => {
+            // Monolithic Slab
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_tower_slab.clone(),
+                material: sky.mat_sky_tower_dark.clone(),
+                transform: Transform::from_xyz(right_x, 22.0, right_z),
+                ..default()
+            });
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_tower_antenna_spire.clone(),
+                material: sky.mat_sky_steel.clone(),
+                transform: Transform::from_xyz(right_x, 22.0 + 75.0 + 19.0, right_z),
+                ..default()
+            });
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_hazard_reflector.clone(),
+                material: sky.mat_sky_antenna_red.clone(),
+                transform: Transform::from_xyz(right_x, 22.0 + 75.0 + 38.0, right_z),
+                ..default()
+            });
+        }
+    }
+
+    // -------------------------------------------------------------
+    // LAYER 3: FAR BACKGROUND MONOLITHS & CITADELS (|X| in [95.0, 155.0]m)
+    // -------------------------------------------------------------
+    let (far_x, far_z) = if seg_idx.rem_euclid(2) == 0 {
+        (-105.0 - h2 * 45.0, -15.0 + h3 * 30.0)
+    } else {
+        (108.0 + h4 * 42.0, 12.0 - h1 * 28.0)
+    };
+    seg.spawn(PbrBundle {
+        mesh: sky.mesh_tower_slab.clone(),
+        material: sky.mat_sky_tower_distant.clone(),
+        transform: Transform::from_xyz(far_x, 40.0, far_z).with_scale(Vec3::new(1.8, 1.6, 1.8)),
+        ..default()
+    });
+    // Far beacon in the storm
+    seg.spawn(PbrBundle {
+        mesh: sky.mesh_hazard_reflector.clone(),
+        material: sky.mat_sky_antenna_red.clone(),
+        transform: Transform::from_xyz(far_x, 40.0 + 120.0, far_z)
+            .with_scale(Vec3::new(2.5, 2.5, 2.5)),
+        ..default()
+    });
+
+    // -------------------------------------------------------------
+    // LAYER 4: TRANSVERSE DISTANT HIGH-ALTITUDE SKYBRIDGES
+    // Spanning between towers at high elevation far outside player bounds
+    // -------------------------------------------------------------
+    if seg_idx.rem_euclid(3) == 1 {
+        let bridge_side = if h1 > 0.5 { -1.0 } else { 1.0 };
+        let bridge_center_x = bridge_side * (left_x.abs() + 28.0);
+        let bridge_y = 38.0 + h2 * 18.0;
+        let bridge_z = -6.0 + h3 * 12.0;
+        seg.spawn(PbrBundle {
+            mesh: sky.mesh_sky_bridge_span.clone(),
+            material: sky.mat_sky_steel.clone(),
+            transform: Transform::from_xyz(bridge_center_x, bridge_y, bridge_z),
+            ..default()
+        });
+    }
 }
 
 // -------------------------------------------------------------
@@ -656,5 +1015,14 @@ mod tests {
             let v = sky_rail_variant(dist as f32);
             assert!(v < 3);
         }
+    }
+
+    #[test]
+    fn test_sky_rail_lane_alignment_matches_gameplay_spacing() {
+        let expected_lanes = [-Lane::SPACING, 0.0, Lane::SPACING];
+        assert_eq!(expected_lanes, [-2.4, 0.0, 2.4]);
+
+        let expected_troughs = [-Lane::SPACING * 0.5, Lane::SPACING * 0.5];
+        assert_eq!(expected_troughs, [-1.2, 1.2]);
     }
 }
