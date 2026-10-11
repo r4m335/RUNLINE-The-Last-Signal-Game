@@ -213,12 +213,24 @@ pub struct PoolAssets {
     pub mesh_flooded_train_roof: Handle<Mesh>,
     pub mesh_flooded_train_window: Handle<Mesh>,
     pub mesh_flooded_service_body: Handle<Mesh>,
+    pub mesh_flooded_service_cab: Handle<Mesh>,
     pub mesh_flooded_service_light: Handle<Mesh>,
+    pub mesh_empty_gondola_wall_side: Handle<Mesh>,
+    pub mesh_empty_gondola_wall_end: Handle<Mesh>,
+    pub mesh_empty_gondola_floor: Handle<Mesh>,
+    pub mesh_empty_gondola_rim: Handle<Mesh>,
+    pub mesh_empty_gondola_stake: Handle<Mesh>,
+    pub mesh_cargo_container_short: Handle<Mesh>,
+    pub mesh_cargo_crate_stack: Handle<Mesh>,
+    pub mesh_cargo_drum: Handle<Mesh>,
+    pub mesh_cargo_cable_reel: Handle<Mesh>,
     pub mat_flooded_steel: Handle<StandardMaterial>,
     pub mat_flooded_hazard: Handle<StandardMaterial>,
     pub mat_flooded_rust: Handle<StandardMaterial>,
     pub mat_flooded_amber: Handle<StandardMaterial>,
     pub mat_flooded_cable: Handle<StandardMaterial>,
+    pub mat_cargo_container: Handle<StandardMaterial>,
+    pub mat_cargo_wood: Handle<StandardMaterial>,
 }
 
 #[derive(Resource, Default)]
@@ -841,8 +853,18 @@ fn init_pool_assets(
         mesh_flooded_train_body: meshes.add(Cuboid::new(2.20, 2.50, 12.0)),
         mesh_flooded_train_roof: meshes.add(Cuboid::new(2.38, 0.38, 11.8)),
         mesh_flooded_train_window: meshes.add(Cuboid::new(0.06, 0.75, 2.40)),
-        mesh_flooded_service_body: meshes.add(Cuboid::new(2.20, 2.30, 8.5)),
+        mesh_flooded_service_body: meshes.add(Cuboid::new(2.20, 0.60, 8.50)),
+        mesh_flooded_service_cab: meshes.add(Cuboid::new(2.14, 1.70, 3.20)),
         mesh_flooded_service_light: meshes.add(Sphere::new(0.22)),
+        mesh_empty_gondola_wall_side: meshes.add(Cuboid::new(0.12, 2.10, 11.8)),
+        mesh_empty_gondola_wall_end: meshes.add(Cuboid::new(2.16, 2.10, 0.14)),
+        mesh_empty_gondola_floor: meshes.add(Cuboid::new(2.16, 0.14, 11.8)),
+        mesh_empty_gondola_rim: meshes.add(Cuboid::new(0.14, 0.10, 11.8)),
+        mesh_empty_gondola_stake: meshes.add(Cuboid::new(0.08, 2.10, 0.14)),
+        mesh_cargo_container_short: meshes.add(Cuboid::new(2.10, 1.55, 3.20)),
+        mesh_cargo_crate_stack: meshes.add(Cuboid::new(0.95, 1.05, 1.45)),
+        mesh_cargo_drum: meshes.add(Cylinder::new(0.32, 0.85)),
+        mesh_cargo_cable_reel: meshes.add(Cylinder::new(0.65, 0.55)),
         mat_flooded_steel: materials.add(StandardMaterial {
             base_color: Color::srgb(0.24, 0.28, 0.32),
             metallic: 0.85,
@@ -871,6 +893,17 @@ fn init_pool_assets(
             base_color: Color::srgb(0.05, 0.06, 0.07),
             metallic: 0.40,
             perceptual_roughness: 0.55,
+            ..default()
+        }),
+        mat_cargo_container: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.08, 0.32, 0.44),
+            metallic: 0.65,
+            perceptual_roughness: 0.38,
+            ..default()
+        }),
+        mat_cargo_wood: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.36, 0.24, 0.15),
+            perceptual_roughness: 0.85,
             ..default()
         }),
     };

@@ -2360,9 +2360,7 @@ fn spawn_flooded_submerged_train(
     }
     commands
         .spawn((
-            PbrBundle {
-                mesh: pool_assets.mesh_flooded_train_body.clone(),
-                material: pool_assets.mat_flooded_steel.clone(),
+            SpatialBundle {
                 transform: Transform::from_xyz(obs_def.lane.x_pos(), 1.25, world_z),
                 ..default()
             },
@@ -2371,45 +2369,64 @@ fn spawn_flooded_submerged_train(
             active.2,
         ))
         .with_children(|train| {
-            // Corrugated rusted roof cowl
+            // Recessed empty gondola floor (bottom cargo bed, hollow interior with NO goods)
             train.spawn(PbrBundle {
-                mesh: pool_assets.mesh_flooded_train_roof.clone(),
-                material: pool_assets.mat_flooded_rust.clone(),
-                transform: Transform::from_xyz(0.0, 1.35, 0.0),
+                mesh: pool_assets.mesh_empty_gondola_floor.clone(),
+                material: pool_assets.mat_flooded_steel.clone(),
+                transform: Transform::from_xyz(0.0, -0.92, 0.0),
                 ..default()
             });
-            // Freight container side sliding doors and vertical structural ribs (no passenger windows)
-            for x in [-1.12, 1.12] {
+            // Left & Right high gondola side walls
+            for x in [-1.04, 1.04] {
                 train.spawn(PbrBundle {
-                    mesh: pool_assets.mesh_flooded_train_window.clone(),
-                    material: pool_assets.mat_flooded_rust.clone(),
-                    transform: Transform::from_xyz(x, 0.15, 0.0),
+                    mesh: pool_assets.mesh_empty_gondola_wall_side.clone(),
+                    material: pool_assets.mat_flooded_steel.clone(),
+                    transform: Transform::from_xyz(x, 0.05, 0.0),
                     ..default()
                 });
-                for z_post in [-4.5, 4.5] {
+                // Top cap rim rail along the top edge of the side walls
+                train.spawn(PbrBundle {
+                    mesh: pool_assets.mesh_empty_gondola_rim.clone(),
+                    material: pool_assets.mat_flooded_rust.clone(),
+                    transform: Transform::from_xyz(x, 1.10, 0.0),
+                    ..default()
+                });
+                // External vertical reinforcement stakes
+                for z_stake in [-4.6, -2.3, 0.0, 2.3, 4.6] {
+                    let stake_x = if x < 0.0 { -1.11 } else { 1.11 };
                     train.spawn(PbrBundle {
-                        mesh: pool_assets.mesh_flooded_barrier_support.clone(),
-                        material: pool_assets.mat_flooded_steel.clone(),
-                        transform: Transform::from_xyz(x, 0.05, z_post)
-                            .with_scale(Vec3::new(1.0, 1.5, 1.0)),
+                        mesh: pool_assets.mesh_empty_gondola_stake.clone(),
+                        material: pool_assets.mat_flooded_rust.clone(),
+                        transform: Transform::from_xyz(stake_x, 0.05, z_stake),
                         ..default()
                     });
                 }
             }
-            // Front heavy crash bumper
-            train.spawn(PbrBundle {
-                mesh: pool_assets.mesh_train_bumper.clone(),
-                material: pool_assets.mat_flooded_rust.clone(),
-                transform: Transform::from_xyz(0.0, -0.65, 6.05),
-                ..default()
-            });
-            // Front bold diagonal hazard warning plate
-            train.spawn(PbrBundle {
-                mesh: pool_assets.mesh_flooded_barrier_plate.clone(),
-                material: pool_assets.mat_flooded_hazard.clone(),
-                transform: Transform::from_xyz(0.0, -0.15, 6.08),
-                ..default()
-            });
+            // Front & Rear bulkheads
+            for (z_end, is_front) in [(5.85, true), (-5.85, false)] {
+                train.spawn(PbrBundle {
+                    mesh: pool_assets.mesh_empty_gondola_wall_end.clone(),
+                    material: pool_assets.mat_flooded_steel.clone(),
+                    transform: Transform::from_xyz(0.0, 0.05, z_end),
+                    ..default()
+                });
+                if is_front {
+                    // Front heavy crash bumper
+                    train.spawn(PbrBundle {
+                        mesh: pool_assets.mesh_train_bumper.clone(),
+                        material: pool_assets.mat_flooded_rust.clone(),
+                        transform: Transform::from_xyz(0.0, -0.65, 6.05),
+                        ..default()
+                    });
+                    // Front bold diagonal hazard warning plate
+                    train.spawn(PbrBundle {
+                        mesh: pool_assets.mesh_flooded_barrier_plate.clone(),
+                        material: pool_assets.mat_flooded_hazard.clone(),
+                        transform: Transform::from_xyz(0.0, -0.15, 6.08),
+                        ..default()
+                    });
+                }
+            }
         });
 }
 
@@ -2441,9 +2458,7 @@ fn spawn_flooded_moving_train(
     }
     commands
         .spawn((
-            PbrBundle {
-                mesh: pool_assets.mesh_flooded_service_body.clone(),
-                material: pool_assets.mat_flooded_steel.clone(),
+            SpatialBundle {
                 transform: Transform::from_xyz(obs_def.lane.x_pos(), 1.25, world_z),
                 ..default()
             },
@@ -2453,19 +2468,35 @@ fn spawn_flooded_moving_train(
             active.2,
         ))
         .with_children(|service| {
+            // Heavy freight flatbed chassis platform (lower frame spanning the 8.5m carriage)
+            service.spawn(PbrBundle {
+                mesh: pool_assets.mesh_flooded_service_body.clone(),
+                material: pool_assets.mat_flooded_steel.clone(),
+                transform: Transform::from_xyz(0.0, -0.85, 0.0),
+                ..default()
+            });
+
+            // --- FORWARD SWITCHER CABIN & MOTOR HOUSING (Z in [1.0, 4.2]) ---
+            // Armored operator cabin body
+            service.spawn(PbrBundle {
+                mesh: pool_assets.mesh_flooded_service_cab.clone(),
+                material: pool_assets.mat_flooded_steel.clone(),
+                transform: Transform::from_xyz(0.0, 0.30, 2.60),
+                ..default()
+            });
             // Raised industrial switcher cab roof
             service.spawn(PbrBundle {
                 mesh: pool_assets.mesh_flooded_train_roof.clone(),
                 material: pool_assets.mat_flooded_rust.clone(),
-                transform: Transform::from_xyz(0.0, 1.25, -1.2)
-                    .with_scale(Vec3::new(0.95, 1.0, 0.65)),
+                transform: Transform::from_xyz(0.0, 1.20, 2.60)
+                    .with_scale(Vec3::new(0.92, 0.80, 0.28)),
                 ..default()
             });
-            // Armored cab front visor
+            // Armored cab front visor / windscreen
             service.spawn(PbrBundle {
                 mesh: pool_assets.mesh_train_windscreen.clone(),
                 material: pool_assets.mat_flooded_rust.clone(),
-                transform: Transform::from_xyz(0.0, 0.70, 1.6)
+                transform: Transform::from_xyz(0.0, 0.70, 4.22)
                     .with_scale(Vec3::new(0.85, 0.60, 1.0)),
                 ..default()
             });
@@ -2473,7 +2504,7 @@ fn spawn_flooded_moving_train(
             service.spawn(PbrBundle {
                 mesh: pool_assets.mesh_train_hvac.clone(),
                 material: pool_assets.mat_flooded_rust.clone(),
-                transform: Transform::from_xyz(0.0, 1.15, 2.2)
+                transform: Transform::from_xyz(0.0, 1.25, 1.60)
                     .with_scale(Vec3::new(0.80, 0.70, 0.60)),
                 ..default()
             });
@@ -2482,7 +2513,7 @@ fn spawn_flooded_moving_train(
                 service.spawn(PbrBundle {
                     mesh: pool_assets.mesh_flooded_service_light.clone(),
                     material: pool_assets.mat_flooded_amber.clone(),
-                    transform: Transform::from_xyz(x, 0.25, 4.3),
+                    transform: Transform::from_xyz(x, 0.25, 4.28),
                     ..default()
                 });
             }
@@ -2497,9 +2528,42 @@ fn spawn_flooded_moving_train(
             service.spawn(PbrBundle {
                 mesh: pool_assets.mesh_flooded_barrier_plate.clone(),
                 material: pool_assets.mat_flooded_hazard.clone(),
-                transform: Transform::from_xyz(0.0, -0.15, 4.32),
+                transform: Transform::from_xyz(0.0, -0.15, 4.30),
                 ..default()
             });
+
+            // --- REAR CARGO DECK HAULING ABUNDANT GOODS (Z in [-4.25, 1.0]) ---
+            // 1. Intermodal freight shipping container (heavy industrial container)
+            service.spawn(PbrBundle {
+                mesh: pool_assets.mesh_cargo_container_short.clone(),
+                material: pool_assets.mat_cargo_container.clone(),
+                transform: Transform::from_xyz(0.0, 0.225, -2.50),
+                ..default()
+            });
+            // 2. Stack of heavy wooden equipment cargo crates
+            service.spawn(PbrBundle {
+                mesh: pool_assets.mesh_cargo_crate_stack.clone(),
+                material: pool_assets.mat_cargo_wood.clone(),
+                transform: Transform::from_xyz(-0.52, -0.025, 0.05),
+                ..default()
+            });
+            // 3. High-voltage industrial cable reel / wire spool
+            service.spawn(PbrBundle {
+                mesh: pool_assets.mesh_cargo_cable_reel.clone(),
+                material: pool_assets.mat_flooded_steel.clone(),
+                transform: Transform::from_xyz(0.50, 0.10, 0.05)
+                    .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
+                ..default()
+            });
+            // 4. Strapped fuel / chemical hazard barrels
+            for x in [-0.50, 0.50] {
+                service.spawn(PbrBundle {
+                    mesh: pool_assets.mesh_cargo_drum.clone(),
+                    material: pool_assets.mat_flooded_hazard.clone(),
+                    transform: Transform::from_xyz(x, -0.125, 0.85),
+                    ..default()
+                });
+            }
         });
 }
 
