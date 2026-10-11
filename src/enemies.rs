@@ -163,6 +163,25 @@ fn next_hunter_cooldown(rng: &mut impl Rng) -> f32 {
     HUNTER_POST_ENCOUNTER_COOLDOWN_MIN + rng.gen_range(0.0..HUNTER_POST_ENCOUNTER_COOLDOWN_VARIANCE)
 }
 
+#[inline]
+fn is_impassable_track_obstacle(obstacle_type: ObstacleType) -> bool {
+    matches!(
+        obstacle_type,
+        ObstacleType::TallPillar | ObstacleType::StaticTrain | ObstacleType::MovingTrain { .. }
+    )
+}
+
+/// Returns whether a Heavy placed in `target_idx` leaves at least one other lane
+/// open through the currently spawned impassable obstacle corridor.
+///
+/// This is deliberately based on lane occupancy rather than visual positions:
+/// moving trains keep their existing lane and collision dimensions, while the
+/// scheduler simply refuses to add a third independent lane denial.
+#[inline]
+fn heavy_candidate_leaves_route(target_idx: usize, future_lane_blocked: [bool; 3]) -> bool {
+    (0..3).any(|lane_idx| lane_idx != target_idx && !future_lane_blocked[lane_idx])
+}
+
 pub struct EnemyPlugin;
 
 impl Plugin for EnemyPlugin {
@@ -721,8 +740,12 @@ fn update_enemy_spawning_and_pacing(
     if director.active_zone_id >= 3 && heavy_count == 0 && squad_mgr.spawn_cooldown <= 0.0 {
         let spawn_z = p_trans.translation.z - 38.0;
 
-        // Query existing track obstacles in the +/- 5m window around spawn_z
+        // A moving train can still be well ahead of the Heavy's spawn point when
+        // this system runs. Treat every upcoming impassable lane as reserved so
+        // the Heavy cannot occupy the only route left by a train pattern.
+        // Query existing track obstacles in the +/- 5m window around spawn_z.
         let mut lane_has_obstacle = [false; 3]; // [Left, Center, Right]
+        let mut future_lane_blocked = [false; 3];
         for (obs, o_trans) in obs_q.iter() {
             if (o_trans.translation.z - spawn_z).abs() <= 5.0 {
                 match obs.lane {
@@ -731,21 +754,31 @@ fn update_enemy_spawning_and_pacing(
                     Lane::Right => lane_has_obstacle[2] = true,
                 }
             }
+
+            let distance_ahead = p_trans.translation.z - o_trans.translation.z;
+            if (0.0..=80.0).contains(&distance_ahead)
+                && is_impassable_track_obstacle(obs.obstacle_type)
+            {
+                match obs.lane {
+                    Lane::Left => future_lane_blocked[0] = true,
+                    Lane::Center => future_lane_blocked[1] = true,
+                    Lane::Right => future_lane_blocked[2] = true,
+                }
+            }
         }
 
         let blocked_count = lane_has_obstacle.iter().filter(|&&b| b).count();
         if blocked_count < 2 {
-            // Find candidate lanes where placing Heavy still leaves at least one open lane
+            // Find candidate lanes where placing Heavy still leaves at least one
+            // route clear through the upcoming impassable obstacle sequence. This
+            // specifically prevents the Zone 3 train corridor from becoming:
+            // Heavy (left) -> moving train (center) -> static train (right).
             let all_lanes = [Lane::Left, Lane::Center, Lane::Right];
             let mut valid_lanes = Vec::new();
 
             for (idx, &lane) in all_lanes.iter().enumerate() {
                 if !lane_has_obstacle[idx] {
-                    let other_route_open = all_lanes
-                        .iter()
-                        .enumerate()
-                        .any(|(other_idx, _)| other_idx != idx && !lane_has_obstacle[other_idx]);
-                    if other_route_open {
+                    if heavy_candidate_leaves_route(idx, future_lane_blocked) {
                         valid_lanes.push(lane);
                     }
                 }
@@ -1635,6 +1668,29 @@ mod tests {
         assert!(!hunter_scheduler_ready(1500.0, 1, false, true, 0.0));
         assert!(!hunter_scheduler_ready(1500.0, 1, true, false, 0.0));
         assert!(hunter_scheduler_ready(2000.0, 2, false, false, 0.0));
+    }
+
+    #[test]
+    fn test_heavy_blocker_cannot_close_zone3_train_escape_lane() {
+        // Twin Rail Squeeze: center moving train + right static train leaves left.
+        // The old first-open-lane selection incorrectly placed Heavy on that left
+        // escape lane. The scheduler must reject left and choose another lane.
+        let future_train_blocked = [false, true, true];
+
+        assert!(!heavy_candidate_leaves_route(0, future_train_blocked));
+        assert!(heavy_candidate_leaves_route(1, future_train_blocked));
+        assert!(heavy_candidate_leaves_route(2, future_train_blocked));
+    }
+
+    #[test]
+    fn test_heavy_blocker_allows_normal_two_route_deployment() {
+        // A single upcoming train still leaves two routes, so adding one Heavy
+        // must remain eligible without changing normal Zone 3 pacing.
+        let future_train_blocked = [false, true, false];
+
+        assert!(heavy_candidate_leaves_route(0, future_train_blocked));
+        assert!(heavy_candidate_leaves_route(1, future_train_blocked));
+        assert!(heavy_candidate_leaves_route(2, future_train_blocked));
     }
 
     #[test]
