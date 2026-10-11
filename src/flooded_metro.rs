@@ -718,17 +718,19 @@ fn spawn_background_tunnel_arch(
     z: f32,
     scale: Vec3,
 ) {
+    // Monumental transverse arch lintel spanning the tunnel ceiling
     seg.spawn(PbrBundle {
         mesh: a.mesh_bg_tunnel_arch.clone(),
         material: a.mat_bg_dark_structure.clone(),
-        transform: Transform::from_xyz(x, y + 16.0 * scale.y, z).with_scale(scale),
+        transform: Transform::from_xyz(x, y + 8.4 * scale.y, z).with_scale(scale),
         ..default()
     });
+    // Massive architectural buttress columns embedded in the tunnel sidewalls
     for side in [-1.0, 1.0] {
         seg.spawn(PbrBundle {
             mesh: a.mesh_bg_arch_column.clone(),
             material: a.mat_bg_dark_structure.clone(),
-            transform: Transform::from_xyz(x + side * 22.0 * scale.x, y + 8.0 * scale.y, z)
+            transform: Transform::from_xyz(x + side * 9.2 * scale.x, y + 4.2 * scale.y, z)
                 .with_scale(scale),
             ..default()
         });
@@ -742,16 +744,25 @@ fn spawn_background_vent_shaft(
     y: f32,
     z: f32,
 ) {
+    // Colossal vertical shaft ascending from the ceiling into subterranean darkness
     seg.spawn(PbrBundle {
         mesh: a.mesh_bg_vent_shaft_body.clone(),
         material: a.mat_bg_dark_structure.clone(),
-        transform: Transform::from_xyz(x, y + 14.0, z),
+        transform: Transform::from_xyz(x, y + 24.4, z),
         ..default()
     });
+    // Heavy reinforced rim collar at the ceiling opening
     seg.spawn(PbrBundle {
         mesh: a.mesh_bg_vent_shaft_cap.clone(),
         material: a.mat_bg_metal_structure.clone(),
-        transform: Transform::from_xyz(x, y + 29.0, z),
+        transform: Transform::from_xyz(x, y + 8.4, z),
+        ..default()
+    });
+    // High-visibility amber warning beacon illuminating the shaft opening
+    seg.spawn(PbrBundle {
+        mesh: a.mesh_emergency_light.clone(),
+        material: a.mat_warning_amber.clone(),
+        transform: Transform::from_xyz(x, y + 7.2, z + 4.8).with_scale(Vec3::splat(2.0)),
         ..default()
     });
 }
@@ -763,22 +774,25 @@ fn spawn_background_pump_tower(
     y: f32,
     z: f32,
 ) {
+    // 14m high industrial pump machinery housing placed along side water margin
     seg.spawn(PbrBundle {
         mesh: a.mesh_bg_pump_housing.clone(),
         material: a.mat_bg_dark_structure.clone(),
-        transform: Transform::from_xyz(x, y + 7.0, z),
+        transform: Transform::from_xyz(x, y + 5.5, z),
         ..default()
     });
+    // Vertical high-pressure suction trunk ascending from water to ceiling
     seg.spawn(PbrBundle {
         mesh: a.mesh_bg_pipe_trunk.clone(),
         material: a.mat_rusted_steel.clone(),
-        transform: Transform::from_xyz(x - 3.8, y + 12.0, z),
+        transform: Transform::from_xyz(x - x.signum() * 2.6, y + 8.0, z),
         ..default()
     });
+    // High-mounted amber machinery beacon
     seg.spawn(PbrBundle {
         mesh: a.mesh_emergency_light.clone(),
         material: a.mat_warning_amber.clone(),
-        transform: Transform::from_xyz(x, y + 14.2, z).with_scale(Vec3::splat(2.5)),
+        transform: Transform::from_xyz(x, y + 12.6, z).with_scale(Vec3::splat(2.2)),
         ..default()
     });
 }
@@ -790,16 +804,18 @@ fn spawn_background_maintenance_bridge(
     y: f32,
     z: f32,
 ) {
+    // Overhead bridge deck crossing directly above the transit corridor
     seg.spawn(PbrBundle {
         mesh: a.mesh_bg_maint_bridge_deck.clone(),
         material: a.mat_bg_metal_structure.clone(),
-        transform: Transform::from_xyz(x, y, z),
+        transform: Transform::from_xyz(x, y + 7.6, z),
         ..default()
     });
+    // Industrial truss railing
     seg.spawn(PbrBundle {
         mesh: a.mesh_bg_maint_bridge_truss.clone(),
         material: a.mat_bg_dark_structure.clone(),
-        transform: Transform::from_xyz(x, y + 1.8, z),
+        transform: Transform::from_xyz(x, y + 9.2, z),
         ..default()
     });
 }
@@ -811,12 +827,13 @@ fn spawn_background_pipe_bank(
     y: f32,
     z: f32,
 ) {
-    for y_off in [0.0, 3.8] {
+    // High-level pipe trunks spanning across the ceiling transversely
+    for y_off in [7.5, 8.8] {
         seg.spawn(PbrBundle {
             mesh: a.mesh_bg_pipe_trunk.clone(),
             material: a.mat_rusted_steel.clone(),
             transform: Transform::from_xyz(x, y + y_off, z)
-                .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
+                .with_rotation(Quat::from_rotation_z(std::f32::consts::FRAC_PI_2)),
             ..default()
         });
     }
@@ -830,10 +847,11 @@ fn spawn_distant_train_silhouette(
     z: f32,
     yaw: f32,
 ) {
+    // 26m long derelict express carriage resting in flooded siding margin
     seg.spawn(PbrBundle {
         mesh: a.mesh_bg_distant_train.clone(),
         material: a.mat_bg_dark_structure.clone(),
-        transform: Transform::from_xyz(x, y + 1.6, z).with_rotation(Quat::from_rotation_y(yaw)),
+        transform: Transform::from_xyz(x, y + 1.2, z).with_rotation(Quat::from_rotation_y(yaw)),
         ..default()
     });
 }
@@ -845,17 +863,19 @@ fn spawn_background_reservoir_wall(
     y: f32,
     z: f32,
 ) {
+    // Colossal reservoir retention wall
     seg.spawn(PbrBundle {
         mesh: a.mesh_bg_reservoir_wall_colossal.clone(),
         material: a.mat_bg_dark_structure.clone(),
-        transform: Transform::from_xyz(x, y + 15.0, z),
+        transform: Transform::from_xyz(x, y + 14.0, z),
         ..default()
     });
+    // Heavy aqueduct buttress pillars flanking the dam wall
     for z_off in [-14.0, 14.0] {
         seg.spawn(PbrBundle {
             mesh: a.mesh_bg_aqueduct_pillar.clone(),
             material: a.mat_bg_dark_structure.clone(),
-            transform: Transform::from_xyz(x - (x.signum() * 2.5), y + 11.0, z + z_off),
+            transform: Transform::from_xyz(x - (x.signum() * 2.5), y + 10.0, z + z_off),
             ..default()
         });
     }
@@ -868,17 +888,19 @@ fn spawn_background_blast_door_portal(
     y: f32,
     z: f32,
 ) {
+    // 26m wide cyclopean reinforced blast door portal frame
     seg.spawn(PbrBundle {
         mesh: a.mesh_bg_blast_door_frame.clone(),
         material: a.mat_bg_dark_structure.clone(),
-        transform: Transform::from_xyz(x, y + 9.0, z),
+        transform: Transform::from_xyz(x, y + 7.5, z),
         ..default()
     });
+    // Heavy retractable blast door leaves mounted on side stanchions
     for side in [-1.0, 1.0] {
         seg.spawn(PbrBundle {
             mesh: a.mesh_bg_blast_door_panel.clone(),
             material: a.mat_bg_metal_structure.clone(),
-            transform: Transform::from_xyz(x + side * 5.8, y + 8.0, z),
+            transform: Transform::from_xyz(x + side * 8.6, y + 7.0, z),
             ..default()
         });
     }
@@ -1236,18 +1258,17 @@ fn spawn_floodgate_descent_segment(
     spawn_water_elements(seg, a, 1.0, false);
 
     // PILLAR A: Background Architectural Silhouettes (Scale & Subterranean Depth)
-    spawn_background_tunnel_arch(seg, a, 0.0, 8.0, -18.0, Vec3::new(1.0, 1.0, 1.0));
     match variant {
         0 => {
-            spawn_background_pump_tower(seg, a, 32.0, 0.0, 0.0);
-            spawn_background_pipe_bank(seg, a, -28.0, 3.0, 0.0);
+            spawn_background_tunnel_arch(seg, a, 0.0, 0.0, -16.0, Vec3::new(1.0, 1.0, 1.0));
+            spawn_background_pipe_bank(seg, a, 0.0, 0.0, 8.0);
             spawn_culvert_drain(seg, a, -1.0, -8.0);
             spawn_pump_station(seg, a, 1.0, 6.0);
             spawn_ladder(seg, a, 1.0, -12.0);
         }
         1 => {
-            spawn_background_vent_shaft(seg, a, -30.0, 0.0, -10.0);
-            spawn_background_maintenance_bridge(seg, a, 0.0, 13.0, 10.0);
+            spawn_background_pump_tower(seg, a, 7.8, 0.0, 0.0);
+            spawn_background_maintenance_bridge(seg, a, 0.0, 0.0, 12.0);
             spawn_electrical_box(seg, a, -1.0, 4.0);
             spawn_culvert_drain(seg, a, 1.0, 10.0);
             spawn_mesh(
@@ -1258,8 +1279,8 @@ fn spawn_floodgate_descent_segment(
             );
         }
         _ => {
-            spawn_background_vent_shaft(seg, a, 30.0, 0.0, 8.0);
-            spawn_background_pump_tower(seg, a, -32.0, 0.0, -5.0);
+            spawn_background_vent_shaft(seg, a, 0.0, 0.0, -8.0);
+            spawn_background_tunnel_arch(seg, a, 0.0, 0.0, 16.0, Vec3::new(1.0, 1.0, 1.0));
             spawn_pump_station(seg, a, -1.0, -4.0);
             spawn_electrical_box(seg, a, 1.0, 8.0);
             spawn_culvert_drain(seg, a, -1.0, 12.0);
@@ -1338,10 +1359,20 @@ fn spawn_submerged_station_segment(
     spawn_water_elements(seg, a, -platform_side, false);
 
     // PILLAR A: Background Silhouettes (Vast Station Hall & Distant Platforms)
-    spawn_background_tunnel_arch(seg, a, 0.0, 9.0, 0.0, Vec3::new(1.15, 1.1, 1.0));
-    spawn_background_maintenance_bridge(seg, a, 0.0, 12.0, -15.0);
-    spawn_background_vent_shaft(seg, a, platform_side * 34.0, 0.0, 5.0);
-    spawn_distant_train_silhouette(seg, a, -platform_side * 28.0, 0.0, 12.0, 0.0);
+    match variant {
+        0 => {
+            spawn_background_tunnel_arch(seg, a, 0.0, 0.0, -12.0, Vec3::new(1.05, 1.0, 1.0));
+            spawn_background_maintenance_bridge(seg, a, 0.0, 0.0, 10.0);
+        }
+        1 => {
+            spawn_distant_train_silhouette(seg, a, -platform_side * 6.6, 0.0, 2.0, 0.0);
+            spawn_background_tunnel_arch(seg, a, 0.0, 0.0, 14.0, Vec3::new(1.05, 1.0, 1.0));
+        }
+        _ => {
+            spawn_background_vent_shaft(seg, a, 0.0, 0.0, 0.0);
+            spawn_background_maintenance_bridge(seg, a, 0.0, 0.0, -12.0);
+        }
+    }
 
     let plat_x = platform_side * 6.5;
     spawn_mesh(
@@ -1457,12 +1488,21 @@ fn spawn_reservoir_crossing_segment(
     spawn_water_elements(seg, a, 1.0, true);
 
     // PILLAR A: Background Silhouettes (Colossal Scale & Distant Aqueduct Arches)
-    spawn_background_reservoir_wall(seg, a, -42.0, -2.0, 0.0);
-    spawn_background_reservoir_wall(seg, a, 42.0, -2.0, 0.0);
-    spawn_background_tunnel_arch(seg, a, 0.0, 14.0, 0.0, Vec3::new(1.35, 1.35, 1.2));
-    spawn_background_pump_tower(seg, a, -34.0, -2.0, -12.0);
-    spawn_background_pump_tower(seg, a, 36.0, -2.0, 12.0);
-    spawn_background_maintenance_bridge(seg, a, 0.0, 17.0, 14.0);
+    match variant {
+        0 => {
+            spawn_background_reservoir_wall(seg, a, -19.5, 0.0, 0.0);
+            spawn_background_reservoir_wall(seg, a, 19.5, 0.0, 0.0);
+        }
+        1 => {
+            spawn_background_tunnel_arch(seg, a, 0.0, 3.5, 0.0, Vec3::new(2.1, 1.4, 1.2));
+            spawn_background_maintenance_bridge(seg, a, 0.0, 4.5, 12.0);
+        }
+        _ => {
+            spawn_background_pump_tower(seg, a, -14.0, 0.0, -8.0);
+            spawn_background_pump_tower(seg, a, 14.0, 0.0, 8.0);
+            spawn_background_maintenance_bridge(seg, a, 0.0, 4.5, -12.0);
+        }
+    }
 
     for side in [-1.0, 1.0] {
         for z in [-14.0, 14.0] {
@@ -1581,11 +1621,20 @@ fn spawn_sunken_transit_segment(
     spawn_water_elements(seg, a, siding_side, false);
 
     // PILLAR A: Background Silhouettes (Distant Derailed Carriages & Transit Yard Hall)
-    spawn_distant_train_silhouette(seg, a, siding_side * 30.0, 0.0, -14.0, 0.15);
-    spawn_distant_train_silhouette(seg, a, -siding_side * 32.0, 0.0, 8.0, -0.22);
-    spawn_background_maintenance_bridge(seg, a, 0.0, 11.5, 0.0);
-    spawn_background_tunnel_arch(seg, a, 0.0, 7.5, 18.0, Vec3::new(1.05, 1.0, 1.0));
-    spawn_background_vent_shaft(seg, a, -siding_side * 28.0, 0.0, -10.0);
+    match variant {
+        0 => {
+            spawn_distant_train_silhouette(seg, a, siding_side * 6.5, 0.0, -12.0, 0.12);
+            spawn_background_tunnel_arch(seg, a, 0.0, 0.0, 14.0, Vec3::new(1.0, 1.0, 1.0));
+        }
+        1 => {
+            spawn_background_maintenance_bridge(seg, a, 0.0, 0.0, 0.0);
+            spawn_background_tunnel_arch(seg, a, 0.0, 0.0, -16.0, Vec3::new(1.0, 1.0, 1.0));
+        }
+        _ => {
+            spawn_distant_train_silhouette(seg, a, -siding_side * 6.5, 0.0, 8.0, -0.15);
+            spawn_background_vent_shaft(seg, a, 0.0, 0.0, -6.0);
+        }
+    }
 
     spawn_train_carriage(seg, a, siding_side, 0.0, false);
 
@@ -1704,11 +1753,19 @@ fn spawn_deep_line_approach_segment(
     spawn_water_elements(seg, a, -1.0, false);
 
     // PILLAR A: Background Silhouettes (Fortified Deep Bulkheads & ECHO Portals)
-    spawn_background_blast_door_portal(seg, a, -26.0, 0.0, 0.0);
-    spawn_background_blast_door_portal(seg, a, 26.0, 0.0, 0.0);
-    spawn_background_tunnel_arch(seg, a, 0.0, 8.5, -16.0, Vec3::new(1.1, 1.05, 1.0));
-    spawn_background_pipe_bank(seg, a, -28.0, 2.0, 10.0);
-    spawn_background_maintenance_bridge(seg, a, 0.0, 12.0, 14.0);
+    match variant {
+        0 => {
+            spawn_background_blast_door_portal(seg, a, 0.0, 0.0, -16.0);
+        }
+        1 => {
+            spawn_background_tunnel_arch(seg, a, 0.0, 0.0, 0.0, Vec3::new(1.05, 1.0, 1.0));
+            spawn_background_pipe_bank(seg, a, 0.0, 0.0, 12.0);
+        }
+        _ => {
+            spawn_background_maintenance_bridge(seg, a, 0.0, 0.0, -10.0);
+            spawn_background_vent_shaft(seg, a, 0.0, 0.0, 10.0);
+        }
+    }
 
     for side in [-1.0, 1.0] {
         spawn_mesh(
@@ -2181,5 +2238,23 @@ mod tests {
             WaterDripEmitterType::PumpHousingLeak,
         ];
         assert_eq!(emitters.len(), 6);
+    }
+
+    #[test]
+    fn test_flooded_metro_background_composition_chapters() {
+        let checkpoints = [
+            (6000.0, FloodedMetroChapter::FloodgateDescent),
+            (6300.0, FloodedMetroChapter::SubmergedStation),
+            (6750.0, FloodedMetroChapter::ReservoirCrossing),
+            (7200.0, FloodedMetroChapter::SunkenTransit),
+            (7650.0, FloodedMetroChapter::DeepLineApproach),
+            (8000.0, FloodedMetroChapter::DeepLineApproach),
+        ];
+
+        for (dist, expected_ch) in checkpoints {
+            assert_eq!(flooded_metro_chapter_for_distance(dist), expected_ch);
+            let var = flooded_metro_variant(dist);
+            assert!(var < 3);
+        }
     }
 }
