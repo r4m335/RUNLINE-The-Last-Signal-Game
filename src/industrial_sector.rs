@@ -53,6 +53,30 @@ pub struct IndustrialSectorAssets {
     pub mesh_warning_light: Handle<Mesh>,
     pub mesh_steam: Handle<Mesh>,
     pub mesh_water_leak: Handle<Mesh>,
+    // Reusable Visual Pass 2 modules. These are created once and instanced
+    // across authored chunks so detail does not create per-frame allocations.
+    pub mesh_facade_panel: Handle<Mesh>,
+    pub mesh_structural_column: Handle<Mesh>,
+    pub mesh_reinforcement_beam: Handle<Mesh>,
+    pub mesh_service_door: Handle<Mesh>,
+    pub mesh_loading_bay: Handle<Mesh>,
+    pub mesh_vent_panel: Handle<Mesh>,
+    pub mesh_platform: Handle<Mesh>,
+    pub mesh_railing: Handle<Mesh>,
+    pub mesh_ladder: Handle<Mesh>,
+    pub mesh_pipe_junction: Handle<Mesh>,
+    pub mesh_valve: Handle<Mesh>,
+    pub mesh_pressure_gauge: Handle<Mesh>,
+    pub mesh_machine: Handle<Mesh>,
+    pub mesh_transformer: Handle<Mesh>,
+    pub mesh_storage_tank: Handle<Mesh>,
+    pub mesh_duct: Handle<Mesh>,
+    pub mesh_cooling_unit: Handle<Mesh>,
+    pub mesh_conveyor_frame: Handle<Mesh>,
+    pub mesh_conveyor_roller: Handle<Mesh>,
+    pub mesh_pallet: Handle<Mesh>,
+    pub mesh_freight_platform: Handle<Mesh>,
+    pub mesh_security_gate: Handle<Mesh>,
     pub mat_factory: Handle<StandardMaterial>,
     pub mat_steel: Handle<StandardMaterial>,
     pub mat_rusted_steel: Handle<StandardMaterial>,
@@ -63,6 +87,8 @@ pub struct IndustrialSectorAssets {
     pub mat_cooling: Handle<StandardMaterial>,
     pub mat_steam: Handle<StandardMaterial>,
     pub mat_water_leak: Handle<StandardMaterial>,
+    pub mat_facade: Handle<StandardMaterial>,
+    pub mat_dark_steel: Handle<StandardMaterial>,
 }
 
 pub fn init_industrial_sector_assets(
@@ -89,6 +115,28 @@ pub fn init_industrial_sector_assets(
         mesh_warning_light: meshes.add(Sphere::new(0.13)),
         mesh_steam: meshes.add(Sphere::new(0.48)),
         mesh_water_leak: meshes.add(Cuboid::new(0.16, 1.8, 0.16)),
+        mesh_facade_panel: meshes.add(Cuboid::new(0.18, 3.1, 7.2)),
+        mesh_structural_column: meshes.add(Cuboid::new(0.28, 7.0, 0.28)),
+        mesh_reinforcement_beam: meshes.add(Cuboid::new(0.22, 0.24, 7.0)),
+        mesh_service_door: meshes.add(Cuboid::new(0.10, 1.8, 1.4)),
+        mesh_loading_bay: meshes.add(Cuboid::new(0.18, 2.4, 3.8)),
+        mesh_vent_panel: meshes.add(Cuboid::new(0.12, 1.2, 1.6)),
+        mesh_platform: meshes.add(Cuboid::new(3.4, 0.14, 6.0)),
+        mesh_railing: meshes.add(Cuboid::new(0.10, 0.75, 6.0)),
+        mesh_ladder: meshes.add(Cuboid::new(0.08, 2.2, 0.08)),
+        mesh_pipe_junction: meshes.add(Sphere::new(0.24)),
+        mesh_valve: meshes.add(Cylinder::new(0.42, 0.14)),
+        mesh_pressure_gauge: meshes.add(Cylinder::new(0.22, 0.08)),
+        mesh_machine: meshes.add(Cuboid::new(1.8, 1.5, 2.3)),
+        mesh_transformer: meshes.add(Cuboid::new(1.4, 1.7, 1.5)),
+        mesh_storage_tank: meshes.add(Cylinder::new(1.6, 3.2)),
+        mesh_duct: meshes.add(Cylinder::new(0.7, 6.0)),
+        mesh_cooling_unit: meshes.add(Cuboid::new(2.4, 1.1, 3.0)),
+        mesh_conveyor_frame: meshes.add(Cuboid::new(4.2, 0.9, 0.18)),
+        mesh_conveyor_roller: meshes.add(Cylinder::new(0.10, 3.4)),
+        mesh_pallet: meshes.add(Cuboid::new(1.8, 0.25, 1.3)),
+        mesh_freight_platform: meshes.add(Cuboid::new(4.0, 0.35, 6.0)),
+        mesh_security_gate: meshes.add(Cuboid::new(0.42, 4.8, 0.42)),
         mat_factory: materials.add(StandardMaterial {
             base_color: Color::srgb(0.12, 0.13, 0.14),
             metallic: 0.65,
@@ -149,6 +197,18 @@ pub fn init_industrial_sector_assets(
             emissive: LinearRgba::new(0.01, 0.18, 0.22, 1.0),
             metallic: 0.25,
             perceptual_roughness: 0.18,
+            ..default()
+        }),
+        mat_facade: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.16, 0.17, 0.18),
+            metallic: 0.72,
+            perceptual_roughness: 0.58,
+            ..default()
+        }),
+        mat_dark_steel: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.07, 0.08, 0.09),
+            metallic: 0.88,
+            perceptual_roughness: 0.48,
             ..default()
         }),
     };
@@ -345,6 +405,8 @@ fn spawn_near_industrial_features(
             ..default()
         });
     }
+    spawn_facade_modules(seg, industrial, side, variant);
+    spawn_pipe_rack_detail(seg, industrial, opposite, variant);
 }
 
 fn spawn_mid_industrial_features(
@@ -476,6 +538,7 @@ fn spawn_mid_industrial_features(
             });
         }
     }
+    spawn_mid_industrial_detail(seg, industrial, side, variant);
 }
 
 fn spawn_far_industrial_features(
@@ -513,6 +576,7 @@ fn spawn_far_industrial_features(
     ) {
         spawn_steam_vent(seg, industrial, side * 12.0, 5.5, 4.0);
     }
+    spawn_far_industrial_detail(seg, industrial, side, variant);
 }
 
 fn spawn_crane(seg: &mut ChildBuilder, industrial: &IndustrialSectorAssets, x: f32) {
@@ -551,6 +615,324 @@ fn spawn_steam_vent(
         transform: Transform::from_xyz(x, y, z).with_scale(Vec3::new(0.7, 1.4, 0.7)),
         ..default()
     });
+}
+
+/// Builds a small repeated facade module instead of treating a factory as one
+/// undifferentiated wall. The modules stay outside the playable lanes while
+/// giving each 40m chunk visible columns, panels, service access, and vents.
+fn spawn_facade_modules(
+    seg: &mut ChildBuilder,
+    industrial: &IndustrialSectorAssets,
+    side: f32,
+    variant: IndustrialVariant,
+) {
+    for z in [-12.0, -4.0, 4.0, 12.0] {
+        seg.spawn(PbrBundle {
+            mesh: industrial.mesh_facade_panel.clone(),
+            material: industrial.mat_facade.clone(),
+            transform: Transform::from_xyz(side * 8.34, 3.35, z),
+            ..default()
+        });
+        seg.spawn(PbrBundle {
+            mesh: industrial.mesh_structural_column.clone(),
+            material: industrial.mat_dark_steel.clone(),
+            transform: Transform::from_xyz(side * 8.48, 3.45, z - 3.25),
+            ..default()
+        });
+        seg.spawn(PbrBundle {
+            mesh: industrial.mesh_reinforcement_beam.clone(),
+            material: industrial.mat_steel.clone(),
+            transform: Transform::from_xyz(side * 8.48, 1.75, z),
+            ..default()
+        });
+    }
+
+    let detail_mesh = match variant {
+        IndustrialVariant::FreightContainerStack
+        | IndustrialVariant::FreightCraneBay
+        | IndustrialVariant::FreightLoadingPlatform => industrial.mesh_loading_bay.clone(),
+        _ => industrial.mesh_service_door.clone(),
+    };
+    seg.spawn(PbrBundle {
+        mesh: detail_mesh,
+        material: industrial.mat_hazard.clone(),
+        transform: Transform::from_xyz(side * 8.57, 1.4, 0.0),
+        ..default()
+    });
+    for z in [-8.0, 8.0] {
+        seg.spawn(PbrBundle {
+            mesh: industrial.mesh_vent_panel.clone(),
+            material: industrial.mat_dark_steel.clone(),
+            transform: Transform::from_xyz(side * 8.57, 4.4, z),
+            ..default()
+        });
+    }
+}
+
+/// A compact pipe rack gives the industrial silhouettes a believable service
+/// route. Valves and gauges are fixed geometry, not animated entities.
+fn spawn_pipe_rack_detail(
+    seg: &mut ChildBuilder,
+    industrial: &IndustrialSectorAssets,
+    side: f32,
+    variant: IndustrialVariant,
+) {
+    for (y, material) in [
+        (2.35, industrial.mat_pipe.clone()),
+        (3.05, industrial.mat_steel.clone()),
+    ] {
+        seg.spawn(PbrBundle {
+            mesh: industrial.mesh_large_pipe.clone(),
+            material,
+            transform: Transform::from_xyz(side * 5.2, y, 0.0)
+                .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
+            ..default()
+        });
+    }
+    for z in [-13.0, 13.0] {
+        seg.spawn(PbrBundle {
+            mesh: industrial.mesh_structural_column.clone(),
+            material: industrial.mat_dark_steel.clone(),
+            transform: Transform::from_xyz(side * 5.25, 3.05, z),
+            ..default()
+        });
+        seg.spawn(PbrBundle {
+            mesh: industrial.mesh_pipe_junction.clone(),
+            material: industrial.mat_pipe.clone(),
+            transform: Transform::from_xyz(side * 5.2, 2.35, z),
+            ..default()
+        });
+    }
+    if !matches!(variant, IndustrialVariant::EntryServiceBlock) {
+        seg.spawn(PbrBundle {
+            mesh: industrial.mesh_valve.clone(),
+            material: industrial.mat_hazard.clone(),
+            transform: Transform::from_xyz(side * 5.2, 2.35, -6.0)
+                .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
+            ..default()
+        });
+        seg.spawn(PbrBundle {
+            mesh: industrial.mesh_pressure_gauge.clone(),
+            material: industrial.mat_amber.clone(),
+            transform: Transform::from_xyz(side * 5.2, 3.05, 6.0)
+                .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
+            ..default()
+        });
+    }
+}
+
+fn spawn_mid_industrial_detail(
+    seg: &mut ChildBuilder,
+    industrial: &IndustrialSectorAssets,
+    side: f32,
+    variant: IndustrialVariant,
+) {
+    match variant {
+        IndustrialVariant::EntryPipeGallery
+        | IndustrialVariant::EntryServiceBlock
+        | IndustrialVariant::EntryWarningLine => {
+            spawn_service_machinery(seg, industrial, side, -6.0);
+        }
+        IndustrialVariant::FreightContainerStack
+        | IndustrialVariant::FreightCraneBay
+        | IndustrialVariant::FreightLoadingPlatform => {
+            seg.spawn(PbrBundle {
+                mesh: industrial.mesh_freight_platform.clone(),
+                material: industrial.mat_dark_steel.clone(),
+                transform: Transform::from_xyz(-side * 6.0, 0.55, 0.0),
+                ..default()
+            });
+            for z in [-7.0, 0.0, 7.0] {
+                seg.spawn(PbrBundle {
+                    mesh: industrial.mesh_pallet.clone(),
+                    material: industrial.mat_rusted_steel.clone(),
+                    transform: Transform::from_xyz(-side * 7.1, 0.75, z),
+                    ..default()
+                });
+            }
+            spawn_service_machinery(seg, industrial, side, 8.0);
+        }
+        IndustrialVariant::ProcessingPressureRow
+        | IndustrialVariant::ProcessingSteamManifold
+        | IndustrialVariant::ProcessingCatwalk => {
+            for z in [-8.0, 8.0] {
+                seg.spawn(PbrBundle {
+                    mesh: industrial.mesh_storage_tank.clone(),
+                    material: industrial.mat_steel.clone(),
+                    transform: Transform::from_xyz(-side * 8.0, 2.0, z),
+                    ..default()
+                });
+            }
+            spawn_catwalk_detail(seg, industrial, side, 0.0);
+        }
+        IndustrialVariant::HeavyWorksConveyor
+        | IndustrialVariant::HeavyWorksVeyronGate
+        | IndustrialVariant::HeavyWorksCoolingArray => {
+            spawn_conveyor_detail(seg, industrial, side);
+            spawn_catwalk_detail(seg, industrial, side, -2.0);
+            for z in [-8.0, 8.0] {
+                seg.spawn(PbrBundle {
+                    mesh: industrial.mesh_cooling_unit.clone(),
+                    material: industrial.mat_cooling.clone(),
+                    transform: Transform::from_xyz(-side * 8.2, 1.0, z),
+                    ..default()
+                });
+            }
+            if matches!(variant, IndustrialVariant::HeavyWorksVeyronGate) {
+                spawn_veyron_security_detail(seg, industrial, side);
+            }
+        }
+        IndustrialVariant::TransitionLeakingMain
+        | IndustrialVariant::TransitionDamagedWorks
+        | IndustrialVariant::TransitionFloodApproach => {
+            spawn_service_machinery(seg, industrial, side, -7.0);
+            seg.spawn(PbrBundle {
+                mesh: industrial.mesh_transformer.clone(),
+                material: industrial.mat_rusted_steel.clone(),
+                transform: Transform::from_xyz(-side * 7.0, 1.1, 8.0),
+                ..default()
+            });
+        }
+    }
+}
+
+fn spawn_service_machinery(
+    seg: &mut ChildBuilder,
+    industrial: &IndustrialSectorAssets,
+    side: f32,
+    z: f32,
+) {
+    seg.spawn(PbrBundle {
+        mesh: industrial.mesh_machine.clone(),
+        material: industrial.mat_dark_steel.clone(),
+        transform: Transform::from_xyz(side * 6.8, 1.0, z),
+        ..default()
+    });
+    seg.spawn(PbrBundle {
+        mesh: industrial.mesh_transformer.clone(),
+        material: industrial.mat_steel.clone(),
+        transform: Transform::from_xyz(side * 7.6, 0.95, z + 3.0),
+        ..default()
+    });
+    seg.spawn(PbrBundle {
+        mesh: industrial.mesh_warning_light.clone(),
+        material: industrial.mat_amber.clone(),
+        transform: Transform::from_xyz(side * 7.7, 2.0, z + 3.0),
+        ..default()
+    });
+}
+
+fn spawn_catwalk_detail(
+    seg: &mut ChildBuilder,
+    industrial: &IndustrialSectorAssets,
+    side: f32,
+    z: f32,
+) {
+    seg.spawn(PbrBundle {
+        mesh: industrial.mesh_platform.clone(),
+        material: industrial.mat_steel.clone(),
+        transform: Transform::from_xyz(side * 6.4, 4.0, z),
+        ..default()
+    });
+    for x in [side * 5.0, side * 7.8] {
+        seg.spawn(PbrBundle {
+            mesh: industrial.mesh_railing.clone(),
+            material: industrial.mat_hazard.clone(),
+            transform: Transform::from_xyz(x, 4.45, z),
+            ..default()
+        });
+    }
+    for x in [side * 5.0, side * 7.8] {
+        seg.spawn(PbrBundle {
+            mesh: industrial.mesh_ladder.clone(),
+            material: industrial.mat_dark_steel.clone(),
+            transform: Transform::from_xyz(x, 2.85, z + 2.2),
+            ..default()
+        });
+    }
+}
+
+fn spawn_conveyor_detail(seg: &mut ChildBuilder, industrial: &IndustrialSectorAssets, side: f32) {
+    for z in [-6.0, 0.0, 6.0] {
+        seg.spawn(PbrBundle {
+            mesh: industrial.mesh_conveyor_frame.clone(),
+            material: industrial.mat_dark_steel.clone(),
+            transform: Transform::from_xyz(side * 6.4, 2.15, z)
+                .with_rotation(Quat::from_rotation_x(0.08)),
+            ..default()
+        });
+        seg.spawn(PbrBundle {
+            mesh: industrial.mesh_conveyor_roller.clone(),
+            material: industrial.mat_steel.clone(),
+            transform: Transform::from_xyz(side * 6.4, 2.38, z)
+                .with_rotation(Quat::from_rotation_z(std::f32::consts::FRAC_PI_2)),
+            ..default()
+        });
+    }
+    seg.spawn(PbrBundle {
+        mesh: industrial.mesh_machine.clone(),
+        material: industrial.mat_hazard.clone(),
+        transform: Transform::from_xyz(side * 6.4, 1.1, 8.0),
+        ..default()
+    });
+}
+
+fn spawn_veyron_security_detail(
+    seg: &mut ChildBuilder,
+    industrial: &IndustrialSectorAssets,
+    side: f32,
+) {
+    for z in [-9.0, 9.0] {
+        seg.spawn(PbrBundle {
+            mesh: industrial.mesh_security_gate.clone(),
+            material: industrial.mat_veyron.clone(),
+            transform: Transform::from_xyz(side * 9.5, 2.4, z),
+            ..default()
+        });
+    }
+    seg.spawn(PbrBundle {
+        mesh: industrial.mesh_sign.clone(),
+        material: industrial.mat_veyron.clone(),
+        transform: Transform::from_xyz(side * 9.5, 5.0, 0.0),
+        ..default()
+    });
+}
+
+fn spawn_far_industrial_detail(
+    seg: &mut ChildBuilder,
+    industrial: &IndustrialSectorAssets,
+    side: f32,
+    variant: IndustrialVariant,
+) {
+    for (x, z) in [(side * 18.0, -10.0), (-side * 19.0, 10.0)] {
+        seg.spawn(PbrBundle {
+            mesh: industrial.mesh_facade_panel.clone(),
+            material: industrial.mat_factory.clone(),
+            transform: Transform::from_xyz(x, 5.2, z).with_scale(Vec3::new(1.0, 1.8, 1.8)),
+            ..default()
+        });
+    }
+    if matches!(
+        variant,
+        IndustrialVariant::FreightCraneBay
+            | IndustrialVariant::FreightLoadingPlatform
+            | IndustrialVariant::HeavyWorksConveyor
+            | IndustrialVariant::HeavyWorksVeyronGate
+    ) {
+        seg.spawn(PbrBundle {
+            mesh: industrial.mesh_duct.clone(),
+            material: industrial.mat_pipe.clone(),
+            transform: Transform::from_xyz(side * 15.0, 6.0, 0.0)
+                .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
+            ..default()
+        });
+    }
+    if matches!(
+        variant,
+        IndustrialVariant::TransitionDamagedWorks | IndustrialVariant::TransitionFloodApproach
+    ) {
+        spawn_steam_vent(seg, industrial, -side * 17.0, 5.3, -8.0);
+    }
 }
 
 #[cfg(test)]
