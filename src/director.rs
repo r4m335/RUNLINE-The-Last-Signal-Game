@@ -1,3 +1,4 @@
+use crate::debug_start::DebugStartConfig;
 use crate::story::DISTANCE_MILESTONES;
 use crate::types::*;
 use crate::zones::get_zone_for_distance;
@@ -114,10 +115,23 @@ fn handle_run_reset_director(
     mut director: ResMut<RunDirector>,
     mut stats: ResMut<GameRunStats>,
     mut powerups: ResMut<ActivePowerUps>,
+    debug_start: Option<Res<DebugStartConfig>>,
 ) {
     for _ in events.read() {
-        *director = RunDirector::default();
-        stats.distance = 0.0;
+        let start_distance = debug_start
+            .as_deref()
+            .map(|config| config.distance())
+            .unwrap_or(0.0);
+        let start_zone = get_zone_for_distance(start_distance);
+        *director = RunDirector {
+            active_zone_id: start_zone.id,
+            milestone_index: DISTANCE_MILESTONES
+                .iter()
+                .position(|milestone| milestone.distance > start_distance)
+                .unwrap_or(DISTANCE_MILESTONES.len()),
+            profile: DifficultyProfile::for_zone(start_zone.id),
+        };
+        stats.distance = start_distance;
         stats.speed = 16.0;
         stats.base_speed = 16.0;
         stats.fragments = 0;
@@ -125,7 +139,7 @@ fn handle_run_reset_director(
         stats.score = 0;
         stats.score_accum = 0.0;
         stats.multiplier = 1.0;
-        stats.current_zone = 1;
+        stats.current_zone = start_zone.id;
         stats.stumble_intensity = 0.0;
         stats.story_dialogue = None;
         *powerups = ActivePowerUps::default();
@@ -182,6 +196,7 @@ fn update_run_director(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::debug_start::DebugStartConfig;
 
     #[test]
     fn test_aggressive_reset_sequence_and_state_isolation() {
@@ -288,5 +303,33 @@ mod tests {
             let director = app.world().resource::<RunDirector>();
             assert_eq!(director.active_zone_id, 1);
         }
+    }
+
+    #[test]
+    fn debug_reset_initializes_actual_distance_zone_and_profile() {
+        let mut app = App::new();
+        app.add_event::<RunResetEvent>();
+        app.init_resource::<RunDirector>();
+        app.init_resource::<GameRunStats>();
+        app.init_resource::<ActivePowerUps>();
+        app.insert_resource(DebugStartConfig { selected_preset: 9 });
+        app.add_systems(Update, handle_run_reset_director);
+
+        app.world_mut().send_event(RunResetEvent);
+        app.update();
+
+        let stats = app.world().resource::<GameRunStats>();
+        assert_eq!(stats.distance, 5100.0);
+        assert_eq!(stats.current_zone, 3);
+
+        let director = app.world().resource::<RunDirector>();
+        assert_eq!(director.active_zone_id, 3);
+        assert_eq!(director.profile.pattern_complexity, 3);
+        assert_eq!(director.profile.speed_multiplier, 1.30);
+
+        app.world_mut().resource_mut::<GameRunStats>().distance = 5600.0;
+        app.world_mut().send_event(RunResetEvent);
+        app.update();
+        assert_eq!(app.world().resource::<GameRunStats>().distance, 5100.0);
     }
 }

@@ -9,6 +9,10 @@ const SEGMENT_LENGTH: f32 = 40.0;
 const SPAWN_AHEAD_DISTANCE: f32 = 160.0;
 const DESPAWN_BEHIND_DISTANCE: f32 = 40.0;
 
+pub(crate) fn initial_track_spawn_z(distance: f32) -> f32 {
+    -distance + SEGMENT_LENGTH * 0.5
+}
+
 #[derive(Resource)]
 pub struct TrackManager {
     pub next_spawn_z: f32,
@@ -103,7 +107,7 @@ fn handle_run_reset_track(
         }
 
         // 3. Reset manager state & spawn 5 clean rolling segments ahead
-        track_mgr.next_spawn_z = 20.0;
+        track_mgr.next_spawn_z = initial_track_spawn_z(stats.distance);
         track_mgr.last_chunk = None;
 
         for _ in 0..5 {
@@ -2036,6 +2040,18 @@ mod tests {
     use super::*;
     use crate::obstacles::check_obstacle_vertical_collision;
     use crate::zones::ZONES;
+
+    #[test]
+    fn debug_start_track_window_is_offset_without_replaying_prior_distance() {
+        assert_eq!(initial_track_spawn_z(0.0), 20.0);
+        assert_eq!(initial_track_spawn_z(5100.0), -5080.0);
+
+        let first_center = initial_track_spawn_z(5100.0) - SEGMENT_LENGTH * 0.5;
+        let last_center = first_center - SEGMENT_LENGTH * 4.0;
+        assert_eq!(first_center, -5100.0);
+        assert_eq!(last_center, -5260.0);
+        assert!(last_center.abs() < 5100.0 + 200.0);
+    }
 
     #[test]
     fn test_zone_transition_preserves_unified_global_lighting() {

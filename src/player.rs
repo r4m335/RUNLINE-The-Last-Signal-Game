@@ -1,3 +1,4 @@
+use crate::debug_start::DebugStartConfig;
 use crate::director::RunDirector;
 use crate::types::*;
 use bevy::animation::graph::{AnimationGraph, AnimationNodeIndex};
@@ -400,13 +401,14 @@ fn handle_run_reset_player(
     mut anim_q: Query<(&mut AnimationPlayer, &mut AnimationTransitions), With<KaiArmature>>,
     mut history: ResMut<PlayerMovementHistory>,
     stats: Res<GameRunStats>,
+    debug_start: Res<DebugStartConfig>,
     kai_assets: Res<KaiModelAssets>,
 ) {
     for _ in events.read() {
         *history = PlayerMovementHistory::default();
 
         if let Ok((mut player, mut transform, opt_ctrl)) = player_q.get_single_mut() {
-            transform.translation = Vec3::new(0.0, 0.65, 0.0);
+            transform.translation = Vec3::new(0.0, 0.65, -debug_start.distance());
             transform.rotation = Quat::IDENTITY;
             transform.scale = Vec3::ONE;
 

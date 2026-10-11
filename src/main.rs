@@ -1,6 +1,7 @@
 mod audio;
 mod benchmark;
 mod collectibles;
+mod debug_start;
 mod director;
 mod enemies;
 mod environment;
@@ -27,6 +28,7 @@ use benchmark::BenchmarkPlugin;
 use bevy::diagnostic::{EntityCountDiagnosticsPlugin, FrameTimeDiagnosticsPlugin};
 use bevy::prelude::*;
 use collectibles::CollectiblePlugin;
+use debug_start::DebugStartConfig;
 use director::DirectorPlugin;
 use enemies::EnemyPlugin;
 use environment::EnvironmentPlugin;
@@ -55,6 +57,7 @@ fn main() {
         // Game States & Core Resources
         .init_state::<AppState>()
         .init_resource::<GameRunStats>()
+        .init_resource::<DebugStartConfig>()
         .init_resource::<ActivePowerUps>()
         .init_resource::<BossBattleState>()
         .init_resource::<PlayerMovementHistory>()

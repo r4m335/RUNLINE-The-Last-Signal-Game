@@ -1,3 +1,6 @@
+use crate::debug_start::DebugStartConfig;
+#[cfg(debug_assertions)]
+use crate::debug_start::DEBUG_START_PRESETS;
 use crate::story::DATA_CHIP_LOGS;
 use crate::types::*;
 use crate::zones::get_zone_for_distance;
@@ -85,6 +88,14 @@ pub struct BackToMenuButton;
 #[derive(Component)]
 pub struct NextCharacterButton;
 
+#[derive(Component)]
+pub struct DebugStartPresetButton {
+    pub preset_idx: usize,
+}
+
+#[derive(Component)]
+pub struct DebugStartSelectionText;
+
 pub struct UiPlugin;
 
 impl Plugin for UiPlugin {
@@ -132,8 +143,12 @@ fn setup_main_menu(
     mut commands: Commands,
     stats: Res<GameRunStats>,
     quality: Res<QualitySettings>,
+    debug_start: Res<DebugStartConfig>,
 ) {
     let char_type = stats.selected_character;
+
+    #[cfg(not(debug_assertions))]
+    let _ = debug_start;
 
     commands
         .spawn((
@@ -278,6 +293,98 @@ fn setup_main_menu(
                     },
                 ));
             });
+
+            // Development-only zone selector. It uses the same run reset path
+            // as a normal start, so selected distances affect the real world,
+            // rolling track, encounters, and environment routing.
+            #[cfg(debug_assertions)]
+            {
+                root.spawn(NodeBundle {
+                    style: Style {
+                        flex_direction: FlexDirection::Column,
+                        align_items: AlignItems::Center,
+                        padding: UiRect::all(Val::Px(8.0)),
+                        border: UiRect::all(Val::Px(1.0)),
+                        width: Val::Px(620.0),
+                        margin: UiRect::bottom(Val::Px(10.0)),
+                        ..default()
+                    },
+                    background_color: BackgroundColor(Color::srgba(0.06, 0.08, 0.12, 0.92)),
+                    border_color: BorderColor(Color::srgb(0.9, 0.55, 0.1)),
+                    ..default()
+                })
+                .with_children(|selector| {
+                    selector.spawn((
+                        TextBundle::from_section(
+                            format!(
+                                "DEBUG START: {} // {:.0}M",
+                                debug_start.preset().label,
+                                debug_start.distance()
+                            ),
+                            TextStyle {
+                                font_size: 14.0,
+                                color: Color::srgb(1.0, 0.75, 0.25),
+                                ..default()
+                            },
+                        ),
+                        DebugStartSelectionText,
+                    ));
+                    selector
+                        .spawn(NodeBundle {
+                            style: Style {
+                                width: Val::Percent(100.0),
+                                flex_direction: FlexDirection::Row,
+                                flex_wrap: FlexWrap::Wrap,
+                                justify_content: JustifyContent::Center,
+                                column_gap: Val::Px(5.0),
+                                row_gap: Val::Px(4.0),
+                                margin: UiRect::top(Val::Px(6.0)),
+                                ..default()
+                            },
+                            ..default()
+                        })
+                        .with_children(|buttons| {
+                            for (preset_idx, preset) in DEBUG_START_PRESETS.iter().enumerate() {
+                                buttons
+                                    .spawn((
+                                        ButtonBundle {
+                                            style: Style {
+                                                width: Val::Px(145.0),
+                                                padding: UiRect::axes(
+                                                    Val::Px(4.0),
+                                                    Val::Px(3.0),
+                                                ),
+                                                border: UiRect::all(Val::Px(1.0)),
+                                                ..default()
+                                            },
+                                            background_color: BackgroundColor(
+                                                if preset_idx == debug_start.selected_preset {
+                                                    Color::srgb(0.55, 0.28, 0.08)
+                                                } else {
+                                                    Color::srgb(0.12, 0.16, 0.22)
+                                                },
+                                            ),
+                                            border_color: BorderColor(Color::srgb(
+                                                0.85, 0.55, 0.15,
+                                            )),
+                                            ..default()
+                                        },
+                                        DebugStartPresetButton { preset_idx },
+                                    ))
+                                    .with_children(|button| {
+                                        button.spawn(TextBundle::from_section(
+                                            preset.label,
+                                            TextStyle {
+                                                font_size: 11.0,
+                                                color: Color::WHITE,
+                                                ..default()
+                                            },
+                                        ));
+                                    });
+                            }
+                        });
+                });
+            }
 
             // Buttons
             root.spawn(NodeBundle {
@@ -1381,6 +1488,7 @@ fn menu_actions_system(
     mut next_state: ResMut<NextState<AppState>>,
     cur_state: Res<State<AppState>>,
     mut stats: ResMut<GameRunStats>,
+    mut debug_start: ResMut<DebugStartConfig>,
     mut powerups: ResMut<ActivePowerUps>,
     mut run_reset_events: EventWriter<RunResetEvent>,
     start_q: Query<&Interaction, (Changed<Interaction>, With<StartRunButton>)>,
@@ -1389,6 +1497,8 @@ fn menu_actions_system(
     archive_q: Query<&Interaction, (Changed<Interaction>, With<OpenStoryLogButton>)>,
     back_q: Query<&Interaction, (Changed<Interaction>, With<BackToMenuButton>)>,
     next_char_q: Query<&Interaction, (Changed<Interaction>, With<NextCharacterButton>)>,
+    debug_start_q: Query<(&Interaction, &DebugStartPresetButton), Changed<Interaction>>,
+    mut debug_label_q: Query<&mut Text, With<DebugStartSelectionText>>,
 ) {
     let mut do_start = false;
     let mut do_restart = false;
@@ -1396,6 +1506,20 @@ fn menu_actions_system(
     let mut do_archive = false;
     let mut do_back = false;
     let mut do_next_char = false;
+
+    for (interaction, preset_button) in debug_start_q.iter() {
+        if *interaction == Interaction::Pressed {
+            debug_start.selected_preset = preset_button.preset_idx;
+        }
+    }
+
+    if let Ok(mut label) = debug_label_q.get_single_mut() {
+        label.sections[0].value = format!(
+            "DEBUG START: {} // {:.0}M",
+            debug_start.preset().label,
+            debug_start.distance()
+        );
+    }
 
     for i in start_q.iter() {
         if *i == Interaction::Pressed {
@@ -1454,12 +1578,12 @@ fn menu_actions_system(
         // Broadcast unified run reset to all subsystems
         run_reset_events.send(RunResetEvent);
 
-        stats.distance = 0.0;
+        stats.distance = debug_start.distance();
         stats.fragments = 0;
         stats.data_chips = 0;
         stats.score = 0;
         stats.score_accum = 0.0;
-        stats.current_zone = 1;
+        stats.current_zone = debug_start.zone_id();
         stats.stumble_intensity = 0.0;
         stats.story_dialogue = None;
 
