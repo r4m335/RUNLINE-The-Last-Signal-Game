@@ -136,6 +136,8 @@ pub struct EnemySquadManager {
 }
 
 const HUNTER_INTRO_DISTANCE: f32 = 850.0;
+const HUNTER_POST_ENCOUNTER_COOLDOWN_MIN: f32 = 10.0;
+const HUNTER_POST_ENCOUNTER_COOLDOWN_VARIANCE: f32 = 5.0;
 
 /// Hunter timing is an encounter-introduction threshold, not a zone boundary.
 /// Once introduced, Hunters remain eligible through the rest of Zone 1 and in
@@ -155,6 +157,10 @@ pub(crate) fn hunter_scheduler_ready(
         && !active_boss
         && !has_hunter
         && hunter_cooldown <= 0.0
+}
+
+fn next_hunter_cooldown(rng: &mut impl Rng) -> f32 {
+    HUNTER_POST_ENCOUNTER_COOLDOWN_MIN + rng.gen_range(0.0..HUNTER_POST_ENCOUNTER_COOLDOWN_VARIANCE)
 }
 
 pub struct EnemyPlugin;
@@ -1027,7 +1033,7 @@ fn update_hunter_ai_fixed(
                             sfx.send(SoundEffect::ShieldBreak);
                             commands.entity(entity).despawn_recursive();
                             let mut rng = rand::thread_rng();
-                            squad_mgr.hunter_cooldown = 4.0 + rng.gen_range(0.0..3.0);
+                            squad_mgr.hunter_cooldown = next_hunter_cooldown(&mut rng);
                             return;
                         } else if player.invulnerable_timer > 0.0 {
                             // Rule: Invulnerable - prevents GameOver
@@ -1076,10 +1082,13 @@ fn update_hunter_ai_fixed(
                 enemy.distance_from_player = d_trans.translation.z - p_trans.translation.z;
 
                 if retreat_timer <= 0.0 {
-                    // Despawn Hunter and enter random 4-7 second predator cooldown
+                    // Despawn Hunter and enter a longer 10-15 second predator cooldown.
+                    // The active encounter's 15-second buffer has already been ticking
+                    // while the Hunter was visible, so this creates meaningful spacing
+                    // between encounter introductions without changing the attack itself.
                     commands.entity(entity).despawn_recursive();
                     let mut rng = rand::thread_rng();
-                    squad_mgr.hunter_cooldown = 4.0 + rng.gen_range(0.0..3.0);
+                    squad_mgr.hunter_cooldown = next_hunter_cooldown(&mut rng);
                 } else {
                     hunter.state = HunterState::Retreating { retreat_timer };
                 }
@@ -2031,13 +2040,17 @@ mod tests {
 
     #[test]
     fn test_hunter_attack_cooldown_range_fairness() {
-        // Pacing guarantee: Hunter predator encounters must maintain 4.0s - 7.0s breathing room
+        // Pacing guarantee: Hunter predator encounters must maintain 10.0s - 15.0s
+        // of post-encounter breathing room.
         for _ in 0..100 {
             let mut rng = rand::thread_rng();
-            let cd = 4.0 + rng.gen_range(0.0..3.0);
+            let cd = next_hunter_cooldown(&mut rng);
             assert!(
-                cd >= 4.0 && cd <= 7.0,
-                "Hunter cooldown must remain strictly within 4-7s range"
+                cd >= HUNTER_POST_ENCOUNTER_COOLDOWN_MIN
+                    && cd
+                        < HUNTER_POST_ENCOUNTER_COOLDOWN_MIN
+                            + HUNTER_POST_ENCOUNTER_COOLDOWN_VARIANCE,
+                "Hunter cooldown must remain within the 10-15s post-encounter range"
             );
         }
     }
