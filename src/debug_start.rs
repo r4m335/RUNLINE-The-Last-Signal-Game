@@ -6,7 +6,7 @@ pub struct DebugStartPreset {
     pub distance: f32,
 }
 
-pub const DEBUG_START_PRESETS: [DebugStartPreset; 12] = [
+pub const DEBUG_START_PRESETS: [DebugStartPreset; 13] = [
     DebugStartPreset {
         label: "NORMAL RUN",
         distance: 0.0,
@@ -55,6 +55,10 @@ pub const DEBUG_START_PRESETS: [DebugStartPreset; 12] = [
         label: "ZONE 3 // TRANSITION 5850M",
         distance: 5850.0,
     },
+    DebugStartPreset {
+        label: "ZONE 4 // 6000M",
+        distance: 6000.0,
+    },
 ];
 
 #[derive(bevy::prelude::Resource, Clone, Copy, Debug, PartialEq, Eq)]
@@ -100,9 +104,16 @@ mod tests {
             distances,
             vec![
                 0.0, 0.0, 1000.0, 1800.0, 2000.0, 3000.0, 3800.0, 4000.0, 4500.0, 5100.0, 5500.0,
-                5850.0
+                5850.0, 6000.0
             ]
         );
+    }
+
+    #[test]
+    fn zone_four_preset_resolves_to_flooded_metro() {
+        let preset = DEBUG_START_PRESETS.last().unwrap();
+        assert_eq!(preset.distance, 6000.0);
+        assert_eq!(get_zone_for_distance(preset.distance).id, 4);
     }
 
     #[test]
