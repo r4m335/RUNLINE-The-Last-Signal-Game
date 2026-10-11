@@ -3,6 +3,7 @@ use crate::obstacles::resolve_obstacle_pool_type;
 use crate::patterns::{select_validated_pattern, ObstacleSpawnDef, PatternChunk};
 use crate::pooling::{EntityPool, PoolAssets};
 use crate::types::*;
+use bevy::ecs::system::SystemParam;
 use bevy::prelude::*;
 
 const SEGMENT_LENGTH: f32 = 40.0;
@@ -17,6 +18,16 @@ pub(crate) fn initial_track_spawn_z(distance: f32) -> f32 {
 pub struct TrackManager {
     pub next_spawn_z: f32,
     pub last_chunk: Option<PatternChunk>,
+}
+
+#[derive(SystemParam)]
+struct TrackEnvironmentAssets<'w> {
+    env: Res<'w, crate::environment::EnvironmentAssets>,
+    props: Option<Res<'w, crate::environment_props::PropAssets>>,
+    signage: Option<Res<'w, crate::environment_signage::SignageAssets>>,
+    neon: Option<Res<'w, crate::neon_district::NeonDistrictAssets>>,
+    industrial: Option<Res<'w, crate::industrial_sector::IndustrialSectorAssets>>,
+    flooded: Option<Res<'w, crate::flooded_metro::FloodedMetroAssets>>,
 }
 
 impl Default for TrackManager {
@@ -50,11 +61,7 @@ fn handle_run_reset_track(
     mut events: EventReader<RunResetEvent>,
     mut commands: Commands,
     mut track_mgr: ResMut<TrackManager>,
-    env_assets: Res<crate::environment::EnvironmentAssets>,
-    prop_assets: Option<Res<crate::environment_props::PropAssets>>,
-    signage_assets: Option<Res<crate::environment_signage::SignageAssets>>,
-    neon_assets: Option<Res<crate::neon_district::NeonDistrictAssets>>,
-    industrial_assets: Option<Res<crate::industrial_sector::IndustrialSectorAssets>>,
+    environment_assets: TrackEnvironmentAssets,
     pool_assets: Res<PoolAssets>,
     powerup_assets: Option<Res<PowerUpModelAssets>>,
     mut pool: ResMut<EntityPool>,
@@ -116,11 +123,12 @@ fn handle_run_reset_track(
 
             spawn_segment(
                 &mut commands,
-                &env_assets,
-                prop_assets.as_deref(),
-                signage_assets.as_deref(),
-                neon_assets.as_deref(),
-                industrial_assets.as_deref(),
+                &environment_assets.env,
+                environment_assets.props.as_deref(),
+                environment_assets.signage.as_deref(),
+                environment_assets.neon.as_deref(),
+                environment_assets.industrial.as_deref(),
+                environment_assets.flooded.as_deref(),
                 z_center,
                 SEGMENT_LENGTH,
                 (-z_center).max(0.0),
@@ -153,11 +161,7 @@ fn handle_run_reset_track(
 fn maintain_rolling_track(
     mut commands: Commands,
     mut track_mgr: ResMut<TrackManager>,
-    env_assets: Res<crate::environment::EnvironmentAssets>,
-    prop_assets: Option<Res<crate::environment_props::PropAssets>>,
-    signage_assets: Option<Res<crate::environment_signage::SignageAssets>>,
-    neon_assets: Option<Res<crate::neon_district::NeonDistrictAssets>>,
-    industrial_assets: Option<Res<crate::industrial_sector::IndustrialSectorAssets>>,
+    environment_assets: TrackEnvironmentAssets,
     pool_assets: Res<PoolAssets>,
     powerup_assets: Option<Res<PowerUpModelAssets>>,
     mut pool: ResMut<EntityPool>,
@@ -177,11 +181,12 @@ fn maintain_rolling_track(
 
         spawn_segment(
             &mut commands,
-            &env_assets,
-            prop_assets.as_deref(),
-            signage_assets.as_deref(),
-            neon_assets.as_deref(),
-            industrial_assets.as_deref(),
+            &environment_assets.env,
+            environment_assets.props.as_deref(),
+            environment_assets.signage.as_deref(),
+            environment_assets.neon.as_deref(),
+            environment_assets.industrial.as_deref(),
+            environment_assets.flooded.as_deref(),
             z_center,
             SEGMENT_LENGTH,
             (-z_center).max(0.0),
@@ -1654,6 +1659,7 @@ fn spawn_segment(
     signage_assets: Option<&crate::environment_signage::SignageAssets>,
     neon_assets: Option<&crate::neon_district::NeonDistrictAssets>,
     industrial_assets: Option<&crate::industrial_sector::IndustrialSectorAssets>,
+    flooded_assets: Option<&crate::flooded_metro::FloodedMetroAssets>,
     z_center: f32,
     length: f32,
     distance: f32,
@@ -1665,6 +1671,7 @@ fn spawn_segment(
         signage_assets,
         neon_assets,
         industrial_assets,
+        flooded_assets,
         z_center,
         length,
         distance,

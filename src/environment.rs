@@ -13,6 +13,7 @@ pub enum EnvironmentRoute {
     OldMetro,
     NeonDistrict,
     IndustrialSector,
+    FloodedMetro,
     Generic,
 }
 
@@ -24,6 +25,7 @@ pub fn environment_route_for_distance(distance: f32) -> EnvironmentRoute {
         1 => EnvironmentRoute::OldMetro,
         2 => EnvironmentRoute::NeonDistrict,
         3 => EnvironmentRoute::IndustrialSector,
+        4 => EnvironmentRoute::FloodedMetro,
         _ => EnvironmentRoute::Generic,
     }
 }
@@ -316,6 +318,7 @@ fn init_environment_assets(
         &mut meshes,
         &mut materials,
     );
+    crate::flooded_metro::init_flooded_metro_assets(&mut commands, &mut meshes, &mut materials);
 }
 
 fn animate_environment_fans(
@@ -335,6 +338,7 @@ pub fn spawn_modular_environment_slice(
     signage: Option<&crate::environment_signage::SignageAssets>,
     neon: Option<&crate::neon_district::NeonDistrictAssets>,
     industrial: Option<&crate::industrial_sector::IndustrialSectorAssets>,
+    flooded: Option<&crate::flooded_metro::FloodedMetroAssets>,
     z_center: f32,
     length: f32,
     _distance: f32,
@@ -376,6 +380,18 @@ pub fn spawn_modular_environment_slice(
                     industrial_ref,
                     props,
                     signage,
+                    z_center,
+                    length,
+                    segment_dist,
+                );
+            }
+        }
+        EnvironmentRoute::FloodedMetro => {
+            if let Some(flooded_ref) = flooded {
+                return crate::flooded_metro::spawn_flooded_metro_segment(
+                    commands,
+                    env,
+                    flooded_ref,
                     z_center,
                     length,
                     segment_dist,
@@ -730,6 +746,11 @@ mod tests {
                     environment_route_for_distance(at),
                     EnvironmentRoute::IndustrialSector
                 );
+            } else if zone.id == 4 {
+                assert_eq!(
+                    environment_route_for_distance(at),
+                    EnvironmentRoute::FloodedMetro
+                );
             } else {
                 assert_eq!(
                     environment_route_for_distance(at),
@@ -766,6 +787,10 @@ mod tests {
         );
         assert_eq!(
             environment_route_for_distance(ZONES[3].start_distance),
+            EnvironmentRoute::FloodedMetro
+        );
+        assert_eq!(
+            environment_route_for_distance(ZONES[4].start_distance),
             EnvironmentRoute::Generic
         );
     }
