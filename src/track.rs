@@ -2373,14 +2373,23 @@ fn spawn_flooded_submerged_train(
                 transform: Transform::from_xyz(0.0, 1.35, 0.0),
                 ..default()
             });
-            // Broken passenger windows with murky teal glass highlights
+            // Freight container side sliding doors and vertical structural ribs (no passenger windows)
             for x in [-1.12, 1.12] {
                 train.spawn(PbrBundle {
                     mesh: pool_assets.mesh_flooded_train_window.clone(),
-                    material: pool_assets.mat_industrial_glass.clone(),
-                    transform: Transform::from_xyz(x, 0.25, 0.0),
+                    material: pool_assets.mat_flooded_rust.clone(),
+                    transform: Transform::from_xyz(x, 0.15, 0.0),
                     ..default()
                 });
+                for z_post in [-4.5, 4.5] {
+                    train.spawn(PbrBundle {
+                        mesh: pool_assets.mesh_flooded_barrier_support.clone(),
+                        material: pool_assets.mat_flooded_steel.clone(),
+                        transform: Transform::from_xyz(x, 0.05, z_post)
+                            .with_scale(Vec3::new(1.0, 1.5, 1.0)),
+                        ..default()
+                    });
+                }
             }
             // Front heavy crash bumper
             train.spawn(PbrBundle {
@@ -2439,12 +2448,28 @@ fn spawn_flooded_moving_train(
             active.2,
         ))
         .with_children(|service| {
-            // Rusted cab roof
+            // Raised industrial switcher cab roof
             service.spawn(PbrBundle {
                 mesh: pool_assets.mesh_flooded_train_roof.clone(),
                 material: pool_assets.mat_flooded_rust.clone(),
-                transform: Transform::from_xyz(0.0, 1.25, 0.0)
-                    .with_scale(Vec3::new(0.95, 1.0, 0.72)),
+                transform: Transform::from_xyz(0.0, 1.25, -1.2)
+                    .with_scale(Vec3::new(0.95, 1.0, 0.65)),
+                ..default()
+            });
+            // Armored cab front visor
+            service.spawn(PbrBundle {
+                mesh: pool_assets.mesh_train_windscreen.clone(),
+                material: pool_assets.mat_flooded_rust.clone(),
+                transform: Transform::from_xyz(0.0, 0.70, 1.6)
+                    .with_scale(Vec3::new(0.85, 0.60, 1.0)),
+                ..default()
+            });
+            // Roof exhaust vent / dynamic brake blister
+            service.spawn(PbrBundle {
+                mesh: pool_assets.mesh_train_hvac.clone(),
+                material: pool_assets.mat_flooded_rust.clone(),
+                transform: Transform::from_xyz(0.0, 1.15, 2.2)
+                    .with_scale(Vec3::new(0.80, 0.70, 0.60)),
                 ..default()
             });
             // High-intensity amber transit headlamps piercing forward
@@ -2456,11 +2481,18 @@ fn spawn_flooded_moving_train(
                     ..default()
                 });
             }
+            // Front heavy cowcatcher / crash plow bumper
+            service.spawn(PbrBundle {
+                mesh: pool_assets.mesh_train_bumper.clone(),
+                material: pool_assets.mat_flooded_rust.clone(),
+                transform: Transform::from_xyz(0.0, -0.65, 4.28),
+                ..default()
+            });
             // Bold full-width front hazard caution plate
             service.spawn(PbrBundle {
                 mesh: pool_assets.mesh_flooded_barrier_plate.clone(),
                 material: pool_assets.mat_flooded_hazard.clone(),
-                transform: Transform::from_xyz(0.0, -0.45, 4.32),
+                transform: Transform::from_xyz(0.0, -0.15, 4.32),
                 ..default()
             });
         });

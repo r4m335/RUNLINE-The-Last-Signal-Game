@@ -159,13 +159,39 @@ pub struct FloodedMetroAssets {
     pub mesh_pump_turbine: Handle<Mesh>,
     pub mesh_sluice_pipe_huge: Handle<Mesh>,
 
-    // --- Chapter 4: Sunken Transit ---
+    // --- Chapter 4: Sunken Transit (Industrial Freight Consist) ---
     pub mesh_train_body: Handle<Mesh>,
     pub mesh_train_roof: Handle<Mesh>,
     pub mesh_train_window: Handle<Mesh>,
     pub mesh_train_door: Handle<Mesh>,
     pub mesh_train_bogie: Handle<Mesh>,
     pub mesh_mangled_rail: Handle<Mesh>,
+
+    // Industrial Freight Locomotive
+    pub mesh_freight_loco_body: Handle<Mesh>,
+    pub mesh_freight_loco_cab: Handle<Mesh>,
+    pub mesh_freight_cowcatcher: Handle<Mesh>,
+    pub mesh_freight_loco_visor: Handle<Mesh>,
+    pub mesh_freight_loco_headlight: Handle<Mesh>,
+    pub mesh_freight_roof_blister: Handle<Mesh>,
+    pub mesh_freight_exhaust_stack: Handle<Mesh>,
+
+    // Modular Cargo Wagons
+    pub mesh_freight_boxcar_body: Handle<Mesh>,
+    pub mesh_freight_boxcar_door: Handle<Mesh>,
+    pub mesh_freight_rib: Handle<Mesh>,
+    pub mesh_freight_bulk_wall_long: Handle<Mesh>,
+    pub mesh_freight_bulk_wall_end: Handle<Mesh>,
+    pub mesh_freight_bulk_floor: Handle<Mesh>,
+    pub mesh_freight_bulk_scrap: Handle<Mesh>,
+    pub mesh_freight_tank_body: Handle<Mesh>,
+    pub mesh_freight_tank_cap: Handle<Mesh>,
+    pub mesh_freight_tank_saddle: Handle<Mesh>,
+    pub mesh_freight_tank_dome: Handle<Mesh>,
+    pub mesh_freight_flatbed_chassis: Handle<Mesh>,
+    pub mesh_freight_cable_spool: Handle<Mesh>,
+    pub mesh_freight_equipment_crate: Handle<Mesh>,
+    pub mesh_freight_coupler: Handle<Mesh>,
 
     // --- Chapter 5: Deep-Line Approach ---
     pub mesh_deep_portal_arch: Handle<Mesh>,
@@ -341,13 +367,39 @@ pub fn init_flooded_metro_assets(
         mesh_pump_turbine: meshes.add(Cuboid::new(3.4, 2.6, 3.4)),
         mesh_sluice_pipe_huge: meshes.add(Cylinder::new(1.1, 22.0)),
 
-        // --- Chapter 4: Sunken Transit ---
-        mesh_train_body: meshes.add(Cuboid::new(3.3, 2.8, 13.5)),
-        mesh_train_roof: meshes.add(Cuboid::new(3.5, 0.32, 13.2)),
+        // --- Chapter 4: Sunken Transit (Industrial Freight Consist) ---
+        mesh_train_body: meshes.add(Cuboid::new(3.2, 2.6, 12.0)),
+        mesh_train_roof: meshes.add(Cuboid::new(3.25, 0.32, 11.8)),
         mesh_train_window: meshes.add(Cuboid::new(0.08, 0.85, 1.7)),
-        mesh_train_door: meshes.add(Cuboid::new(0.10, 2.0, 1.15)),
+        mesh_train_door: meshes.add(Cuboid::new(0.12, 2.1, 2.4)),
         mesh_train_bogie: meshes.add(Cuboid::new(2.6, 0.55, 3.0)),
         mesh_mangled_rail: meshes.add(Cuboid::new(0.16, 0.22, 6.5)),
+
+        // Industrial Freight Locomotive
+        mesh_freight_loco_body: meshes.add(Cuboid::new(3.2, 2.6, 12.0)),
+        mesh_freight_loco_cab: meshes.add(Cuboid::new(3.25, 1.25, 3.8)),
+        mesh_freight_cowcatcher: meshes.add(Cuboid::new(3.3, 0.7, 0.6)),
+        mesh_freight_loco_visor: meshes.add(Cuboid::new(2.4, 0.55, 0.15)),
+        mesh_freight_loco_headlight: meshes.add(Sphere::new(0.20)),
+        mesh_freight_roof_blister: meshes.add(Cuboid::new(1.8, 0.45, 4.2)),
+        mesh_freight_exhaust_stack: meshes.add(Cylinder::new(0.25, 0.9)),
+
+        // Modular Cargo Wagons
+        mesh_freight_boxcar_body: meshes.add(Cuboid::new(3.2, 2.6, 11.5)),
+        mesh_freight_boxcar_door: meshes.add(Cuboid::new(0.12, 2.1, 2.4)),
+        mesh_freight_rib: meshes.add(Cuboid::new(0.10, 2.5, 0.14)),
+        mesh_freight_bulk_wall_long: meshes.add(Cuboid::new(0.16, 1.5, 11.5)),
+        mesh_freight_bulk_wall_end: meshes.add(Cuboid::new(3.1, 1.5, 0.16)),
+        mesh_freight_bulk_floor: meshes.add(Cuboid::new(3.0, 0.25, 11.3)),
+        mesh_freight_bulk_scrap: meshes.add(Cuboid::new(2.7, 0.75, 9.5)),
+        mesh_freight_tank_body: meshes.add(Cylinder::new(1.35, 10.0)),
+        mesh_freight_tank_cap: meshes.add(Sphere::new(1.34)),
+        mesh_freight_tank_saddle: meshes.add(Cuboid::new(3.1, 0.55, 1.2)),
+        mesh_freight_tank_dome: meshes.add(Cylinder::new(0.5, 0.45)),
+        mesh_freight_flatbed_chassis: meshes.add(Cuboid::new(3.2, 0.5, 11.5)),
+        mesh_freight_cable_spool: meshes.add(Cylinder::new(1.1, 0.8)),
+        mesh_freight_equipment_crate: meshes.add(Cuboid::new(1.4, 1.2, 1.8)),
+        mesh_freight_coupler: meshes.add(Cuboid::new(0.4, 0.4, 0.9)),
 
         // --- Chapter 5: Deep-Line Approach ---
         mesh_deep_portal_arch: meshes.add(Cuboid::new(20.0, 2.0, 2.6)),
@@ -847,11 +899,34 @@ fn spawn_distant_train_silhouette(
     z: f32,
     yaw: f32,
 ) {
-    // 26m long derelict express carriage resting in flooded siding margin
+    let rot = Quat::from_rotation_y(yaw);
+    // Industrial freight consist silhouette: heavy locomotive + trailing cargo wagon
     seg.spawn(PbrBundle {
         mesh: a.mesh_bg_distant_train.clone(),
         material: a.mat_bg_dark_structure.clone(),
-        transform: Transform::from_xyz(x, y + 1.2, z).with_rotation(Quat::from_rotation_y(yaw)),
+        transform: Transform::from_xyz(x, y + 1.2, z).with_rotation(rot),
+        ..default()
+    });
+    // Distinct locomotive cab hump silhouette
+    let cab_offset = rot * Vec3::new(0.0, 1.8, -8.0);
+    seg.spawn(PbrBundle {
+        mesh: a.mesh_freight_loco_cab.clone(),
+        material: a.mat_bg_dark_structure.clone(),
+        transform: Transform::from_xyz(x + cab_offset.x, y + 1.2 + cab_offset.y, z + cab_offset.z)
+            .with_rotation(rot),
+        ..default()
+    });
+    // Distinct tanker saddle / equipment silhouette
+    let tank_offset = rot * Vec3::new(0.0, 0.4, 7.5);
+    seg.spawn(PbrBundle {
+        mesh: a.mesh_freight_tank_saddle.clone(),
+        material: a.mat_bg_dark_structure.clone(),
+        transform: Transform::from_xyz(
+            x + tank_offset.x,
+            y + 1.2 + tank_offset.y,
+            z + tank_offset.z,
+        )
+        .with_rotation(rot),
         ..default()
     });
 }
@@ -1771,7 +1846,29 @@ fn spawn_sunken_transit_segment(
         }
     }
 
-    spawn_train_carriage(seg, a, siding_side, 0.0, false);
+    // Modular Freight Consists in siding margins based on chapter variant
+    match variant {
+        0 => {
+            // Variant 0: Heavy industrial locomotive + closed cargo boxcar
+            spawn_freight_locomotive(seg, a, siding_side, -6.0, false);
+            spawn_freight_boxcar(seg, a, siding_side, 6.5, false, false);
+            spawn_culvert_drain(seg, a, -siding_side, 10.0);
+            spawn_electrical_box(seg, a, -siding_side, -4.0);
+        }
+        1 => {
+            // Variant 1: Industrial chemical tanker + maintenance utility flatbed wagon
+            spawn_freight_tanker(seg, a, siding_side, -6.0, false);
+            spawn_freight_maintenance_wagon(seg, a, siding_side, 6.5, false);
+            spawn_freight_boxcar(seg, a, -siding_side, 12.0, false, false);
+        }
+        _ => {
+            // Variant 2: Damaged tilted locomotive + open bulk scrap wagon
+            spawn_freight_locomotive(seg, a, siding_side, -5.0, true);
+            spawn_freight_bulk_wagon(seg, a, siding_side, 7.5, false);
+            spawn_ladder(seg, a, siding_side, -14.0);
+            spawn_pump_station(seg, a, -siding_side, 8.0);
+        }
+    }
 
     spawn_mesh(
         seg,
@@ -1794,33 +1891,41 @@ fn spawn_sunken_transit_segment(
         Transform::from_xyz(-siding_side * 8.65, 3.4, 0.0),
     );
 
-    match variant {
-        0 => {
-            spawn_culvert_drain(seg, a, -siding_side, 10.0);
-            spawn_electrical_box(seg, a, -siding_side, -4.0);
-        }
-        1 => {
-            spawn_train_carriage(seg, a, -siding_side, 12.0, false);
-        }
-        _ => {
-            spawn_ladder(seg, a, siding_side, -14.0);
-            spawn_pump_station(seg, a, -siding_side, 8.0);
-        }
-    }
-
     if landmark == FloodedMetroLandmark::SunkenTransitWreckage {
         spawn_landmark_sunken_train_wreck(seg, a);
     }
 }
 
 fn spawn_landmark_sunken_train_wreck(seg: &mut ChildBuilder, a: &FloodedMetroAssets) {
-    spawn_train_carriage(seg, a, -1.0, -4.0, true);
-    spawn_train_carriage(seg, a, 1.0, 10.0, false);
+    // 7360m–7400m HERO LANDMARK: Derailed industrial freight consist partially submerged in canal siding
+    // Lead industrial locomotive heavily tilted into flooded canal siding
+    spawn_freight_locomotive(seg, a, -1.0, -8.0, true);
+    // Trailing derailed closed boxcar with damaged/slid-open cargo door
+    spawn_freight_boxcar(seg, a, -1.0, 4.5, true, true);
+    // Trailing partially submerged chemical tanker wagon
+    spawn_freight_tanker(seg, a, -1.0, 16.5, true);
+    // Opposite siding maintenance flatbed wagon with tilted industrial cable reels
+    spawn_freight_maintenance_wagon(seg, a, 1.0, 2.0, false);
+
+    // Detached bogies on mangled track
     spawn_mesh(
         seg,
         &a.mesh_train_bogie,
         &a.mat_rusted_steel,
-        Transform::from_xyz(-6.2, 0.35, 6.0).with_rotation(Quat::from_rotation_z(0.35)),
+        Transform::from_xyz(-6.5, 0.35, -1.0).with_rotation(Quat::from_rotation_z(0.35)),
+    );
+    spawn_mesh(
+        seg,
+        &a.mesh_train_bogie,
+        &a.mat_steel,
+        Transform::from_xyz(7.0, 0.35, 10.0).with_rotation(Quat::from_rotation_z(-0.25)),
+    );
+    // Floating debris & submerged timber cargo pallets
+    spawn_mesh(
+        seg,
+        &a.mesh_floating_debris,
+        &a.mat_submerged_wood,
+        Transform::from_xyz(-6.6, 0.05, 11.0),
     );
     spawn_mesh(
         seg,
@@ -1828,9 +1933,16 @@ fn spawn_landmark_sunken_train_wreck(seg: &mut ChildBuilder, a: &FloodedMetroAss
         &a.mat_submerged_wood,
         Transform::from_xyz(6.8, 0.05, -6.0),
     );
+    // Mangled rail section protruding from the water
+    spawn_mesh(
+        seg,
+        &a.mesh_mangled_rail,
+        &a.mat_rusted_steel,
+        Transform::from_xyz(-6.3, 0.15, -14.0).with_rotation(Quat::from_rotation_y(0.40)),
+    );
 }
 
-fn spawn_train_carriage(
+fn spawn_freight_locomotive(
     seg: &mut ChildBuilder,
     a: &FloodedMetroAssets,
     side: f32,
@@ -1838,44 +1950,472 @@ fn spawn_train_carriage(
     tilted: bool,
 ) {
     let x = side * 8.2;
-    let inward = -side;
-    let rot = if tilted {
-        Quat::from_rotation_z(side * 0.22) * Quat::from_rotation_x(0.08)
+    let base_rot = if side < 0.0 {
+        Quat::from_rotation_y(std::f32::consts::PI)
     } else {
         Quat::IDENTITY
     };
-    let y = if tilted { 1.6 } else { 2.1 };
+    let tilt_rot = if tilted {
+        Quat::from_rotation_z(side * 0.24) * Quat::from_rotation_x(0.10)
+    } else {
+        Quat::IDENTITY
+    };
+    let rot = tilt_rot * base_rot;
+    let y = if tilted { 1.35 } else { 1.85 };
 
+    // Heavy industrial locomotive main body
     spawn_mesh(
         seg,
-        &a.mesh_train_body,
-        &a.mat_train_body,
+        &a.mesh_freight_loco_body,
+        &a.mat_steel,
         Transform::from_xyz(x, y, z).with_rotation(rot),
     );
+
+    // Raised engineer control cab at rear of locomotive
+    let cab_offset = rot * Vec3::new(0.0, 1.45, -3.2);
     spawn_mesh(
         seg,
-        &a.mesh_train_roof,
-        &a.mat_rusted_steel,
-        Transform::from_xyz(x, y + 1.45, z).with_rotation(rot),
+        &a.mesh_freight_loco_cab,
+        &a.mat_steel,
+        Transform::from_xyz(x + cab_offset.x, y + cab_offset.y, z + cab_offset.z)
+            .with_rotation(rot),
     );
 
-    for win_z in [-4.0, 0.0, 4.0] {
+    // Armored windshield visor
+    let visor_offset = rot * Vec3::new(0.0, 1.45, -1.25);
+    spawn_mesh(
+        seg,
+        &a.mesh_freight_loco_visor,
+        &a.mat_rusted_steel,
+        Transform::from_xyz(x + visor_offset.x, y + visor_offset.y, z + visor_offset.z)
+            .with_rotation(rot),
+    );
+
+    // Heavy wedge cowcatcher / plow bumper with hazard stripes at front
+    let cowcatcher_offset = rot * Vec3::new(0.0, -0.65, 5.8);
+    spawn_mesh(
+        seg,
+        &a.mesh_freight_cowcatcher,
+        &a.mat_hazard_stripe,
+        Transform::from_xyz(
+            x + cowcatcher_offset.x,
+            y + cowcatcher_offset.y,
+            z + cowcatcher_offset.z,
+        )
+        .with_rotation(rot),
+    );
+
+    // Twin piercing halogen headlights
+    for lamp_x in [-0.9, 0.9] {
+        let lamp_offset = rot * Vec3::new(lamp_x, 0.15, 5.95);
         spawn_mesh(
             seg,
-            &a.mesh_train_window,
-            &a.mat_train_window,
-            Transform::from_xyz(x + inward * 1.68, y + 0.25, z + win_z).with_rotation(rot),
+            &a.mesh_freight_loco_headlight,
+            &a.mat_warning_amber,
+            Transform::from_xyz(x + lamp_offset.x, y + lamp_offset.y, z + lamp_offset.z)
+                .with_rotation(rot),
         );
     }
 
-    for door_z in [-5.8, 5.8] {
+    // Dynamic brake blister / radiator cowl on long hood
+    let blister_offset = rot * Vec3::new(0.0, 1.45, 1.5);
+    spawn_mesh(
+        seg,
+        &a.mesh_freight_roof_blister,
+        &a.mat_rusted_steel,
+        Transform::from_xyz(
+            x + blister_offset.x,
+            y + blister_offset.y,
+            z + blister_offset.z,
+        )
+        .with_rotation(rot),
+    );
+
+    // Industrial exhaust stack
+    let stack_offset = rot * Vec3::new(0.45, 1.85, 3.2);
+    spawn_mesh(
+        seg,
+        &a.mesh_freight_exhaust_stack,
+        &a.mat_rusted_steel,
+        Transform::from_xyz(x + stack_offset.x, y + stack_offset.y, z + stack_offset.z)
+            .with_rotation(rot),
+    );
+
+    // Bogies / wheel assemblies
+    for bogie_z in [-3.8, 3.8] {
+        let bogie_offset = rot * Vec3::new(0.0, -1.15, bogie_z);
         spawn_mesh(
             seg,
-            &a.mesh_train_door,
+            &a.mesh_train_bogie,
             &a.mat_rusted_steel,
-            Transform::from_xyz(x + inward * 1.69, y - 0.40, z + door_z).with_rotation(rot),
+            Transform::from_xyz(x + bogie_offset.x, y + bogie_offset.y, z + bogie_offset.z)
+                .with_rotation(rot),
         );
     }
+
+    // Heavy knuckle coupler
+    let coupler_offset = rot * Vec3::new(0.0, -0.70, -6.1);
+    spawn_mesh(
+        seg,
+        &a.mesh_freight_coupler,
+        &a.mat_steel,
+        Transform::from_xyz(
+            x + coupler_offset.x,
+            y + coupler_offset.y,
+            z + coupler_offset.z,
+        )
+        .with_rotation(rot),
+    );
+}
+
+fn spawn_freight_boxcar(
+    seg: &mut ChildBuilder,
+    a: &FloodedMetroAssets,
+    side: f32,
+    z: f32,
+    tilted: bool,
+    damaged_door: bool,
+) {
+    let x = side * 8.2;
+    let rot = if tilted {
+        Quat::from_rotation_z(side * 0.20) * Quat::from_rotation_x(0.08)
+    } else {
+        Quat::IDENTITY
+    };
+    let y = if tilted { 1.45 } else { 1.85 };
+
+    // Heavy corrugated steel freight container / boxcar body
+    spawn_mesh(
+        seg,
+        &a.mesh_freight_boxcar_body,
+        &a.mat_rusted_steel,
+        Transform::from_xyz(x, y, z).with_rotation(rot),
+    );
+
+    // Exterior vertical reinforcement ribs
+    for rib_z in [-4.6, -2.3, 0.0, 2.3, 4.6] {
+        for side_sign in [-1.0, 1.0] {
+            let rib_offset = rot * Vec3::new(side_sign * 1.62, 0.0, rib_z);
+            spawn_mesh(
+                seg,
+                &a.mesh_freight_rib,
+                &a.mat_steel,
+                Transform::from_xyz(x + rib_offset.x, y + rib_offset.y, z + rib_offset.z)
+                    .with_rotation(rot),
+            );
+        }
+    }
+
+    // Heavy sliding cargo door facing track corridor
+    let door_inward = -side;
+    let door_z_offset = if damaged_door { 1.2 } else { 0.0 };
+    let door_rot = if damaged_door {
+        rot * Quat::from_rotation_y(0.25)
+    } else {
+        rot
+    };
+    let door_offset = rot * Vec3::new(door_inward * 1.66, -0.15, door_z_offset);
+    spawn_mesh(
+        seg,
+        &a.mesh_freight_boxcar_door,
+        &a.mat_steel,
+        Transform::from_xyz(x + door_offset.x, y + door_offset.y, z + door_offset.z)
+            .with_rotation(door_rot),
+    );
+
+    // Bogies / wheel assemblies
+    for bogie_z in [-3.6, 3.6] {
+        let bogie_offset = rot * Vec3::new(0.0, -1.15, bogie_z);
+        spawn_mesh(
+            seg,
+            &a.mesh_train_bogie,
+            &a.mat_rusted_steel,
+            Transform::from_xyz(x + bogie_offset.x, y + bogie_offset.y, z + bogie_offset.z)
+                .with_rotation(rot),
+        );
+    }
+
+    // Couplers at both ends
+    for end_z in [-5.8, 5.8] {
+        let coup_offset = rot * Vec3::new(0.0, -0.70, end_z);
+        spawn_mesh(
+            seg,
+            &a.mesh_freight_coupler,
+            &a.mat_steel,
+            Transform::from_xyz(x + coup_offset.x, y + coup_offset.y, z + coup_offset.z)
+                .with_rotation(rot),
+        );
+    }
+}
+
+fn spawn_freight_tanker(
+    seg: &mut ChildBuilder,
+    a: &FloodedMetroAssets,
+    side: f32,
+    z: f32,
+    tilted: bool,
+) {
+    let x = side * 8.2;
+    let rot = if tilted {
+        Quat::from_rotation_z(side * 0.22) * Quat::from_rotation_x(-0.08)
+    } else {
+        Quat::IDENTITY
+    };
+    let y = if tilted { 1.40 } else { 1.85 };
+
+    // Horizontal cylindrical pressurized chemical / fuel tank
+    let tank_rot = rot * Quat::from_rotation_x(std::f32::consts::FRAC_PI_2);
+    spawn_mesh(
+        seg,
+        &a.mesh_freight_tank_body,
+        &a.mat_steel,
+        Transform::from_xyz(x, y + 0.35, z).with_rotation(tank_rot),
+    );
+
+    // Hemispherical rounded end caps
+    for end_z in [-5.0, 5.0] {
+        let cap_offset = rot * Vec3::new(0.0, 0.35, end_z);
+        spawn_mesh(
+            seg,
+            &a.mesh_freight_tank_cap,
+            &a.mat_steel,
+            Transform::from_xyz(x + cap_offset.x, y + cap_offset.y, z + cap_offset.z)
+                .with_rotation(rot),
+        );
+    }
+
+    // Saddle cradle mounts
+    for saddle_z in [-3.5, 3.5] {
+        let saddle_offset = rot * Vec3::new(0.0, -0.65, saddle_z);
+        spawn_mesh(
+            seg,
+            &a.mesh_freight_tank_saddle,
+            &a.mat_rusted_steel,
+            Transform::from_xyz(
+                x + saddle_offset.x,
+                y + saddle_offset.y,
+                z + saddle_offset.z,
+            )
+            .with_rotation(rot),
+        );
+    }
+
+    // Top inspection manhole dome
+    let dome_offset = rot * Vec3::new(0.0, 1.70, 0.0);
+    spawn_mesh(
+        seg,
+        &a.mesh_freight_tank_dome,
+        &a.mat_rusted_steel,
+        Transform::from_xyz(x + dome_offset.x, y + dome_offset.y, z + dome_offset.z)
+            .with_rotation(rot),
+    );
+
+    // Hazardous chemical warning stripe placard
+    let placard_inward = -side;
+    let placard_offset = rot * Vec3::new(placard_inward * 1.42, 0.35, 0.0);
+    spawn_mesh(
+        seg,
+        &a.mesh_hazard_sign,
+        &a.mat_hazard_stripe,
+        Transform::from_xyz(
+            x + placard_offset.x,
+            y + placard_offset.y,
+            z + placard_offset.z,
+        )
+        .with_rotation(rot),
+    );
+
+    // Bogies
+    for bogie_z in [-3.6, 3.6] {
+        let bogie_offset = rot * Vec3::new(0.0, -1.15, bogie_z);
+        spawn_mesh(
+            seg,
+            &a.mesh_train_bogie,
+            &a.mat_rusted_steel,
+            Transform::from_xyz(x + bogie_offset.x, y + bogie_offset.y, z + bogie_offset.z)
+                .with_rotation(rot),
+        );
+    }
+
+    // Couplers
+    for end_z in [-5.5, 5.5] {
+        let coup_offset = rot * Vec3::new(0.0, -0.70, end_z);
+        spawn_mesh(
+            seg,
+            &a.mesh_freight_coupler,
+            &a.mat_steel,
+            Transform::from_xyz(x + coup_offset.x, y + coup_offset.y, z + coup_offset.z)
+                .with_rotation(rot),
+        );
+    }
+}
+
+fn spawn_freight_bulk_wagon(
+    seg: &mut ChildBuilder,
+    a: &FloodedMetroAssets,
+    side: f32,
+    z: f32,
+    tilted: bool,
+) {
+    let x = side * 8.2;
+    let rot = if tilted {
+        Quat::from_rotation_z(side * 0.18) * Quat::from_rotation_x(0.06)
+    } else {
+        Quat::IDENTITY
+    };
+    let y = if tilted { 1.35 } else { 1.75 };
+
+    // Flatbed bed floor
+    let floor_offset = rot * Vec3::new(0.0, -0.65, 0.0);
+    spawn_mesh(
+        seg,
+        &a.mesh_freight_bulk_floor,
+        &a.mat_steel,
+        Transform::from_xyz(x + floor_offset.x, y + floor_offset.y, z + floor_offset.z)
+            .with_rotation(rot),
+    );
+
+    // Long side walls
+    for side_sign in [-1.0, 1.0] {
+        let wall_offset = rot * Vec3::new(side_sign * 1.52, 0.10, 0.0);
+        spawn_mesh(
+            seg,
+            &a.mesh_freight_bulk_wall_long,
+            &a.mat_rusted_steel,
+            Transform::from_xyz(x + wall_offset.x, y + wall_offset.y, z + wall_offset.z)
+                .with_rotation(rot),
+        );
+    }
+
+    // End bulkhead walls
+    for end_z in [-5.65, 5.65] {
+        let end_offset = rot * Vec3::new(0.0, 0.10, end_z);
+        spawn_mesh(
+            seg,
+            &a.mesh_freight_bulk_wall_end,
+            &a.mat_rusted_steel,
+            Transform::from_xyz(x + end_offset.x, y + end_offset.y, z + end_offset.z)
+                .with_rotation(rot),
+        );
+    }
+
+    // Heavy irregular dark scrap metal / mineral load
+    let scrap_offset = rot * Vec3::new(0.0, -0.20, 0.0);
+    spawn_mesh(
+        seg,
+        &a.mesh_freight_bulk_scrap,
+        &a.mat_bg_dark_structure,
+        Transform::from_xyz(x + scrap_offset.x, y + scrap_offset.y, z + scrap_offset.z)
+            .with_rotation(rot),
+    );
+
+    // Bogies
+    for bogie_z in [-3.6, 3.6] {
+        let bogie_offset = rot * Vec3::new(0.0, -1.15, bogie_z);
+        spawn_mesh(
+            seg,
+            &a.mesh_train_bogie,
+            &a.mat_rusted_steel,
+            Transform::from_xyz(x + bogie_offset.x, y + bogie_offset.y, z + bogie_offset.z)
+                .with_rotation(rot),
+        );
+    }
+
+    // Couplers
+    for end_z in [-5.8, 5.8] {
+        let coup_offset = rot * Vec3::new(0.0, -0.70, end_z);
+        spawn_mesh(
+            seg,
+            &a.mesh_freight_coupler,
+            &a.mat_steel,
+            Transform::from_xyz(x + coup_offset.x, y + coup_offset.y, z + coup_offset.z)
+                .with_rotation(rot),
+        );
+    }
+}
+
+fn spawn_freight_maintenance_wagon(
+    seg: &mut ChildBuilder,
+    a: &FloodedMetroAssets,
+    side: f32,
+    z: f32,
+    tilted: bool,
+) {
+    let x = side * 8.2;
+    let rot = if tilted {
+        Quat::from_rotation_z(side * 0.16) * Quat::from_rotation_x(0.05)
+    } else {
+        Quat::IDENTITY
+    };
+    let y = if tilted { 1.25 } else { 1.65 };
+
+    // Heavy channel flatbed chassis
+    spawn_mesh(
+        seg,
+        &a.mesh_freight_flatbed_chassis,
+        &a.mat_steel,
+        Transform::from_xyz(x, y - 0.40, z).with_rotation(rot),
+    );
+
+    // Heavy industrial cable spools on deck
+    for (spool_z, spool_rot_tilt) in [(-2.4, 0.0), (2.0, 0.20)] {
+        let spool_rot = rot
+            * Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)
+            * Quat::from_rotation_z(spool_rot_tilt);
+        let spool_offset = rot * Vec3::new(0.0, 0.70, spool_z);
+        spawn_mesh(
+            seg,
+            &a.mesh_freight_cable_spool,
+            &a.mat_submerged_wood,
+            Transform::from_xyz(x + spool_offset.x, y + spool_offset.y, z + spool_offset.z)
+                .with_rotation(spool_rot),
+        );
+    }
+
+    // Utility generator / equipment crate
+    let crate_offset = rot * Vec3::new(0.0, 0.65, -4.5);
+    spawn_mesh(
+        seg,
+        &a.mesh_freight_equipment_crate,
+        &a.mat_rusted_steel,
+        Transform::from_xyz(x + crate_offset.x, y + crate_offset.y, z + crate_offset.z)
+            .with_rotation(rot),
+    );
+
+    // Bogies
+    for bogie_z in [-3.6, 3.6] {
+        let bogie_offset = rot * Vec3::new(0.0, -1.05, bogie_z);
+        spawn_mesh(
+            seg,
+            &a.mesh_train_bogie,
+            &a.mat_rusted_steel,
+            Transform::from_xyz(x + bogie_offset.x, y + bogie_offset.y, z + bogie_offset.z)
+                .with_rotation(rot),
+        );
+    }
+
+    // Couplers
+    for end_z in [-5.8, 5.8] {
+        let coup_offset = rot * Vec3::new(0.0, -0.60, end_z);
+        spawn_mesh(
+            seg,
+            &a.mesh_freight_coupler,
+            &a.mat_steel,
+            Transform::from_xyz(x + coup_offset.x, y + coup_offset.y, z + coup_offset.z)
+                .with_rotation(rot),
+        );
+    }
+}
+
+#[allow(dead_code)]
+fn spawn_train_carriage(
+    seg: &mut ChildBuilder,
+    a: &FloodedMetroAssets,
+    side: f32,
+    z: f32,
+    tilted: bool,
+) {
+    spawn_freight_boxcar(seg, a, side, z, tilted, false);
 }
 
 // -------------------------------------------------------------
@@ -2426,5 +2966,22 @@ mod tests {
             let var = flooded_metro_variant(dist);
             assert!(var < 3);
         }
+    }
+
+    #[test]
+    fn test_flooded_metro_sunken_transit_freight_landmark() {
+        assert_eq!(
+            flooded_metro_chapter_for_distance(7380.0),
+            FloodedMetroChapter::SunkenTransit
+        );
+        assert_eq!(
+            flooded_metro_landmark_for_distance(7380.0),
+            FloodedMetroLandmark::SunkenTransitWreckage
+        );
+        // Non-landmark distance within Chapter 4
+        assert_eq!(
+            flooded_metro_landmark_for_distance(7300.0),
+            FloodedMetroLandmark::None
+        );
     }
 }
