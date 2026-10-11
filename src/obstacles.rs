@@ -25,6 +25,7 @@ pub fn resolve_obstacle_pool_type(obstacle_type: ObstacleType, distance: f32) ->
     let zone_id = get_zone_for_distance(distance).id;
     let is_neon_district = zone_id == 2;
     let is_industrial_sector = zone_id == 3;
+    let is_flooded_metro = zone_id == 4;
 
     match obstacle_type {
         ObstacleType::LowBarrier => {
@@ -32,6 +33,8 @@ pub fn resolve_obstacle_pool_type(obstacle_type: ObstacleType, distance: f32) ->
                 PoolType::NeonRoadBarrier
             } else if is_industrial_sector {
                 PoolType::IndustrialRoadBarrier
+            } else if is_flooded_metro {
+                PoolType::FloodedBarrier
             } else {
                 PoolType::LowBarrier
             }
@@ -41,6 +44,8 @@ pub fn resolve_obstacle_pool_type(obstacle_type: ObstacleType, distance: f32) ->
                 PoolType::NeonOverheadScanner
             } else if is_industrial_sector {
                 PoolType::IndustrialOverheadPipe
+            } else if is_flooded_metro {
+                PoolType::FloodedPowerCable
             } else {
                 PoolType::HighHangingWire
             }
@@ -50,6 +55,8 @@ pub fn resolve_obstacle_pool_type(obstacle_type: ObstacleType, distance: f32) ->
                 PoolType::NeonCheckpointPillar
             } else if is_industrial_sector {
                 PoolType::IndustrialSupportPillar
+            } else if is_flooded_metro {
+                PoolType::FloodedPumpColumn
             } else {
                 PoolType::TallPillar
             }
@@ -59,6 +66,8 @@ pub fn resolve_obstacle_pool_type(obstacle_type: ObstacleType, distance: f32) ->
                 PoolType::NeonAutoVan
             } else if is_industrial_sector {
                 PoolType::IndustrialFreightTransport
+            } else if is_flooded_metro {
+                PoolType::FloodedSubmergedTrain
             } else {
                 PoolType::StaticTrain
             }
@@ -68,6 +77,8 @@ pub fn resolve_obstacle_pool_type(obstacle_type: ObstacleType, distance: f32) ->
                 PoolType::NeonCyberBus
             } else if is_industrial_sector {
                 PoolType::IndustrialCargoTransport
+            } else if is_flooded_metro {
+                PoolType::FloodedMovingTrain
             } else {
                 PoolType::MovingTrain
             }

@@ -52,6 +52,19 @@ pub fn flooded_metro_landmark_for_distance(distance: f32) -> FloodedMetroLandmar
 #[derive(Resource)]
 #[allow(dead_code)]
 pub struct FloodedMetroAssets {
+    // --- Submerged Track & Drainage Canals ---
+    pub mesh_submerged_ballast_bed: Handle<Mesh>,
+    pub mesh_wet_ballast_strip: Handle<Mesh>,
+    pub mesh_corroded_rail_base: Handle<Mesh>,
+    pub mesh_corroded_rail_crown: Handle<Mesh>,
+    pub mesh_submerged_heavy_sleeper: Handle<Mesh>,
+    pub mesh_sleeper_tie_plate: Handle<Mesh>,
+    pub mesh_canal_trough: Handle<Mesh>,
+    pub mesh_canal_water: Handle<Mesh>,
+    pub mesh_canal_grate: Handle<Mesh>,
+    pub mesh_faded_lane_marker: Handle<Mesh>,
+    pub mesh_rail_puddle: Handle<Mesh>,
+
     // --- Structural Geometry ---
     pub mesh_wall_main: Handle<Mesh>,
     pub mesh_wall_reservoir: Handle<Mesh>,
@@ -148,6 +161,24 @@ pub struct FloodedMetroAssets {
     pub mesh_echo_conduit_ring: Handle<Mesh>,
     pub mesh_echo_sensor_relay: Handle<Mesh>,
 
+    // --- Background Architectural Silhouettes ---
+    pub mesh_bg_tunnel_arch: Handle<Mesh>,
+    pub mesh_bg_arch_column: Handle<Mesh>,
+    pub mesh_bg_vent_shaft_body: Handle<Mesh>,
+    pub mesh_bg_vent_shaft_cap: Handle<Mesh>,
+    pub mesh_bg_pump_housing: Handle<Mesh>,
+    pub mesh_bg_pipe_trunk: Handle<Mesh>,
+    pub mesh_bg_maint_bridge_deck: Handle<Mesh>,
+    pub mesh_bg_maint_bridge_truss: Handle<Mesh>,
+    pub mesh_bg_reservoir_wall_colossal: Handle<Mesh>,
+    pub mesh_bg_aqueduct_pillar: Handle<Mesh>,
+    pub mesh_bg_distant_train: Handle<Mesh>,
+    pub mesh_bg_blast_door_frame: Handle<Mesh>,
+    pub mesh_bg_blast_door_panel: Handle<Mesh>,
+
+    // --- WaterDrip Geometry ---
+    pub mesh_water_droplet: Handle<Mesh>,
+
     // --- Materials ---
     pub mat_concrete: Handle<StandardMaterial>,
     pub mat_wet_concrete: Handle<StandardMaterial>,
@@ -165,6 +196,20 @@ pub struct FloodedMetroAssets {
     pub mat_train_body: Handle<StandardMaterial>,
     pub mat_train_window: Handle<StandardMaterial>,
     pub mat_submerged_wood: Handle<StandardMaterial>,
+
+    // --- Dedicated Submerged Track Materials ---
+    pub mat_wet_ballast: Handle<StandardMaterial>,
+    pub mat_corroded_rail: Handle<StandardMaterial>,
+    pub mat_submerged_sleeper: Handle<StandardMaterial>,
+    pub mat_canal_wall: Handle<StandardMaterial>,
+    pub mat_faded_lane_marker: Handle<StandardMaterial>,
+
+    // --- Background Silhouette Materials ---
+    pub mat_bg_dark_structure: Handle<StandardMaterial>,
+    pub mat_bg_metal_structure: Handle<StandardMaterial>,
+
+    // --- WaterDrip Material ---
+    pub mat_water_droplet: Handle<StandardMaterial>,
 }
 
 pub fn init_flooded_metro_assets(
@@ -173,6 +218,19 @@ pub fn init_flooded_metro_assets(
     materials: &mut Assets<StandardMaterial>,
 ) {
     let assets = FloodedMetroAssets {
+        // --- Dedicated Submerged Track & Drainage Canals ---
+        mesh_submerged_ballast_bed: meshes.add(Cuboid::new(9.2, 0.44, 40.0)),
+        mesh_wet_ballast_strip: meshes.add(Cuboid::new(1.1, 0.16, 40.0)),
+        mesh_corroded_rail_base: meshes.add(Cuboid::new(0.16, 0.07, 40.0)),
+        mesh_corroded_rail_crown: meshes.add(Cuboid::new(0.11, 0.08, 40.0)),
+        mesh_submerged_heavy_sleeper: meshes.add(Cuboid::new(7.6, 0.20, 0.50)),
+        mesh_sleeper_tie_plate: meshes.add(Cuboid::new(0.32, 0.04, 0.40)),
+        mesh_canal_trough: meshes.add(Cuboid::new(0.85, 0.32, 40.0)),
+        mesh_canal_water: meshes.add(Cuboid::new(0.68, 0.05, 40.0)),
+        mesh_canal_grate: meshes.add(Cuboid::new(0.82, 0.06, 1.2)),
+        mesh_faded_lane_marker: meshes.add(Cuboid::new(0.22, 0.03, 1.8)),
+        mesh_rail_puddle: meshes.add(Cuboid::new(1.2, 0.03, 6.0)),
+
         // --- Structural Geometry ---
         mesh_wall_main: meshes.add(Cuboid::new(0.50, 8.6, 40.0)),
         mesh_wall_reservoir: meshes.add(Cuboid::new(0.80, 16.0, 40.0)),
@@ -268,6 +326,24 @@ pub fn init_flooded_metro_assets(
         mesh_locking_clamp: meshes.add(Cuboid::new(0.55, 0.55, 1.6)),
         mesh_echo_conduit_ring: meshes.add(Cylinder::new(3.8, 0.38)),
         mesh_echo_sensor_relay: meshes.add(Cuboid::new(0.48, 0.75, 0.48)),
+
+        // --- Background Architectural Silhouettes ---
+        mesh_bg_tunnel_arch: meshes.add(Cuboid::new(48.0, 3.5, 5.0)),
+        mesh_bg_arch_column: meshes.add(Cuboid::new(4.5, 28.0, 4.5)),
+        mesh_bg_vent_shaft_body: meshes.add(Cylinder::new(5.0, 32.0)),
+        mesh_bg_vent_shaft_cap: meshes.add(Cylinder::new(6.2, 3.0)),
+        mesh_bg_pump_housing: meshes.add(Cuboid::new(8.0, 14.0, 8.0)),
+        mesh_bg_pipe_trunk: meshes.add(Cylinder::new(1.8, 40.0)),
+        mesh_bg_maint_bridge_deck: meshes.add(Cuboid::new(50.0, 1.2, 4.0)),
+        mesh_bg_maint_bridge_truss: meshes.add(Cuboid::new(50.0, 3.5, 0.4)),
+        mesh_bg_reservoir_wall_colossal: meshes.add(Cuboid::new(2.5, 34.0, 40.0)),
+        mesh_bg_aqueduct_pillar: meshes.add(Cuboid::new(5.5, 22.0, 5.5)),
+        mesh_bg_distant_train: meshes.add(Cuboid::new(4.2, 3.6, 26.0)),
+        mesh_bg_blast_door_frame: meshes.add(Cuboid::new(26.0, 18.0, 3.0)),
+        mesh_bg_blast_door_panel: meshes.add(Cuboid::new(11.0, 16.0, 1.2)),
+
+        // --- WaterDrip Geometry ---
+        mesh_water_droplet: meshes.add(Cuboid::new(0.04, 0.32, 0.04)),
 
         // --- Materials ---
         mat_concrete: materials.add(StandardMaterial {
@@ -366,6 +442,61 @@ pub fn init_flooded_metro_assets(
             perceptual_roughness: 0.88,
             ..default()
         }),
+
+        // --- Dedicated Submerged Track Materials ---
+        mat_wet_ballast: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.045, 0.055, 0.062),
+            metallic: 0.18,
+            perceptual_roughness: 0.34,
+            ..default()
+        }),
+        mat_corroded_rail: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.18, 0.115, 0.09),
+            metallic: 0.68,
+            perceptual_roughness: 0.62,
+            ..default()
+        }),
+        mat_submerged_sleeper: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.065, 0.075, 0.080),
+            metallic: 0.10,
+            perceptual_roughness: 0.76,
+            ..default()
+        }),
+        mat_canal_wall: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.07, 0.085, 0.095),
+            metallic: 0.25,
+            perceptual_roughness: 0.55,
+            ..default()
+        }),
+        mat_faded_lane_marker: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.52, 0.40, 0.12),
+            metallic: 0.10,
+            perceptual_roughness: 0.82,
+            ..default()
+        }),
+
+        // --- Background Silhouette Materials ---
+        mat_bg_dark_structure: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.045, 0.06, 0.07),
+            metallic: 0.30,
+            perceptual_roughness: 0.82,
+            ..default()
+        }),
+        mat_bg_metal_structure: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.08, 0.09, 0.10),
+            metallic: 0.50,
+            perceptual_roughness: 0.70,
+            ..default()
+        }),
+
+        // --- WaterDrip Material ---
+        mat_water_droplet: materials.add(StandardMaterial {
+            base_color: Color::srgba(0.20, 0.60, 0.70, 0.85),
+            emissive: LinearRgba::new(0.015, 0.08, 0.10, 1.0),
+            metallic: 0.10,
+            perceptual_roughness: 0.12,
+            ..default()
+        }),
     };
 
     commands.insert_resource(assets);
@@ -373,7 +504,7 @@ pub fn init_flooded_metro_assets(
 
 pub fn spawn_flooded_metro_segment(
     commands: &mut Commands,
-    env: &EnvironmentAssets,
+    _env: &EnvironmentAssets,
     flooded: &FloodedMetroAssets,
     z_center: f32,
     length: f32,
@@ -390,8 +521,13 @@ pub fn spawn_flooded_metro_segment(
             Despawnable { z_center },
         ))
         .with_children(|seg| {
-            spawn_flooded_track(seg, env, length);
+            // PILLAR B: Dedicated Submerged Track Identity
+            spawn_flooded_track(seg, flooded, length);
 
+            // PILLAR D: Lightweight WaterDrip System
+            spawn_chapter_water_drip_emitters(seg, flooded, chapter, variant);
+
+            // PILLAR A: Layered Background Depth & Chapter Specific Architecture
             match chapter {
                 FloodedMetroChapter::FloodgateDescent => {
                     spawn_floodgate_descent_segment(seg, flooded, variant, landmark);
@@ -413,66 +549,299 @@ pub fn spawn_flooded_metro_segment(
         .id()
 }
 
-fn spawn_flooded_track(seg: &mut ChildBuilder, env: &EnvironmentAssets, length: f32) {
+// -------------------------------------------------------------
+// PILLAR B — DEDICATED SUBMERGED TRACK IDENTITY
+// -------------------------------------------------------------
+
+fn spawn_flooded_track(seg: &mut ChildBuilder, a: &FloodedMetroAssets, length: f32) {
+    // 1. Wet submerged ballast track bed
     seg.spawn(PbrBundle {
-        mesh: env.mesh_bed.clone(),
-        material: env.mat_concrete_bed.clone(),
-        transform: Transform::from_xyz(0.0, -0.225, 0.0),
-        ..default()
-    });
-    seg.spawn(PbrBundle {
-        mesh: env.mesh_drain_trough.clone(),
-        material: env.mat_drainage.clone(),
-        transform: Transform::from_xyz(0.0, -0.05, 0.0),
-        ..default()
-    });
-    seg.spawn(PbrBundle {
-        mesh: env.mesh_curb_shoulder.clone(),
-        material: env.mat_ballast_curb.clone(),
-        transform: Transform::from_xyz(-4.2, 0.12, 0.0),
-        ..default()
-    });
-    seg.spawn(PbrBundle {
-        mesh: env.mesh_curb_shoulder.clone(),
-        material: env.mat_ballast_curb.clone(),
-        transform: Transform::from_xyz(4.2, 0.12, 0.0),
+        mesh: a.mesh_submerged_ballast_bed.clone(),
+        material: a.mat_wet_ballast.clone(),
+        transform: Transform::from_xyz(0.0, -0.22, 0.0),
         ..default()
     });
 
-    let sleeper_count = (length / 4.0) as i32;
-    for i in -sleeper_count / 2..=sleeper_count / 2 {
+    // 2. Continuous Trackside Drainage Canals along both shoulders (x = -4.3, +4.3)
+    for side in [-1.0, 1.0] {
+        let canal_x = side * 4.3;
+        // Canal concrete/steel trough recessed into the floor
         seg.spawn(PbrBundle {
-            mesh: env.mesh_sleeper_heavy.clone(),
-            material: env.mat_sleeper_stained.clone(),
-            transform: Transform::from_xyz(0.0, 0.01, i as f32 * 4.0),
+            mesh: a.mesh_canal_trough.clone(),
+            material: a.mat_canal_wall.clone(),
+            transform: Transform::from_xyz(canal_x, -0.06, 0.0),
+            ..default()
+        });
+        // Recessed water surface inside the canal
+        seg.spawn(PbrBundle {
+            mesh: a.mesh_canal_water.clone(),
+            material: a.mat_water.clone(),
+            transform: Transform::from_xyz(canal_x, 0.04, 0.0),
+            ..default()
+        });
+        // Periodic drainage grates along the canal
+        for z in [-14.0, -6.0, 2.0, 10.0, 18.0] {
+            seg.spawn(PbrBundle {
+                mesh: a.mesh_canal_grate.clone(),
+                material: a.mat_rusted_steel.clone(),
+                transform: Transform::from_xyz(canal_x, 0.10, z),
+                ..default()
+            });
+        }
+        // Wet ballast curb strip between track and canal
+        seg.spawn(PbrBundle {
+            mesh: a.mesh_wet_ballast_strip.clone(),
+            material: a.mat_wet_ballast.clone(),
+            transform: Transform::from_xyz(side * 3.4, 0.02, 0.0),
             ..default()
         });
     }
 
+    // 3. Heavy submerged sleepers with corroded tie plates
+    let sleeper_count = (length / 4.0) as i32;
+    for i in -sleeper_count / 2..=sleeper_count / 2 {
+        let z = i as f32 * 4.0;
+        seg.spawn(PbrBundle {
+            mesh: a.mesh_submerged_heavy_sleeper.clone(),
+            material: a.mat_submerged_sleeper.clone(),
+            transform: Transform::from_xyz(0.0, 0.02, z),
+            ..default()
+        });
+        // Corroded tie plates at rail intersections for all 3 lanes
+        for lane_idx in -1..=1 {
+            let x = Lane::from_index(lane_idx).x_pos();
+            for rail_x in [x - 0.48, x + 0.48] {
+                seg.spawn(PbrBundle {
+                    mesh: a.mesh_sleeper_tie_plate.clone(),
+                    material: a.mat_rusted_steel.clone(),
+                    transform: Transform::from_xyz(rail_x, 0.07, z),
+                    ..default()
+                });
+            }
+        }
+    }
+
+    // 4. Corroded, dark, wet rails and damaged Flooded Metro lane markings
     for lane_idx in -1..=1 {
         let x = Lane::from_index(lane_idx).x_pos();
+        // Corroded Rails
         for rail_x in [x - 0.48, x + 0.48] {
             seg.spawn(PbrBundle {
-                mesh: env.mesh_rail_base.clone(),
-                material: env.mat_rail_base.clone(),
-                transform: Transform::from_xyz(rail_x, 0.04, 0.0),
+                mesh: a.mesh_corroded_rail_base.clone(),
+                material: a.mat_corroded_rail.clone(),
+                transform: Transform::from_xyz(rail_x, 0.05, 0.0),
                 ..default()
             });
             seg.spawn(PbrBundle {
-                mesh: env.mesh_rail_crown.clone(),
-                material: env.mat_rail_crown.clone(),
-                transform: Transform::from_xyz(rail_x, 0.09, 0.0),
+                mesh: a.mesh_corroded_rail_crown.clone(),
+                material: a.mat_corroded_rail.clone(),
+                transform: Transform::from_xyz(rail_x, 0.10, 0.0),
                 ..default()
             });
         }
+        // Flooded Metro lane markings: damaged, water-washed hazard plates
         for i in -4..=4 {
-            seg.spawn(PbrBundle {
-                mesh: env.mesh_lane_stripe.clone(),
-                material: env.mat_echo_conduit.clone(),
-                transform: Transform::from_xyz(x, 0.13, i as f32 * 4.5),
-                ..default()
-            });
+            if (i + lane_idx).abs() % 5 != 0 {
+                seg.spawn(PbrBundle {
+                    mesh: a.mesh_faded_lane_marker.clone(),
+                    material: if (i + lane_idx) % 2 == 0 {
+                        a.mat_faded_lane_marker.clone()
+                    } else {
+                        a.mat_hazard_stripe.clone()
+                    },
+                    transform: Transform::from_xyz(x, 0.06, i as f32 * 4.5),
+                    ..default()
+                });
+            }
         }
+    }
+
+    // 5. Standing shallow water / puddles along track floor
+    for z in [-11.0, 7.0] {
+        seg.spawn(PbrBundle {
+            mesh: a.mesh_rail_puddle.clone(),
+            material: a.mat_water_puddle.clone(),
+            transform: Transform::from_xyz(0.0, 0.025, z),
+            ..default()
+        });
+    }
+}
+
+// -------------------------------------------------------------
+// PILLAR A — REUSABLE BACKGROUND ARCHITECTURE SILHOUETTES
+// -------------------------------------------------------------
+
+fn spawn_background_tunnel_arch(
+    seg: &mut ChildBuilder,
+    a: &FloodedMetroAssets,
+    x: f32,
+    y: f32,
+    z: f32,
+    scale: Vec3,
+) {
+    seg.spawn(PbrBundle {
+        mesh: a.mesh_bg_tunnel_arch.clone(),
+        material: a.mat_bg_dark_structure.clone(),
+        transform: Transform::from_xyz(x, y + 16.0 * scale.y, z).with_scale(scale),
+        ..default()
+    });
+    for side in [-1.0, 1.0] {
+        seg.spawn(PbrBundle {
+            mesh: a.mesh_bg_arch_column.clone(),
+            material: a.mat_bg_dark_structure.clone(),
+            transform: Transform::from_xyz(x + side * 22.0 * scale.x, y + 8.0 * scale.y, z)
+                .with_scale(scale),
+            ..default()
+        });
+    }
+}
+
+fn spawn_background_vent_shaft(
+    seg: &mut ChildBuilder,
+    a: &FloodedMetroAssets,
+    x: f32,
+    y: f32,
+    z: f32,
+) {
+    seg.spawn(PbrBundle {
+        mesh: a.mesh_bg_vent_shaft_body.clone(),
+        material: a.mat_bg_dark_structure.clone(),
+        transform: Transform::from_xyz(x, y + 14.0, z),
+        ..default()
+    });
+    seg.spawn(PbrBundle {
+        mesh: a.mesh_bg_vent_shaft_cap.clone(),
+        material: a.mat_bg_metal_structure.clone(),
+        transform: Transform::from_xyz(x, y + 29.0, z),
+        ..default()
+    });
+}
+
+fn spawn_background_pump_tower(
+    seg: &mut ChildBuilder,
+    a: &FloodedMetroAssets,
+    x: f32,
+    y: f32,
+    z: f32,
+) {
+    seg.spawn(PbrBundle {
+        mesh: a.mesh_bg_pump_housing.clone(),
+        material: a.mat_bg_dark_structure.clone(),
+        transform: Transform::from_xyz(x, y + 7.0, z),
+        ..default()
+    });
+    seg.spawn(PbrBundle {
+        mesh: a.mesh_bg_pipe_trunk.clone(),
+        material: a.mat_rusted_steel.clone(),
+        transform: Transform::from_xyz(x - 3.8, y + 12.0, z),
+        ..default()
+    });
+    seg.spawn(PbrBundle {
+        mesh: a.mesh_emergency_light.clone(),
+        material: a.mat_warning_amber.clone(),
+        transform: Transform::from_xyz(x, y + 14.2, z).with_scale(Vec3::splat(2.5)),
+        ..default()
+    });
+}
+
+fn spawn_background_maintenance_bridge(
+    seg: &mut ChildBuilder,
+    a: &FloodedMetroAssets,
+    x: f32,
+    y: f32,
+    z: f32,
+) {
+    seg.spawn(PbrBundle {
+        mesh: a.mesh_bg_maint_bridge_deck.clone(),
+        material: a.mat_bg_metal_structure.clone(),
+        transform: Transform::from_xyz(x, y, z),
+        ..default()
+    });
+    seg.spawn(PbrBundle {
+        mesh: a.mesh_bg_maint_bridge_truss.clone(),
+        material: a.mat_bg_dark_structure.clone(),
+        transform: Transform::from_xyz(x, y + 1.8, z),
+        ..default()
+    });
+}
+
+fn spawn_background_pipe_bank(
+    seg: &mut ChildBuilder,
+    a: &FloodedMetroAssets,
+    x: f32,
+    y: f32,
+    z: f32,
+) {
+    for y_off in [0.0, 3.8] {
+        seg.spawn(PbrBundle {
+            mesh: a.mesh_bg_pipe_trunk.clone(),
+            material: a.mat_rusted_steel.clone(),
+            transform: Transform::from_xyz(x, y + y_off, z)
+                .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
+            ..default()
+        });
+    }
+}
+
+fn spawn_distant_train_silhouette(
+    seg: &mut ChildBuilder,
+    a: &FloodedMetroAssets,
+    x: f32,
+    y: f32,
+    z: f32,
+    yaw: f32,
+) {
+    seg.spawn(PbrBundle {
+        mesh: a.mesh_bg_distant_train.clone(),
+        material: a.mat_bg_dark_structure.clone(),
+        transform: Transform::from_xyz(x, y + 1.6, z).with_rotation(Quat::from_rotation_y(yaw)),
+        ..default()
+    });
+}
+
+fn spawn_background_reservoir_wall(
+    seg: &mut ChildBuilder,
+    a: &FloodedMetroAssets,
+    x: f32,
+    y: f32,
+    z: f32,
+) {
+    seg.spawn(PbrBundle {
+        mesh: a.mesh_bg_reservoir_wall_colossal.clone(),
+        material: a.mat_bg_dark_structure.clone(),
+        transform: Transform::from_xyz(x, y + 15.0, z),
+        ..default()
+    });
+    for z_off in [-14.0, 14.0] {
+        seg.spawn(PbrBundle {
+            mesh: a.mesh_bg_aqueduct_pillar.clone(),
+            material: a.mat_bg_dark_structure.clone(),
+            transform: Transform::from_xyz(x - (x.signum() * 2.5), y + 11.0, z + z_off),
+            ..default()
+        });
+    }
+}
+
+fn spawn_background_blast_door_portal(
+    seg: &mut ChildBuilder,
+    a: &FloodedMetroAssets,
+    x: f32,
+    y: f32,
+    z: f32,
+) {
+    seg.spawn(PbrBundle {
+        mesh: a.mesh_bg_blast_door_frame.clone(),
+        material: a.mat_bg_dark_structure.clone(),
+        transform: Transform::from_xyz(x, y + 9.0, z),
+        ..default()
+    });
+    for side in [-1.0, 1.0] {
+        seg.spawn(PbrBundle {
+            mesh: a.mesh_bg_blast_door_panel.clone(),
+            material: a.mat_bg_metal_structure.clone(),
+            transform: Transform::from_xyz(x + side * 5.8, y + 8.0, z),
+            ..default()
+        });
     }
 }
 
@@ -585,7 +954,6 @@ fn spawn_ceiling_infrastructure(
 ) {
     let y_base = if is_cavern { 9.5 } else { 6.4 };
 
-    // Continuous drainage conduits and structural girders overhead
     spawn_mesh(
         seg,
         &a.mesh_pipe_medium,
@@ -615,7 +983,6 @@ fn spawn_ceiling_infrastructure(
         );
     }
 
-    // Caged utility fixtures at ceiling level
     for z in [-12.0, 12.0] {
         spawn_mesh(
             seg,
@@ -627,7 +994,6 @@ fn spawn_ceiling_infrastructure(
 }
 
 fn spawn_pipe_runs(seg: &mut ChildBuilder, a: &FloodedMetroAssets, variant: u8) {
-    // Left shoulder large drainage main with flange joints and valve wheels
     spawn_mesh(
         seg,
         &a.mesh_pipe_drain_huge,
@@ -668,7 +1034,6 @@ fn spawn_pipe_runs(seg: &mut ChildBuilder, a: &FloodedMetroAssets, variant: u8) 
         );
     }
 
-    // Right shoulder smaller multi-conduit cluster
     for (y_offset, z_offset) in [(3.2, 0.0), (3.7, 0.0)] {
         spawn_mesh(
             seg,
@@ -704,7 +1069,6 @@ fn spawn_water_elements(
         );
     }
 
-    // Standing water puddles along track curb shoulders
     for s in [-1.0, 1.0] {
         spawn_mesh(
             seg,
@@ -826,19 +1190,26 @@ fn spawn_floodgate_descent_segment(
     variant: u8,
     landmark: FloodedMetroLandmark,
 ) {
+    // Immediate foreground and midground tunnel walls
     spawn_tunnel_shell(seg, a, 9.0, 8.6, false);
     spawn_concrete_arch_ribs(seg, a, 8.6, &[-14.0, 14.0]);
     spawn_ceiling_infrastructure(seg, a, variant, false);
     spawn_pipe_runs(seg, a, variant);
     spawn_water_elements(seg, a, 1.0, false);
 
+    // PILLAR A: Background Architectural Silhouettes (Scale & Subterranean Depth)
+    spawn_background_tunnel_arch(seg, a, 0.0, 8.0, -18.0, Vec3::new(1.0, 1.0, 1.0));
     match variant {
         0 => {
+            spawn_background_pump_tower(seg, a, 32.0, 0.0, 0.0);
+            spawn_background_pipe_bank(seg, a, -28.0, 3.0, 0.0);
             spawn_culvert_drain(seg, a, -1.0, -8.0);
             spawn_pump_station(seg, a, 1.0, 6.0);
             spawn_ladder(seg, a, 1.0, -12.0);
         }
         1 => {
+            spawn_background_vent_shaft(seg, a, -30.0, 0.0, -10.0);
+            spawn_background_maintenance_bridge(seg, a, 0.0, 13.0, 10.0);
             spawn_electrical_box(seg, a, -1.0, 4.0);
             spawn_culvert_drain(seg, a, 1.0, 10.0);
             spawn_mesh(
@@ -849,6 +1220,8 @@ fn spawn_floodgate_descent_segment(
             );
         }
         _ => {
+            spawn_background_vent_shaft(seg, a, 30.0, 0.0, 8.0);
+            spawn_background_pump_tower(seg, a, -32.0, 0.0, -5.0);
             spawn_pump_station(seg, a, -1.0, -4.0);
             spawn_electrical_box(seg, a, 1.0, 8.0);
             spawn_culvert_drain(seg, a, -1.0, 12.0);
@@ -861,7 +1234,6 @@ fn spawn_floodgate_descent_segment(
 }
 
 fn spawn_landmark_floodgate(seg: &mut ChildBuilder, a: &FloodedMetroAssets) {
-    // Massive Reinforced Sluice Floodgate Arch
     spawn_mesh(
         seg,
         &a.mesh_gate_portal_arch,
@@ -876,7 +1248,6 @@ fn spawn_landmark_floodgate(seg: &mut ChildBuilder, a: &FloodedMetroAssets) {
             &a.mat_concrete,
             Transform::from_xyz(x, 4.8, 0.0),
         );
-        // Hydraulic actuator assemblies
         spawn_mesh(
             seg,
             &a.mesh_hydraulic_cylinder,
@@ -889,7 +1260,6 @@ fn spawn_landmark_floodgate(seg: &mut ChildBuilder, a: &FloodedMetroAssets) {
             &a.mat_steel,
             Transform::from_xyz(x - side * 0.9, 3.4, 0.0),
         );
-        // Emergency beacon indicators on gate towers
         spawn_mesh(
             seg,
             &a.mesh_emergency_light,
@@ -897,8 +1267,6 @@ fn spawn_landmark_floodgate(seg: &mut ChildBuilder, a: &FloodedMetroAssets) {
             Transform::from_xyz(side * 6.2, 7.2, 0.2),
         );
     }
-
-    // Heavy reinforced steel gate leaves suspended overhead with safe clearance for Kai
     for side in [-1.0, 1.0] {
         spawn_mesh(
             seg,
@@ -907,8 +1275,6 @@ fn spawn_landmark_floodgate(seg: &mut ChildBuilder, a: &FloodedMetroAssets) {
             Transform::from_xyz(side * 3.8, 5.4, 0.0),
         );
     }
-
-    // Vertical flood level gauge board
     spawn_mesh(
         seg,
         &a.mesh_flood_level_gauge,
@@ -933,6 +1299,12 @@ fn spawn_submerged_station_segment(
     spawn_ceiling_infrastructure(seg, a, variant, false);
     spawn_water_elements(seg, a, -platform_side, false);
 
+    // PILLAR A: Background Silhouettes (Vast Station Hall & Distant Platforms)
+    spawn_background_tunnel_arch(seg, a, 0.0, 9.0, 0.0, Vec3::new(1.15, 1.1, 1.0));
+    spawn_background_maintenance_bridge(seg, a, 0.0, 12.0, -15.0);
+    spawn_background_vent_shaft(seg, a, platform_side * 34.0, 0.0, 5.0);
+    spawn_distant_train_silhouette(seg, a, -platform_side * 28.0, 0.0, 12.0, 0.0);
+
     // Elevated passenger station platform on one flank
     let plat_x = platform_side * 6.5;
     spawn_mesh(
@@ -941,7 +1313,6 @@ fn spawn_submerged_station_segment(
         &a.mat_wet_concrete,
         Transform::from_xyz(plat_x, 0.42, 0.0),
     );
-    // Tactile hazard edge stripe along platform edge
     spawn_mesh(
         seg,
         &a.mesh_platform_tactile_edge,
@@ -949,7 +1320,6 @@ fn spawn_submerged_station_segment(
         Transform::from_xyz(platform_side * 3.9, 0.74, 0.0),
     );
 
-    // Metro tile arch columns supporting station roof
     for z in [-14.0, 0.0, 14.0] {
         spawn_mesh(
             seg,
@@ -959,7 +1329,6 @@ fn spawn_submerged_station_segment(
         );
     }
 
-    // Station passenger furniture & fittings
     spawn_mesh(
         seg,
         &a.mesh_station_bench,
@@ -988,7 +1357,6 @@ fn spawn_submerged_station_segment(
             spawn_pump_station(seg, a, -platform_side, 4.0);
         }
         _ => {
-            // Floating debris and submerged pallets in flooded opposite lane
             spawn_mesh(
                 seg,
                 &a.mesh_floating_debris,
@@ -1011,7 +1379,6 @@ fn spawn_submerged_station_segment(
 }
 
 fn spawn_landmark_submerged_station(seg: &mut ChildBuilder, a: &FloodedMetroAssets) {
-    // Grand Station Platform Complex with submerged passenger stairs
     spawn_mesh(
         seg,
         &a.mesh_submerged_stairs,
@@ -1048,10 +1415,18 @@ fn spawn_reservoir_crossing_segment(
     variant: u8,
     landmark: FloodedMetroLandmark,
 ) {
-    // Vast Cavern Shell: pushed out to 21 meters with 16m high walls!
+    // Vast Cavern Shell: pushed out to 21 meters with 16m high walls
     spawn_tunnel_shell(seg, a, 21.0, 16.0, true);
     spawn_ceiling_infrastructure(seg, a, variant, true);
     spawn_water_elements(seg, a, 1.0, true);
+
+    // PILLAR A: Background Silhouettes (Colossal Scale & Distant Aqueduct Arches)
+    spawn_background_reservoir_wall(seg, a, -42.0, -2.0, 0.0);
+    spawn_background_reservoir_wall(seg, a, 42.0, -2.0, 0.0);
+    spawn_background_tunnel_arch(seg, a, 0.0, 14.0, 0.0, Vec3::new(1.35, 1.35, 1.2));
+    spawn_background_pump_tower(seg, a, -34.0, -2.0, -12.0);
+    spawn_background_pump_tower(seg, a, 36.0, -2.0, 12.0);
+    spawn_background_maintenance_bridge(seg, a, 0.0, 17.0, 14.0);
 
     // Massive concrete bridge piers plunging down into deep water
     for side in [-1.0, 1.0] {
@@ -1065,7 +1440,6 @@ fn spawn_reservoir_crossing_segment(
         }
     }
 
-    // High overhead maintenance catwalks along cavern sides
     let catwalk_side = if variant == 0 { -1.0 } else { 1.0 };
     spawn_mesh(
         seg,
@@ -1082,7 +1456,6 @@ fn spawn_reservoir_crossing_segment(
 
     match variant {
         0 => {
-            // Cylindrical intake tower rising from the water
             spawn_mesh(
                 seg,
                 &a.mesh_intake_tower,
@@ -1097,7 +1470,6 @@ fn spawn_reservoir_crossing_segment(
             );
         }
         1 => {
-            // Turbine pump housing island
             spawn_mesh(
                 seg,
                 &a.mesh_pump_turbine,
@@ -1113,7 +1485,6 @@ fn spawn_reservoir_crossing_segment(
             );
         }
         _ => {
-            // Floating debris and maintenance ladders
             spawn_mesh(
                 seg,
                 &a.mesh_floating_debris,
@@ -1135,14 +1506,12 @@ fn spawn_reservoir_crossing_segment(
 }
 
 fn spawn_landmark_reservoir_aqueduct(seg: &mut ChildBuilder, a: &FloodedMetroAssets) {
-    // Colossal Overhead Truss Aqueduct Bridge Spanning Across the Cavern
     spawn_mesh(
         seg,
         &a.mesh_reservoir_truss_span,
         &a.mat_steel,
         Transform::from_xyz(0.0, 10.8, 0.0),
     );
-    // Twin towering intake towers rising from the dark lake on both flanks
     for side in [-1.0, 1.0] {
         let x = side * 15.0;
         spawn_mesh(
@@ -1176,6 +1545,13 @@ fn spawn_sunken_transit_segment(
     spawn_ceiling_infrastructure(seg, a, variant, false);
     spawn_water_elements(seg, a, siding_side, false);
 
+    // PILLAR A: Background Silhouettes (Distant Derailed Carriages & Transit Yard Hall)
+    spawn_distant_train_silhouette(seg, a, siding_side * 30.0, 0.0, -14.0, 0.15);
+    spawn_distant_train_silhouette(seg, a, -siding_side * 32.0, 0.0, 8.0, -0.22);
+    spawn_background_maintenance_bridge(seg, a, 0.0, 11.5, 0.0);
+    spawn_background_tunnel_arch(seg, a, 0.0, 7.5, 18.0, Vec3::new(1.05, 1.0, 1.0));
+    spawn_background_vent_shaft(seg, a, -siding_side * 28.0, 0.0, -10.0);
+
     // Stalled abandoned train carriage on flooded siding
     spawn_train_carriage(seg, a, siding_side, 0.0, false);
 
@@ -1200,7 +1576,6 @@ fn spawn_sunken_transit_segment(
             spawn_electrical_box(seg, a, -siding_side, -4.0);
         }
         1 => {
-            // Second carriage on the other siding
             spawn_train_carriage(seg, a, -siding_side, 12.0, false);
         }
         _ => {
@@ -1215,11 +1590,8 @@ fn spawn_sunken_transit_segment(
 }
 
 fn spawn_landmark_sunken_train_wreck(seg: &mut ChildBuilder, a: &FloodedMetroAssets) {
-    // The Sunken Express Derailment Formation: heavily tilted into water basin
     spawn_train_carriage(seg, a, -1.0, -4.0, true);
     spawn_train_carriage(seg, a, 1.0, 10.0, false);
-
-    // Floating debris and dislodged bogies around the wreckage
     spawn_mesh(
         seg,
         &a.mesh_train_bogie,
@@ -1263,7 +1635,6 @@ fn spawn_train_carriage(
         Transform::from_xyz(x, y + 1.45, z).with_rotation(rot),
     );
 
-    // Window cutouts with murky transit glass
     for win_z in [-4.0, 0.0, 4.0] {
         spawn_mesh(
             seg,
@@ -1273,7 +1644,6 @@ fn spawn_train_carriage(
         );
     }
 
-    // Broken sliding doors jammed ajar
     for door_z in [-5.8, 5.8] {
         spawn_mesh(
             seg,
@@ -1295,13 +1665,18 @@ fn spawn_deep_line_approach_segment(
     landmark: FloodedMetroLandmark,
 ) {
     spawn_tunnel_shell(seg, a, 9.0, 8.6, false);
-    // Double reinforced concrete ribs for fortified restricted approach
     spawn_concrete_arch_ribs(seg, a, 8.6, &[-14.0, -7.0, 7.0, 14.0]);
     spawn_ceiling_infrastructure(seg, a, variant, false);
     spawn_pipe_runs(seg, a, variant);
     spawn_water_elements(seg, a, -1.0, false);
 
-    // Sealed blast hatches with pressure locking lugs
+    // PILLAR A: Background Silhouettes (Fortified Deep Bulkheads & ECHO Portals)
+    spawn_background_blast_door_portal(seg, a, -26.0, 0.0, 0.0);
+    spawn_background_blast_door_portal(seg, a, 26.0, 0.0, 0.0);
+    spawn_background_tunnel_arch(seg, a, 0.0, 8.5, -16.0, Vec3::new(1.1, 1.05, 1.0));
+    spawn_background_pipe_bank(seg, a, -28.0, 2.0, 10.0);
+    spawn_background_maintenance_bridge(seg, a, 0.0, 12.0, 14.0);
+
     for side in [-1.0, 1.0] {
         spawn_mesh(
             seg,
@@ -1317,7 +1692,6 @@ fn spawn_deep_line_approach_segment(
         );
     }
 
-    // High-security warning signage and emergency red beacons
     spawn_mesh(
         seg,
         &a.mesh_hazard_sign,
@@ -1337,7 +1711,6 @@ fn spawn_deep_line_approach_segment(
             spawn_pump_station(seg, a, 1.0, 8.0);
         }
         1 => {
-            // Strange ECHO diagnostic relay pods embedded in alcoves
             spawn_mesh(
                 seg,
                 &a.mesh_echo_sensor_relay,
@@ -1359,7 +1732,6 @@ fn spawn_deep_line_approach_segment(
 }
 
 fn spawn_landmark_deep_bulkhead_portal(seg: &mut ChildBuilder, a: &FloodedMetroAssets) {
-    // Massive Reinforced Blast Bulkhead Vault Portal Framing the Deep Line
     spawn_mesh(
         seg,
         &a.mesh_deep_portal_arch,
@@ -1393,8 +1765,6 @@ fn spawn_landmark_deep_bulkhead_portal(seg: &mut ChildBuilder, a: &FloodedMetroA
             Transform::from_xyz(side * 5.8, 6.4, 0.3),
         );
     }
-
-    // Circular ECHO waveguide containment collar in the upper portal arch
     spawn_mesh(
         seg,
         &a.mesh_echo_conduit_ring,
@@ -1408,6 +1778,242 @@ fn spawn_landmark_deep_bulkhead_portal(seg: &mut ChildBuilder, a: &FloodedMetroA
         &a.mat_hazard_stripe,
         Transform::from_xyz(0.0, 7.8, 0.3),
     );
+}
+
+// -------------------------------------------------------------
+// PILLAR D — LIGHTWEIGHT WATERDRIP SYSTEM
+// -------------------------------------------------------------
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(dead_code)]
+pub enum WaterDripEmitterType {
+    CeilingCrack,
+    PipeLeak,
+    DrainageOutlet,
+    StructuralJoint,
+    BrokenVent,
+    PumpHousingLeak,
+}
+
+#[derive(Component)]
+#[allow(dead_code)]
+pub struct WaterDripEmitter {
+    pub emitter_type: WaterDripEmitterType,
+    pub timer: f32,
+    pub interval: f32,
+    pub droplet_speed: f32,
+    pub floor_y: f32,
+    pub spread: f32,
+    pub active_count: u32,
+    pub max_active: u32,
+}
+
+#[derive(Component)]
+pub struct WaterDripDroplet {
+    pub speed: f32,
+    pub floor_y: f32,
+}
+
+pub fn spawn_water_drip_emitter(
+    parent: &mut ChildBuilder,
+    _flooded: &FloodedMetroAssets,
+    emitter_type: WaterDripEmitterType,
+    pos: Vec3,
+    floor_y: f32,
+) {
+    let (interval, droplet_speed, spread, max_active) = match emitter_type {
+        WaterDripEmitterType::CeilingCrack => (0.32, 12.5, 0.35, 14),
+        WaterDripEmitterType::PipeLeak => (0.20, 14.0, 0.15, 18),
+        WaterDripEmitterType::DrainageOutlet => (0.16, 15.0, 0.20, 20),
+        WaterDripEmitterType::StructuralJoint => (0.40, 11.5, 0.30, 12),
+        WaterDripEmitterType::BrokenVent => (0.26, 13.0, 0.45, 15),
+        WaterDripEmitterType::PumpHousingLeak => (0.24, 13.5, 0.18, 16),
+    };
+
+    parent.spawn((
+        SpatialBundle::from_transform(Transform::from_translation(pos)),
+        WaterDripEmitter {
+            emitter_type,
+            timer: 0.0,
+            interval,
+            droplet_speed,
+            floor_y,
+            spread,
+            active_count: 0,
+            max_active,
+        },
+    ));
+}
+
+fn spawn_chapter_water_drip_emitters(
+    seg: &mut ChildBuilder,
+    a: &FloodedMetroAssets,
+    chapter: FloodedMetroChapter,
+    variant: u8,
+) {
+    match chapter {
+        FloodedMetroChapter::FloodgateDescent => {
+            spawn_water_drip_emitter(
+                seg,
+                a,
+                WaterDripEmitterType::StructuralJoint,
+                Vec3::new(0.0, 7.2, -10.0),
+                0.0,
+            );
+            spawn_water_drip_emitter(
+                seg,
+                a,
+                WaterDripEmitterType::PipeLeak,
+                Vec3::new(-7.4, 4.4, 4.0),
+                0.0,
+            );
+            if variant == 0 {
+                spawn_water_drip_emitter(
+                    seg,
+                    a,
+                    WaterDripEmitterType::PumpHousingLeak,
+                    Vec3::new(6.8, 2.8, 6.0),
+                    0.0,
+                );
+            }
+        }
+        FloodedMetroChapter::SubmergedStation => {
+            let plat_x = if variant == 1 { -6.5 } else { 6.5 };
+            spawn_water_drip_emitter(
+                seg,
+                a,
+                WaterDripEmitterType::CeilingCrack,
+                Vec3::new(plat_x, 6.2, 0.0),
+                0.42,
+            );
+            spawn_water_drip_emitter(
+                seg,
+                a,
+                WaterDripEmitterType::PipeLeak,
+                Vec3::new(-plat_x * 0.8, 6.4, -8.0),
+                0.0,
+            );
+        }
+        FloodedMetroChapter::ReservoirCrossing => {
+            spawn_water_drip_emitter(
+                seg,
+                a,
+                WaterDripEmitterType::CeilingCrack,
+                Vec3::new(0.0, 9.5, 0.0),
+                0.0,
+            );
+            spawn_water_drip_emitter(
+                seg,
+                a,
+                WaterDripEmitterType::DrainageOutlet,
+                Vec3::new(12.0, 4.5, -10.0),
+                -0.06,
+            );
+            spawn_water_drip_emitter(
+                seg,
+                a,
+                WaterDripEmitterType::StructuralJoint,
+                Vec3::new(-6.8, 5.0, 8.0),
+                0.0,
+            );
+        }
+        FloodedMetroChapter::SunkenTransit => {
+            let siding_side = if variant == 2 { -1.0 } else { 1.0 };
+            spawn_water_drip_emitter(
+                seg,
+                a,
+                WaterDripEmitterType::BrokenVent,
+                Vec3::new(siding_side * 8.0, 6.0, 0.0),
+                1.6,
+            );
+            spawn_water_drip_emitter(
+                seg,
+                a,
+                WaterDripEmitterType::CeilingCrack,
+                Vec3::new(-siding_side * 3.0, 6.4, 12.0),
+                0.0,
+            );
+        }
+        FloodedMetroChapter::DeepLineApproach => {
+            spawn_water_drip_emitter(
+                seg,
+                a,
+                WaterDripEmitterType::StructuralJoint,
+                Vec3::new(-6.5, 5.8, 0.0),
+                0.0,
+            );
+            if variant == 1 {
+                spawn_water_drip_emitter(
+                    seg,
+                    a,
+                    WaterDripEmitterType::CeilingCrack,
+                    Vec3::new(4.0, 6.8, 8.0),
+                    0.0,
+                );
+            }
+        }
+    }
+}
+
+pub fn update_water_drip_emitters(
+    mut commands: Commands,
+    time: Res<Time>,
+    flooded: Option<Res<FloodedMetroAssets>>,
+    mut emitter_query: Query<(Entity, &mut WaterDripEmitter)>,
+) {
+    let Some(flooded) = flooded else { return };
+    let dt = time.delta_seconds();
+
+    for (emitter_entity, mut emitter) in emitter_query.iter_mut() {
+        emitter.timer += dt;
+        if emitter.timer >= emitter.interval {
+            emitter.timer = 0.0;
+            if emitter.active_count < emitter.max_active {
+                emitter.active_count += 1;
+                let offset_x =
+                    ((emitter.active_count as f32 * 1.618).fract() - 0.5) * 2.0 * emitter.spread;
+                let offset_z =
+                    ((emitter.active_count as f32 * 2.718).fract() - 0.5) * 2.0 * emitter.spread;
+                let drop_mesh = flooded.mesh_water_droplet.clone();
+                let drop_mat = flooded.mat_water_droplet.clone();
+                let droplet_speed = emitter.droplet_speed;
+                let floor_y = emitter.floor_y;
+
+                commands.entity(emitter_entity).with_children(|children| {
+                    children.spawn((
+                        PbrBundle {
+                            mesh: drop_mesh,
+                            material: drop_mat,
+                            transform: Transform::from_xyz(offset_x, 0.0, offset_z),
+                            ..default()
+                        },
+                        WaterDripDroplet {
+                            speed: droplet_speed,
+                            floor_y,
+                        },
+                    ));
+                });
+            }
+        }
+    }
+}
+
+pub fn update_water_drips(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut droplet_query: Query<(Entity, &Parent, &mut Transform, &WaterDripDroplet)>,
+    mut emitter_query: Query<&mut WaterDripEmitter>,
+) {
+    let dt = time.delta_seconds();
+    for (entity, parent, mut transform, droplet) in droplet_query.iter_mut() {
+        transform.translation.y -= droplet.speed * dt;
+        if transform.translation.y <= droplet.floor_y {
+            if let Ok(mut emitter) = emitter_query.get_mut(parent.get()) {
+                emitter.active_count = emitter.active_count.saturating_sub(1);
+            }
+            commands.entity(entity).despawn();
+        }
+    }
 }
 
 // -------------------------------------------------------------
@@ -1481,7 +2087,6 @@ mod tests {
 
     #[test]
     fn test_flooded_metro_landmarks_appear_in_each_chapter() {
-        // Each chapter must contain exactly one hero landmark chunk
         assert_eq!(
             flooded_metro_landmark_for_distance(6130.0),
             FloodedMetroLandmark::FloodgateDescentSluice
@@ -1503,7 +2108,6 @@ mod tests {
             FloodedMetroLandmark::DeepLineBulkheadPortal
         );
 
-        // Ordinary segments must return FloodedMetroLandmark::None
         assert_eq!(
             flooded_metro_landmark_for_distance(6050.0),
             FloodedMetroLandmark::None
@@ -1524,5 +2128,18 @@ mod tests {
             flooded_metro_landmark_for_distance(7700.0),
             FloodedMetroLandmark::None
         );
+    }
+
+    #[test]
+    fn test_flooded_metro_water_drip_emitter_types() {
+        let emitters = [
+            WaterDripEmitterType::CeilingCrack,
+            WaterDripEmitterType::PipeLeak,
+            WaterDripEmitterType::DrainageOutlet,
+            WaterDripEmitterType::StructuralJoint,
+            WaterDripEmitterType::BrokenVent,
+            WaterDripEmitterType::PumpHousingLeak,
+        ];
+        assert_eq!(emitters.len(), 6);
     }
 }

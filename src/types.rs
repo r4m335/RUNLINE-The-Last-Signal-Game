@@ -418,6 +418,12 @@ pub enum PoolType {
     IndustrialSupportPillar,
     IndustrialFreightTransport,
     IndustrialCargoTransport,
+    // Zone 4 Flooded Metro Dedicated Obstacles
+    FloodedBarrier,
+    FloodedPowerCable,
+    FloodedPumpColumn,
+    FloodedSubmergedTrain,
+    FloodedMovingTrain,
     EchoFragment,
     DataChip,
     PowerUp,

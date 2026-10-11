@@ -101,7 +101,12 @@ impl Plugin for EnvironmentPlugin {
         app.add_systems(Startup, init_environment_assets)
             .add_systems(
                 Update,
-                (animate_environment_fans,).run_if(in_state(AppState::InGame)),
+                (
+                    animate_environment_fans,
+                    crate::flooded_metro::update_water_drip_emitters,
+                    crate::flooded_metro::update_water_drips,
+                )
+                    .run_if(in_state(AppState::InGame)),
             );
     }
 }

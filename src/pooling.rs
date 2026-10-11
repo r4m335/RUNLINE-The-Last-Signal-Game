@@ -191,6 +191,28 @@ pub struct PoolAssets {
     pub mat_industrial_pipe: Handle<StandardMaterial>,
     pub mat_industrial_warning: Handle<StandardMaterial>,
     pub mat_industrial_glass: Handle<StandardMaterial>,
+
+    // Zone 4 Flooded Metro Dedicated Obstacles
+    pub mesh_flooded_barrier_frame: Handle<Mesh>,
+    pub mesh_flooded_barrier_plate: Handle<Mesh>,
+    pub mesh_flooded_barrier_strobe: Handle<Mesh>,
+    pub mesh_flooded_barrier_support: Handle<Mesh>,
+    pub mesh_flooded_pipe_column: Handle<Mesh>,
+    pub mesh_flooded_column_collar: Handle<Mesh>,
+    pub mesh_flooded_column_valve: Handle<Mesh>,
+    pub mesh_flooded_cable_bundle: Handle<Mesh>,
+    pub mesh_flooded_cable_tag: Handle<Mesh>,
+    pub mesh_flooded_cable_conduit: Handle<Mesh>,
+    pub mesh_flooded_train_body: Handle<Mesh>,
+    pub mesh_flooded_train_roof: Handle<Mesh>,
+    pub mesh_flooded_train_window: Handle<Mesh>,
+    pub mesh_flooded_service_body: Handle<Mesh>,
+    pub mesh_flooded_service_light: Handle<Mesh>,
+    pub mat_flooded_steel: Handle<StandardMaterial>,
+    pub mat_flooded_hazard: Handle<StandardMaterial>,
+    pub mat_flooded_rust: Handle<StandardMaterial>,
+    pub mat_flooded_amber: Handle<StandardMaterial>,
+    pub mat_flooded_cable: Handle<StandardMaterial>,
 }
 
 #[derive(Resource, Default)]
@@ -210,6 +232,11 @@ pub struct EntityPool {
     pub industrial_pillars: Vec<Entity>,
     pub industrial_freight: Vec<Entity>,
     pub industrial_cargo: Vec<Entity>,
+    pub flooded_barriers: Vec<Entity>,
+    pub flooded_cables: Vec<Entity>,
+    pub flooded_pillars: Vec<Entity>,
+    pub flooded_freight: Vec<Entity>,
+    pub flooded_cargo: Vec<Entity>,
     pub fragments: Vec<Entity>,
     pub data_chips: Vec<Entity>,
     pub powerups: Vec<Entity>,
@@ -233,6 +260,11 @@ impl EntityPool {
             PoolType::IndustrialSupportPillar => self.industrial_pillars.pop(),
             PoolType::IndustrialFreightTransport => self.industrial_freight.pop(),
             PoolType::IndustrialCargoTransport => self.industrial_cargo.pop(),
+            PoolType::FloodedBarrier => self.flooded_barriers.pop(),
+            PoolType::FloodedPowerCable => self.flooded_cables.pop(),
+            PoolType::FloodedPumpColumn => self.flooded_pillars.pop(),
+            PoolType::FloodedSubmergedTrain => self.flooded_freight.pop(),
+            PoolType::FloodedMovingTrain => self.flooded_cargo.pop(),
             PoolType::EchoFragment => self.fragments.pop(),
             PoolType::DataChip => self.data_chips.pop(),
             PoolType::PowerUp => self.powerups.pop(),
@@ -256,6 +288,11 @@ impl EntityPool {
             PoolType::IndustrialSupportPillar => self.industrial_pillars.push(entity),
             PoolType::IndustrialFreightTransport => self.industrial_freight.push(entity),
             PoolType::IndustrialCargoTransport => self.industrial_cargo.push(entity),
+            PoolType::FloodedBarrier => self.flooded_barriers.push(entity),
+            PoolType::FloodedPowerCable => self.flooded_cables.push(entity),
+            PoolType::FloodedPumpColumn => self.flooded_pillars.push(entity),
+            PoolType::FloodedSubmergedTrain => self.flooded_freight.push(entity),
+            PoolType::FloodedMovingTrain => self.flooded_cargo.push(entity),
             PoolType::EchoFragment => self.fragments.push(entity),
             PoolType::DataChip => self.data_chips.push(entity),
             PoolType::PowerUp => self.powerups.push(entity),
@@ -278,6 +315,11 @@ impl EntityPool {
             + self.industrial_pillars.len()
             + self.industrial_freight.len()
             + self.industrial_cargo.len()
+            + self.flooded_barriers.len()
+            + self.flooded_cables.len()
+            + self.flooded_pillars.len()
+            + self.flooded_freight.len()
+            + self.flooded_cargo.len()
             + self.fragments.len()
             + self.data_chips.len()
             + self.powerups.len()
@@ -770,6 +812,51 @@ fn init_pool_assets(
             emissive: LinearRgba::new(0.04, 0.35, 0.38, 1.0),
             metallic: 0.80,
             perceptual_roughness: 0.12,
+            ..default()
+        }),
+        // Zone 4 Flooded Metro Dedicated Obstacles
+        mesh_flooded_barrier_frame: meshes.add(Cuboid::new(2.10, 0.45, 0.35)),
+        mesh_flooded_barrier_plate: meshes.add(Cuboid::new(1.90, 0.32, 0.08)),
+        mesh_flooded_barrier_strobe: meshes.add(Sphere::new(0.12)),
+        mesh_flooded_barrier_support: meshes.add(Cuboid::new(0.16, 0.74, 0.30)),
+        mesh_flooded_pipe_column: meshes.add(Cylinder::new(0.48, 4.40)),
+        mesh_flooded_column_collar: meshes.add(Cuboid::new(1.40, 0.65, 1.40)),
+        mesh_flooded_column_valve: meshes.add(Cylinder::new(0.42, 0.12)),
+        mesh_flooded_cable_bundle: meshes.add(Cylinder::new(0.09, 2.40)),
+        mesh_flooded_cable_tag: meshes.add(Cuboid::new(0.35, 0.45, 0.04)),
+        mesh_flooded_cable_conduit: meshes.add(Cuboid::new(2.10, 0.16, 0.16)),
+        mesh_flooded_train_body: meshes.add(Cuboid::new(2.20, 2.50, 12.0)),
+        mesh_flooded_train_roof: meshes.add(Cuboid::new(2.35, 0.32, 11.8)),
+        mesh_flooded_train_window: meshes.add(Cuboid::new(0.06, 0.75, 2.40)),
+        mesh_flooded_service_body: meshes.add(Cuboid::new(2.20, 2.30, 8.5)),
+        mesh_flooded_service_light: meshes.add(Sphere::new(0.18)),
+        mat_flooded_steel: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.14, 0.18, 0.20),
+            metallic: 0.88,
+            perceptual_roughness: 0.36,
+            ..default()
+        }),
+        mat_flooded_hazard: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.72, 0.48, 0.08),
+            metallic: 0.35,
+            perceptual_roughness: 0.52,
+            ..default()
+        }),
+        mat_flooded_rust: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.24, 0.12, 0.06),
+            metallic: 0.55,
+            perceptual_roughness: 0.82,
+            ..default()
+        }),
+        mat_flooded_amber: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.95, 0.42, 0.05),
+            emissive: LinearRgba::new(2.2, 0.65, 0.02, 1.0),
+            ..default()
+        }),
+        mat_flooded_cable: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.035, 0.040, 0.045),
+            metallic: 0.30,
+            perceptual_roughness: 0.75,
             ..default()
         }),
     };
