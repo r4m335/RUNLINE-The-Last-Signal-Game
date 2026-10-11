@@ -368,8 +368,8 @@ pub fn init_flooded_metro_assets(
         mesh_bg_reservoir_wall_colossal: meshes.add(Cuboid::new(2.5, 34.0, 40.0)),
         mesh_bg_aqueduct_pillar: meshes.add(Cuboid::new(5.5, 22.0, 5.5)),
         mesh_bg_distant_train: meshes.add(Cuboid::new(4.2, 3.6, 26.0)),
-        mesh_bg_blast_door_frame: meshes.add(Cuboid::new(26.0, 18.0, 3.0)),
-        mesh_bg_blast_door_panel: meshes.add(Cuboid::new(11.0, 16.0, 1.2)),
+        mesh_bg_blast_door_frame: meshes.add(Cuboid::new(26.0, 2.4, 3.0)),
+        mesh_bg_blast_door_panel: meshes.add(Cuboid::new(2.4, 10.0, 2.2)),
 
         // --- WaterDrip Geometry ---
         mesh_water_droplet: meshes.add(Cuboid::new(0.045, 0.36, 0.045)),
@@ -888,19 +888,19 @@ fn spawn_background_blast_door_portal(
     y: f32,
     z: f32,
 ) {
-    // 26m wide cyclopean reinforced blast door portal frame
+    // 26m wide reinforced blast portal overhead header lintel (elevated at ceiling level)
     seg.spawn(PbrBundle {
         mesh: a.mesh_bg_blast_door_frame.clone(),
         material: a.mat_bg_dark_structure.clone(),
-        transform: Transform::from_xyz(x, y + 7.5, z),
+        transform: Transform::from_xyz(x, y + 8.4, z),
         ..default()
     });
-    // Heavy retractable blast door leaves mounted on side stanchions
+    // Massive vertical jamb stanchions embedded into the tunnel sidewalls (center corridor remains 100% open)
     for side in [-1.0, 1.0] {
         seg.spawn(PbrBundle {
             mesh: a.mesh_bg_blast_door_panel.clone(),
             material: a.mat_bg_metal_structure.clone(),
-            transform: Transform::from_xyz(x + side * 8.6, y + 7.0, z),
+            transform: Transform::from_xyz(x + side * 8.8, y + 4.5, z),
             ..default()
         });
     }
