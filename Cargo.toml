@@ -31,6 +31,8 @@ rand = "0.8"
 
 [profile.dev]
 opt-level = 1
+# Avoid stale incremental object combinations that fail during MSVC linking.
+incremental = false
 
 [profile.dev.package."*"]
 opt-level = 3
