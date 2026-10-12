@@ -89,6 +89,13 @@ pub struct SkyRailDistantDrone {
     pub phase: f32,
 }
 
+#[derive(Component, Debug, Clone)]
+pub struct SkyRailDistantCraft {
+    pub speed: f32,
+    pub min_local_z: f32,
+    pub max_local_z: f32,
+}
+
 #[derive(Resource, Debug)]
 pub struct SkyRailStormState {
     pub flash_timer: f32,
@@ -232,6 +239,15 @@ pub struct SkyRailAssets {
     pub mesh_micro_weathered_patch: Handle<Mesh>,
     pub mesh_cloud_wisps_small: Handle<Mesh>,
 
+    // Distant Megacity & Industrial Complex Meshes
+    pub mesh_tower_cylinder_large: Handle<Mesh>,
+    pub mesh_industrial_cooling_tower: Handle<Mesh>,
+    pub mesh_industrial_vent_stack: Handle<Mesh>,
+    pub mesh_distant_skybridge_long: Handle<Mesh>,
+    pub mesh_tower_cluster_block: Handle<Mesh>,
+    pub mesh_distant_crossing_rail: Handle<Mesh>,
+    pub mesh_distant_traffic_craft: Handle<Mesh>,
+
     // Track & Infrastructure Materials
     pub mat_sky_steel: Handle<StandardMaterial>,
     pub mat_sky_tread: Handle<StandardMaterial>,
@@ -255,6 +271,7 @@ pub struct SkyRailAssets {
     // Skyline & Cloud Abyss Materials (Readable Dark Atmospheric Depth)
     pub mat_sky_tower_dark: Handle<StandardMaterial>,
     pub mat_sky_tower_distant: Handle<StandardMaterial>,
+    pub mat_sky_tower_faint: Handle<StandardMaterial>,
     pub mat_sky_window_dim: Handle<StandardMaterial>,
     pub mat_sky_window_amber_dim: Handle<StandardMaterial>,
     pub mat_sky_antenna_red: Handle<StandardMaterial>,
@@ -400,6 +417,15 @@ pub fn init_sky_rail_assets(
         mesh_micro_weathered_patch: meshes.add(Cuboid::new(1.40, 1.80, 0.08)),
         mesh_cloud_wisps_small: meshes.add(Cuboid::new(70.0, 7.5, 30.0)),
 
+        // Distant Megacity & Industrial Complex Meshes
+        mesh_tower_cylinder_large: meshes.add(Cylinder::new(14.0, 180.0)),
+        mesh_industrial_cooling_tower: meshes.add(Cylinder::new(13.0, 52.0)),
+        mesh_industrial_vent_stack: meshes.add(Cylinder::new(3.0, 85.0)),
+        mesh_distant_skybridge_long: meshes.add(Cuboid::new(110.0, 3.8, 5.2)),
+        mesh_tower_cluster_block: meshes.add(Cuboid::new(34.0, 110.0, 30.0)),
+        mesh_distant_crossing_rail: meshes.add(Cuboid::new(130.0, 1.2, 4.0)),
+        mesh_distant_traffic_craft: meshes.add(Cuboid::new(3.0, 1.2, 5.5)),
+
         // Materials Palette
         mat_sky_steel: materials.add(StandardMaterial {
             base_color: Color::srgb(0.11, 0.14, 0.19),
@@ -507,6 +533,13 @@ pub fn init_sky_rail_assets(
             metallic: 0.60,
             perceptual_roughness: 0.55,
             emissive: LinearRgba::new(0.012, 0.018, 0.030, 1.0),
+            ..default()
+        }),
+        mat_sky_tower_faint: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.032, 0.045, 0.068),
+            metallic: 0.40,
+            perceptual_roughness: 0.75,
+            emissive: LinearRgba::new(0.008, 0.012, 0.020, 1.0),
             ..default()
         }),
         mat_sky_window_dim: materials.add(StandardMaterial {
@@ -1098,254 +1131,407 @@ fn spawn_skyline_megatowers(seg: &mut ChildBuilder, sky: &SkyRailAssets, distanc
     }
 
     // -------------------------------------------------------------
-    // ZONE 5 VISUAL PHILOSOPHY: VAST ABYSS, NOT A STREET CANYON
-    // The railway is suspended 850m above Aurelia in an exposed void.
-    // Flanking space (|x| < 90m) is OPEN AIR, CLOUDS & EXPOSED PYLONS.
-    // Megastructures are distant titans (|x| in [110.0, 240.0]m).
-    // They appear SPARSELY (alternating flanks, not every segment),
-    // leaving immense voids of stormy sky.
+    // MULTI-LAYER MEGACITY CLUSTERS & HORIZON SKYLINE (LAYER C: 135–320M)
     // -------------------------------------------------------------
+    let primary_side = if seg_idx.rem_euclid(2) == 0 {
+        -1.0
+    } else {
+        1.0
+    };
+    let secondary_side = -primary_side;
 
     match chapter {
         SkyRailChapter::SkyRailEmergence => {
-            // Chapter 1: First emergence from underground into vast open sky.
-            // Solitary horizon titan far away (|x| >= 170m) swallowed by cloud deck below.
-            if seg_idx.rem_euclid(3) == 0 {
-                let side = if h1 > 0.5 { -1.0 } else { 1.0 };
-                let titan_x = side * (175.0 + h2 * 45.0);
-                let titan_z = -15.0 + h3 * 30.0;
+            // Chapter 1: Emergence from underground into open storm sky.
+            // Distant solitary horizon titan rising from the cloud deck at |X| >= 165m.
+            let titan_x = primary_side * (165.0 + h2 * 45.0);
+            let titan_z = -15.0 + h3 * 30.0;
+            // Primary colossal titan piercing cloud stratum
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_tower_colossus.clone(),
+                material: sky.mat_sky_tower_distant.clone(),
+                transform: Transform::from_xyz(titan_x, 15.0, titan_z),
+                ..default()
+            });
+            // Stepped crown pinnacle atop primary titan
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_tower_stepped_crown.clone(),
+                material: sky.mat_sky_steel.clone(),
+                transform: Transform::from_xyz(titan_x, 115.0, titan_z)
+                    .with_scale(Vec3::new(1.4, 1.4, 1.4)),
+                ..default()
+            });
+            // Vertical structural rib accents on inward face
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_tower_window_slit_v.clone(),
+                material: sky.mat_sky_midground_steel.clone(),
+                transform: Transform::from_xyz(titan_x - primary_side * 17.5, 20.0, titan_z)
+                    .with_scale(Vec3::new(1.0, 2.8, 1.2)),
+                ..default()
+            });
+            // Horizontal crossband rib
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_tower_window_slit_h.clone(),
+                material: sky.mat_sky_midground_steel.clone(),
+                transform: Transform::from_xyz(titan_x - primary_side * 17.5, 45.0, titan_z)
+                    .with_scale(Vec3::new(1.0, 1.5, 1.2)),
+                ..default()
+            });
+            // Distant aviation beacon blinking in cloud mist
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_hazard_reflector.clone(),
+                material: sky.mat_sky_antenna_red.clone(),
+                transform: Transform::from_xyz(titan_x, 138.0, titan_z)
+                    .with_scale(Vec3::new(3.2, 3.2, 3.2)),
+                ..default()
+            });
+
+            // Flanking cluster block partially submerged in clouds
+            if h1 > 0.35 {
+                let block_x = titan_x + primary_side * 28.0;
                 seg.spawn(PbrBundle {
-                    mesh: sky.mesh_tower_colossus.clone(),
-                    material: sky.mat_sky_tower_distant.clone(),
-                    transform: Transform::from_xyz(titan_x, 15.0, titan_z),
-                    ..default()
-                });
-                // Vertical structural rib accents on inward face
-                seg.spawn(PbrBundle {
-                    mesh: sky.mesh_tower_window_slit_v.clone(),
-                    material: sky.mat_sky_midground_steel.clone(),
-                    transform: Transform::from_xyz(titan_x - side * 17.5, 20.0, titan_z)
-                        .with_scale(Vec3::new(1.0, 2.8, 1.2)),
-                    ..default()
-                });
-                // Horizontal crossband rib
-                seg.spawn(PbrBundle {
-                    mesh: sky.mesh_tower_window_slit_h.clone(),
-                    material: sky.mat_sky_midground_steel.clone(),
-                    transform: Transform::from_xyz(titan_x - side * 17.5, 45.0, titan_z)
-                        .with_scale(Vec3::new(1.0, 1.5, 1.2)),
-                    ..default()
-                });
-                // Distant warning beacon blinking in cloud mist
-                seg.spawn(PbrBundle {
-                    mesh: sky.mesh_hazard_reflector.clone(),
-                    material: sky.mat_sky_antenna_red.clone(),
-                    transform: Transform::from_xyz(titan_x, 15.0 + 95.0 + 10.0, titan_z)
-                        .with_scale(Vec3::new(3.0, 3.0, 3.0)),
+                    mesh: sky.mesh_tower_cluster_block.clone(),
+                    material: sky.mat_sky_tower_dark.clone(),
+                    transform: Transform::from_xyz(block_x, 10.0, titan_z + 8.0),
                     ..default()
                 });
             }
+
+            // Far horizon faint silhouette skyline on opposite flank (Layer C+ 245–300m)
+            let far_x = secondary_side * (245.0 + h4 * 55.0);
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_tower_colossus.clone(),
+                material: sky.mat_sky_tower_faint.clone(),
+                transform: Transform::from_xyz(far_x, 12.0, titan_z - 10.0),
+                ..default()
+            });
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_hazard_reflector.clone(),
+                material: sky.mat_sky_antenna_red.clone(),
+                transform: Transform::from_xyz(far_x, 110.0, titan_z - 10.0)
+                    .with_scale(Vec3::new(2.8, 2.8, 2.8)),
+                ..default()
+            });
         }
         SkyRailChapter::UpperAurelia => {
-            // Chapter 2: Distant colossal corporate arcologies rising above cloud deck.
-            // Solitary titans in mid-to-far background (|x| in [115.0, 195.0]m).
-            // Alternate left/right every 2 segments so there's always vast open void on one side.
-            if seg_idx.rem_euclid(2) == 0 {
-                let left_x = -120.0 - h1 * 45.0;
-                let left_z = -10.0 + h2 * 20.0;
+            // Chapter 2: Upper Aurelia — colossal corporate arcologies, compound tower clusters,
+            // elevated skybridge networks, and far horizon silhouettes.
+            let cluster_x = primary_side * (140.0 + h1 * 40.0);
+            let cluster_z = -10.0 + h2 * 20.0;
+
+            // 1. Primary Megatitan (alternates between cylindrical titan and colossal rectangular arcology)
+            if h3 > 0.5 {
                 seg.spawn(PbrBundle {
-                    mesh: sky.mesh_distant_megatitan.clone(),
+                    mesh: sky.mesh_tower_cylinder_large.clone(),
                     material: sky.mat_sky_tower_dark.clone(),
-                    transform: Transform::from_xyz(left_x, 35.0, left_z),
+                    transform: Transform::from_xyz(cluster_x, 30.0, cluster_z),
                     ..default()
                 });
-                // Stepped crown pinnacle rising into storm sky
                 seg.spawn(PbrBundle {
                     mesh: sky.mesh_tower_stepped_crown.clone(),
                     material: sky.mat_sky_steel.clone(),
-                    transform: Transform::from_xyz(left_x, 35.0 + 160.0 + 16.0, left_z)
-                        .with_scale(Vec3::new(1.8, 1.8, 1.8)),
+                    transform: Transform::from_xyz(cluster_x, 122.0, cluster_z)
+                        .with_scale(Vec3::new(1.6, 1.6, 1.6)),
                     ..default()
                 });
-                // Structural antenna spire atop stepped crown pinnacle
-                seg.spawn(PbrBundle {
-                    mesh: sky.mesh_tower_antenna_spire.clone(),
-                    material: sky.mat_sky_steel.clone(),
-                    transform: Transform::from_xyz(left_x, 35.0 + 160.0 + 40.0, left_z)
-                        .with_scale(Vec3::new(1.2, 1.2, 1.2)),
-                    ..default()
-                });
-                // Sparse red aviation warning beacon atop pinnacle
-                seg.spawn(PbrBundle {
-                    mesh: sky.mesh_hazard_reflector.clone(),
-                    material: sky.mat_sky_antenna_red.clone(),
-                    transform: Transform::from_xyz(left_x, 35.0 + 160.0 + 64.0, left_z)
-                        .with_scale(Vec3::new(3.5, 3.5, 3.5)),
-                    ..default()
-                });
-                // Faint dim amber window slit on inward face
-                if h2 > 0.3 {
-                    seg.spawn(PbrBundle {
-                        mesh: sky.mesh_tower_window_slit_v.clone(),
-                        material: sky.mat_sky_window_amber_dim.clone(),
-                        transform: Transform::from_xyz(left_x + 28.0, 45.0, left_z)
-                            .with_scale(Vec3::new(1.5, 2.0, 1.5)),
-                        ..default()
-                    });
-                }
-            } else if (seg_idx + 1).rem_euclid(3) == 0 {
-                let right_x = 125.0 + h3 * 45.0;
-                let right_z = 10.0 - h4 * 20.0;
-                seg.spawn(PbrBundle {
-                    mesh: sky.mesh_tower_obelisk.clone(),
-                    material: sky.mat_sky_tower_dark.clone(),
-                    transform: Transform::from_xyz(right_x, 50.0, right_z)
-                        .with_scale(Vec3::new(1.6, 1.4, 1.6)),
-                    ..default()
-                });
-                if h1 > 0.4 {
-                    seg.spawn(PbrBundle {
-                        mesh: sky.mesh_tower_window_slit_h.clone(),
-                        material: sky.mat_sky_window_amber_dim.clone(),
-                        transform: Transform::from_xyz(right_x - 14.0, 52.0, right_z)
-                            .with_scale(Vec3::new(1.2, 1.2, 1.2)),
-                        ..default()
-                    });
-                }
-                seg.spawn(PbrBundle {
-                    mesh: sky.mesh_hazard_reflector.clone(),
-                    material: sky.mat_sky_antenna_red.clone(),
-                    transform: Transform::from_xyz(right_x, 50.0 + 154.0 + 10.0, right_z)
-                        .with_scale(Vec3::new(3.0, 3.0, 3.0)),
-                    ..default()
-                });
-            }
-
-            // Distant high-altitude power trunk / utility span far in background (sparse, |x| > 140m)
-            if seg_idx.rem_euclid(5) == 1 {
-                let bridge_side = if h4 > 0.5 { -1.0 } else { 1.0 };
-                let bridge_x = bridge_side * (145.0 + h1 * 40.0);
-                seg.spawn(PbrBundle {
-                    mesh: sky.mesh_sky_bridge_span.clone(),
-                    material: sky.mat_sky_steel.clone(),
-                    transform: Transform::from_xyz(bridge_x, 62.0, 0.0)
-                        .with_scale(Vec3::new(1.5, 1.5, 1.5)),
-                    ..default()
-                });
-            }
-        }
-        SkyRailChapter::StormCorridor => {
-            // Chapter 3: Hostile storm corridor - near-black storm clouds, vast open voids,
-            // atmospheric storm monitoring spires and razor-sharp lightning silhouettes.
-            if seg_idx.rem_euclid(3) == 0 {
-                let side = if h3 > 0.5 { -1.0 } else { 1.0 };
-                let spire_x = side * (135.0 + h1 * 55.0);
-                let spire_z = -12.0 + h2 * 24.0;
-                // Colossal atmospheric storm spine tower piercing the storm clouds
-                seg.spawn(PbrBundle {
-                    mesh: sky.mesh_storm_spine_tower.clone(),
-                    material: sky.mat_sky_storm_composite.clone(),
-                    transform: Transform::from_xyz(spire_x, 70.0, spire_z),
-                    ..default()
-                });
-                // Flashing red aviation warning beacon on tower apex
-                seg.spawn(PbrBundle {
-                    mesh: sky.mesh_hazard_reflector.clone(),
-                    material: sky.mat_sky_antenna_red.clone(),
-                    transform: Transform::from_xyz(spire_x, 140.0, spire_z)
-                        .with_scale(Vec3::new(3.5, 3.5, 3.5)),
-                    ..default()
-                });
-            }
-
-            // Far monolithic slab silhouetted against lightning
-            if seg_idx.rem_euclid(4) == 2 {
-                let titan_x = -155.0 - h4 * 40.0;
-                seg.spawn(PbrBundle {
-                    mesh: sky.mesh_tower_slab.clone(),
-                    material: sky.mat_sky_tower_dark.clone(),
-                    transform: Transform::from_xyz(titan_x, 40.0, 0.0)
-                        .with_scale(Vec3::new(1.6, 1.8, 1.6)),
-                    ..default()
-                });
-                // Dim cyan window slit columns giving structural scale
-                seg.spawn(PbrBundle {
-                    mesh: sky.mesh_tower_window_slit_v.clone(),
-                    material: sky.mat_sky_window_dim.clone(),
-                    transform: Transform::from_xyz(titan_x + 35.0, 42.0, 0.0)
-                        .with_scale(Vec3::new(1.4, 2.2, 1.4)),
-                    ..default()
-                });
-                seg.spawn(PbrBundle {
-                    mesh: sky.mesh_hazard_reflector.clone(),
-                    material: sky.mat_sky_antenna_red.clone(),
-                    transform: Transform::from_xyz(titan_x, 40.0 + 135.0 + 10.0, 0.0)
-                        .with_scale(Vec3::new(3.0, 3.0, 3.0)),
-                    ..default()
-                });
-            }
-        }
-        SkyRailChapter::BrokenSkyway => {
-            // Chapter 4: Catastrophic aerial infrastructure collapse.
-            // Solitary fractured monoliths and severed suspension pylons far in the mist (|x| >= 140m).
-            if seg_idx.rem_euclid(3) == 1 {
-                let titan_side = if h2 > 0.5 { -1.0 } else { 1.0 };
-                let titan_x = titan_side * (145.0 + h3 * 50.0);
+            } else {
                 seg.spawn(PbrBundle {
                     mesh: sky.mesh_distant_megatitan.clone(),
                     material: sky.mat_sky_tower_dark.clone(),
-                    transform: Transform::from_xyz(titan_x, 25.0, 0.0)
-                        .with_rotation(Quat::from_rotation_z(titan_side * 0.06)),
+                    transform: Transform::from_xyz(cluster_x, 35.0, cluster_z),
                     ..default()
                 });
-                // Tilted structural brace along fractured tower
                 seg.spawn(PbrBundle {
-                    mesh: sky.mesh_pylon_bracket.clone(),
+                    mesh: sky.mesh_tower_stepped_crown.clone(),
                     material: sky.mat_sky_steel.clone(),
-                    transform: Transform::from_xyz(titan_x - titan_side * 28.0, 32.0, 0.0)
-                        .with_rotation(Quat::from_rotation_z(titan_side * 0.25)),
+                    transform: Transform::from_xyz(cluster_x, 195.0, cluster_z)
+                        .with_scale(Vec3::new(1.8, 1.8, 1.8)),
                     ..default()
                 });
                 seg.spawn(PbrBundle {
-                    mesh: sky.mesh_hazard_reflector.clone(),
-                    material: sky.mat_sky_emergency_red.clone(),
-                    transform: Transform::from_xyz(titan_x, 25.0 + 160.0 + 10.0, 0.0)
-                        .with_scale(Vec3::new(3.2, 3.2, 3.2)),
+                    mesh: sky.mesh_tower_antenna_spire.clone(),
+                    material: sky.mat_sky_steel.clone(),
+                    transform: Transform::from_xyz(cluster_x, 235.0, cluster_z)
+                        .with_scale(Vec3::new(1.2, 1.2, 1.2)),
                     ..default()
                 });
             }
+
+            // Red aviation warning beacon on primary titan apex
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_hazard_reflector.clone(),
+                material: sky.mat_sky_antenna_red.clone(),
+                transform: Transform::from_xyz(cluster_x, 240.0, cluster_z)
+                    .with_scale(Vec3::new(3.5, 3.5, 3.5)),
+                ..default()
+            });
+
+            // 2. Flanking stepped corporate cluster block
+            let flank_block_x = cluster_x + primary_side * 28.0;
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_tower_cluster_block.clone(),
+                material: sky.mat_sky_tower_dark.clone(),
+                transform: Transform::from_xyz(flank_block_x, 25.0, cluster_z + 8.0),
+                ..default()
+            });
+
+            // 3. Horizontal skybridge span connecting primary titan to flanking block
+            let bridge_span_x = (cluster_x + flank_block_x) * 0.5;
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_distant_skybridge_long.clone(),
+                material: sky.mat_sky_steel.clone(),
+                transform: Transform::from_xyz(bridge_span_x, 62.0, cluster_z + 4.0),
+                ..default()
+            });
+
+            // 4. Inward-facing amber window slits giving structural scale
+            if h2 > 0.25 {
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_tower_window_slit_v.clone(),
+                    material: sky.mat_sky_window_amber_dim.clone(),
+                    transform: Transform::from_xyz(
+                        cluster_x - primary_side * 20.0,
+                        48.0,
+                        cluster_z,
+                    )
+                    .with_scale(Vec3::new(1.5, 2.0, 1.5)),
+                    ..default()
+                });
+            }
+            if h4 > 0.4 {
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_tower_window_slit_h.clone(),
+                    material: sky.mat_sky_window_amber_dim.clone(),
+                    transform: Transform::from_xyz(
+                        flank_block_x - primary_side * 16.0,
+                        52.0,
+                        cluster_z + 8.0,
+                    )
+                    .with_scale(Vec3::new(1.2, 1.2, 1.2)),
+                    ..default()
+                });
+            }
+
+            // 5. Far horizon faint skyline silhouette layer (Layer C+ 240–310m on secondary flank)
+            let far_x = secondary_side * (240.0 + h3 * 60.0);
+            let far_z = 8.0 - h1 * 16.0;
+            if h1 > 0.5 {
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_tower_colossus.clone(),
+                    material: sky.mat_sky_tower_faint.clone(),
+                    transform: Transform::from_xyz(far_x, 18.0, far_z),
+                    ..default()
+                });
+            } else {
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_tower_cylinder_large.clone(),
+                    material: sky.mat_sky_tower_faint.clone(),
+                    transform: Transform::from_xyz(far_x, 15.0, far_z),
+                    ..default()
+                });
+            }
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_hazard_reflector.clone(),
+                material: sky.mat_sky_antenna_red.clone(),
+                transform: Transform::from_xyz(far_x, 115.0, far_z)
+                    .with_scale(Vec3::new(2.8, 2.8, 2.8)),
+                ..default()
+            });
+        }
+        SkyRailChapter::StormCorridor => {
+            // Chapter 3: Storm Corridor — industrial power infrastructure, cooling towers,
+            // atmospheric storm spires, and lightning-revealed industrial blocks.
+            let complex_x = primary_side * (138.0 + h1 * 42.0);
+            let complex_z = -12.0 + h2 * 24.0;
+
+            // 1. Colossal atmospheric storm spine tower piercing the storm ceiling
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_storm_spine_tower.clone(),
+                material: sky.mat_sky_storm_composite.clone(),
+                transform: Transform::from_xyz(complex_x, 70.0, complex_z),
+                ..default()
+            });
+            // Flashing red aviation warning beacon on tower apex
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_hazard_reflector.clone(),
+                material: sky.mat_sky_antenna_red.clone(),
+                transform: Transform::from_xyz(complex_x, 140.0, complex_z)
+                    .with_scale(Vec3::new(3.5, 3.5, 3.5)),
+                ..default()
+            });
+
+            // 2. Colossal background cooling tower at complex flank
+            let cooling_x = complex_x + primary_side * 28.0;
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_industrial_cooling_tower.clone(),
+                material: sky.mat_sky_tower_dark.clone(),
+                transform: Transform::from_xyz(cooling_x, 14.0, complex_z + 6.0),
+                ..default()
+            });
+
+            // 3. High industrial vent stack
+            let vent_x = complex_x - primary_side * 22.0;
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_industrial_vent_stack.clone(),
+                material: sky.mat_sky_steel.clone(),
+                transform: Transform::from_xyz(vent_x, 42.0, complex_z - 8.0),
+                ..default()
+            });
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_hazard_reflector.clone(),
+                material: sky.mat_sky_antenna_red.clone(),
+                transform: Transform::from_xyz(vent_x, 86.0, complex_z - 8.0)
+                    .with_scale(Vec3::new(2.8, 2.8, 2.8)),
+                ..default()
+            });
+
+            // 4. Horizontal utility conduit span connecting industrial complex
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_utility_conduit_pipe.clone(),
+                material: sky.mat_sky_steel.clone(),
+                transform: Transform::from_xyz(complex_x, 32.0, complex_z)
+                    .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
+                ..default()
+            });
+
+            // 5. Far monolithic industrial slab silhouetted against storm lightning (secondary flank)
+            let far_slab_x = secondary_side * (245.0 + h4 * 50.0);
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_tower_slab.clone(),
+                material: sky.mat_sky_tower_faint.clone(),
+                transform: Transform::from_xyz(far_slab_x, 40.0, 0.0)
+                    .with_scale(Vec3::new(1.6, 1.8, 1.6)),
+                ..default()
+            });
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_hazard_reflector.clone(),
+                material: sky.mat_sky_antenna_red.clone(),
+                transform: Transform::from_xyz(far_slab_x, 175.0, 0.0)
+                    .with_scale(Vec3::new(3.0, 3.0, 3.0)),
+                ..default()
+            });
+        }
+        SkyRailChapter::BrokenSkyway => {
+            // Chapter 4: Broken Skyway — catastrophic infrastructure collapse.
+            // Fractured titans, tilted cluster blocks, severed skybridges, emergency beacons.
+            let titan_x = primary_side * (142.0 + h3 * 45.0);
+            let titan_z = -8.0 + h1 * 16.0;
+
+            // 1. Tilted fractured titan
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_distant_megatitan.clone(),
+                material: sky.mat_sky_tower_dark.clone(),
+                transform: Transform::from_xyz(titan_x, 25.0, titan_z)
+                    .with_rotation(Quat::from_rotation_z(primary_side * 0.06)),
+                ..default()
+            });
+            // Tilted structural brace along fractured tower face
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_pylon_bracket.clone(),
+                material: sky.mat_sky_steel.clone(),
+                transform: Transform::from_xyz(titan_x - primary_side * 28.0, 32.0, titan_z)
+                    .with_rotation(Quat::from_rotation_z(primary_side * 0.25)),
+                ..default()
+            });
+            // Emergency red flashing beacon atop fractured apex
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_hazard_reflector.clone(),
+                material: sky.mat_sky_emergency_red.clone(),
+                transform: Transform::from_xyz(titan_x, 195.0, titan_z)
+                    .with_scale(Vec3::new(3.5, 3.5, 3.5)),
+                ..default()
+            });
+
+            // 2. Tilted broken cluster block
+            let broken_block_x = titan_x + primary_side * 26.0;
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_tower_cluster_block.clone(),
+                material: sky.mat_sky_tower_dark.clone(),
+                transform: Transform::from_xyz(broken_block_x, 18.0, titan_z + 6.0)
+                    .with_rotation(Quat::from_rotation_z(-primary_side * 0.12)),
+                ..default()
+            });
+
+            // 3. Severed broken skybridge dangling into void
+            let bridge_x = (titan_x + broken_block_x) * 0.5;
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_distant_skybridge_long.clone(),
+                material: sky.mat_sky_steel.clone(),
+                transform: Transform::from_xyz(bridge_x, 50.0, titan_z + 3.0)
+                    .with_rotation(Quat::from_rotation_z(primary_side * 0.28)),
+                ..default()
+            });
+
+            // 4. Far horizon faint damaged silhouette (secondary flank)
+            let far_x = secondary_side * (240.0 + h2 * 55.0);
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_tower_colossus.clone(),
+                material: sky.mat_sky_tower_faint.clone(),
+                transform: Transform::from_xyz(far_x, 14.0, 0.0)
+                    .with_rotation(Quat::from_rotation_z(-primary_side * 0.04)),
+                ..default()
+            });
         }
         SkyRailChapter::EchoApproach => {
-            // Chapter 5: Unnerving mathematical symmetry approaching ECHO facility.
-            // Symmetrical solitary ECHO monolithic bastions far in the clouds (x = ±145m).
-            if seg_idx.rem_euclid(3) == 0 {
-                for side in [-1.0, 1.0] {
-                    let bastion_x = side * (140.0 + h1 * 25.0);
-                    seg.spawn(PbrBundle {
-                        mesh: sky.mesh_tower_slab.clone(),
-                        material: sky.mat_sky_echo_monolith.clone(),
-                        transform: Transform::from_xyz(bastion_x, 45.0, 0.0)
-                            .with_scale(Vec3::new(1.4, 2.0, 1.4)),
-                        ..default()
-                    });
-                    // Cold cyan vertical telemetry window slit
-                    seg.spawn(PbrBundle {
-                        mesh: sky.mesh_tower_window_slit_v.clone(),
-                        material: sky.mat_sky_window_dim.clone(),
-                        transform: Transform::from_xyz(bastion_x - side * 15.0, 55.0, 0.0)
-                            .with_scale(Vec3::new(1.8, 2.2, 1.8)),
-                        ..default()
-                    });
-                    // Cyan pinnacle marker beacon
-                    seg.spawn(PbrBundle {
-                        mesh: sky.mesh_hazard_reflector.clone(),
-                        material: sky.mat_sky_cyan_glow.clone(),
-                        transform: Transform::from_xyz(bastion_x, 45.0 + 150.0 + 10.0, 0.0)
-                            .with_scale(Vec3::new(3.5, 3.5, 3.5)),
-                        ..default()
-                    });
-                }
+            // Chapter 5: ECHO Approach — artificial mathematical symmetry approaching ECHO monolith.
+            // Symmetrical monolithic bastions on both flanks with cyan telemetry accents.
+            for side in [-1.0, 1.0] {
+                let bastion_x = side * (142.0 + h1 * 22.0);
+                // Primary ECHO monolith slab
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_tower_slab.clone(),
+                    material: sky.mat_sky_echo_monolith.clone(),
+                    transform: Transform::from_xyz(bastion_x, 45.0, 0.0)
+                        .with_scale(Vec3::new(1.4, 2.0, 1.4)),
+                    ..default()
+                });
+                // Flanking stepped bastion block
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_tower_cluster_block.clone(),
+                    material: sky.mat_sky_echo_monolith.clone(),
+                    transform: Transform::from_xyz(bastion_x + side * 28.0, 32.0, 6.0),
+                    ..default()
+                });
+                // Symmetrical horizontal skybridge span
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_distant_skybridge_long.clone(),
+                    material: sky.mat_sky_echo_monolith.clone(),
+                    transform: Transform::from_xyz(bastion_x + side * 14.0, 72.0, 3.0),
+                    ..default()
+                });
+                // Cold cyan vertical telemetry window slit
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_tower_window_slit_v.clone(),
+                    material: sky.mat_sky_window_dim.clone(),
+                    transform: Transform::from_xyz(bastion_x - side * 15.0, 55.0, 0.0)
+                        .with_scale(Vec3::new(1.8, 2.2, 1.8)),
+                    ..default()
+                });
+                // Cyan pinnacle marker beacon
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_hazard_reflector.clone(),
+                    material: sky.mat_sky_cyan_glow.clone(),
+                    transform: Transform::from_xyz(bastion_x, 45.0 + 150.0 + 10.0, 0.0)
+                        .with_scale(Vec3::new(3.5, 3.5, 3.5)),
+                    ..default()
+                });
             }
+
+            // Far horizon faint symmetrical bastion gates (secondary flank)
+            let far_echo_x = secondary_side * 260.0;
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_tower_colossus.clone(),
+                material: sky.mat_sky_tower_faint.clone(),
+                transform: Transform::from_xyz(far_echo_x, 20.0, 0.0),
+                ..default()
+            });
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_hazard_reflector.clone(),
+                material: sky.mat_sky_cyan_glow.clone(),
+                transform: Transform::from_xyz(far_echo_x, 120.0, 0.0)
+                    .with_scale(Vec3::new(3.0, 3.0, 3.0)),
+                ..default()
+            });
         }
     }
 }
@@ -2183,14 +2369,14 @@ fn spawn_distant_infrastructure(
     }
 
     // -------------------------------------------------------------
-    // CHAPTER-AWARE DEEP INFRASTRUCTURE
+    // CHAPTER-AWARE DEEP INFRASTRUCTURE (TRANSIT WEB, BRIDGES & CRAFT)
     // -------------------------------------------------------------
     match chapter {
         SkyRailChapter::SkyRailEmergence => {
-            // Chapter 1: First emergence from subterranean portal.
-            // 80%+ empty void; sparse solitary transmission infrastructure in far distance.
-            if seg_idx.rem_euclid(3) == 1 {
-                let mast_x = -155.0 - h2 * 35.0;
+            // Chapter 1: First emergence from subterranean portal into vast storm chasm.
+            // Distant solitary transmission masts and utility conduits.
+            if seg_idx.rem_euclid(2) == 1 {
+                let mast_x = -145.0 - h2 * 30.0;
                 seg.spawn(PbrBundle {
                     mesh: sky.mesh_transmission_mast.clone(),
                     material: sky.mat_sky_steel.clone(),
@@ -2211,87 +2397,66 @@ fn spawn_distant_infrastructure(
                     ..default()
                 });
             }
-            if seg_idx.rem_euclid(4) == 2 {
-                let pipe_x = 145.0 + h3 * 25.0;
+            if seg_idx.rem_euclid(3) == 2 {
+                let pipe_x = 135.0 + h3 * 25.0;
                 seg.spawn(PbrBundle {
                     mesh: sky.mesh_utility_conduit_pipe.clone(),
                     material: sky.mat_sky_steel.clone(),
-                    transform: Transform::from_xyz(pipe_x, 12.0, 0.0)
+                    transform: Transform::from_xyz(pipe_x, 14.0, 0.0)
                         .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
                     ..default()
                 });
             }
         }
         SkyRailChapter::UpperAurelia => {
-            // Chapter 2: Colossal distant industrial transit web of Aurelia across abyss.
-            // 1. Distant parallel elevated sky-rail line running along X = -138m at y = 22m
+            // Chapter 2: Upper Aurelia — colossal distant transit web across the chasm.
+            // 1. Distant parallel elevated sky-rail line running along X = -125m at y = 22m
             seg.spawn(PbrBundle {
                 mesh: sky.mesh_distant_rail_span.clone(),
                 material: sky.mat_sky_steel.clone(),
-                transform: Transform::from_xyz(-138.0, 22.0, 0.0),
+                transform: Transform::from_xyz(-125.0, 22.0, 0.0),
                 ..default()
             });
             seg.spawn(PbrBundle {
                 mesh: sky.mesh_distant_rail_strip.clone(),
                 material: sky.mat_sky_mag_strip.clone(),
-                transform: Transform::from_xyz(-138.0, 22.35, 0.0),
+                transform: Transform::from_xyz(-125.0, 22.35, 0.0),
                 ..default()
             });
-            // Every 2 segments: slender pylon plunging 90m into abyss beneath the distant rail
+            // Slender pylon plunging 90m into the abyss beneath the distant rail
             if seg_idx.rem_euclid(2) == 0 {
                 seg.spawn(PbrBundle {
                     mesh: sky.mesh_distant_rail_pylon.clone(),
                     material: sky.mat_sky_pylon.clone(),
-                    transform: Transform::from_xyz(-138.0, -23.0, 0.0),
+                    transform: Transform::from_xyz(-125.0, -23.0, 0.0),
                     ..default()
                 });
             }
 
-            // 2. Distant high-speed mag-train silhouette gliding on the distant rail (rare authored sighting at 8580-8640m)
-            if distance >= 8580.0 && distance <= 8640.0 {
-                seg.spawn((
-                    PbrBundle {
-                        mesh: sky.mesh_distant_train_car.clone(),
-                        material: sky.mat_sky_steel.clone(),
-                        transform: Transform::from_xyz(-138.0, 23.3, 0.0),
-                        ..default()
-                    },
-                    SkyRailDistantTrain {
-                        speed: -52.0,
-                        min_local_z: -38.0,
-                        max_local_z: 38.0,
-                    },
-                ))
-                .with_children(|car| {
-                    // Small cyan front marker slicing through distant mist
-                    car.spawn(PbrBundle {
-                        mesh: sky.mesh_hazard_reflector.clone(),
-                        material: sky.mat_sky_cyan_glow.clone(),
-                        transform: Transform::from_xyz(0.0, 0.2, -11.0)
-                            .with_scale(Vec3::new(1.4, 1.4, 1.4)),
-                        ..default()
-                    });
-                    // Illuminated cyan passenger window band facing inward (+X)
-                    car.spawn(PbrBundle {
-                        mesh: sky.mesh_train_window_strip.clone(),
-                        material: sky.mat_sky_train_window.clone(),
-                        transform: Transform::from_xyz(1.75, 0.25, 0.0),
-                        ..default()
-                    });
-                    // Red tail marker
-                    car.spawn(PbrBundle {
-                        mesh: sky.mesh_hazard_reflector.clone(),
-                        material: sky.mat_sky_antenna_red.clone(),
-                        transform: Transform::from_xyz(0.0, 0.2, 11.0)
-                            .with_scale(Vec3::new(1.1, 1.1, 1.1)),
-                        ..default()
-                    });
+            // 2. Crossing elevated rail bridge spanning obliquely across the background
+            if seg_idx.rem_euclid(2) == 1 {
+                let cross_x = 120.0 + h1 * 22.0;
+                let cross_y = 36.0 + h2 * 10.0;
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_distant_crossing_rail.clone(),
+                    material: sky.mat_sky_steel.clone(),
+                    transform: Transform::from_xyz(cross_x, cross_y, 0.0)
+                        .with_rotation(Quat::from_rotation_y(0.42)),
+                    ..default()
+                });
+                // Mag-guide light on crossing bridge
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_hazard_reflector.clone(),
+                    material: sky.mat_sky_cyan_glow.clone(),
+                    transform: Transform::from_xyz(cross_x, cross_y + 1.2, 0.0)
+                        .with_scale(Vec3::new(1.4, 1.4, 1.4)),
+                    ..default()
                 });
             }
 
             // 3. Colossal vertical elevator shaft (spanning 180m from -80m up to +100m)
-            if seg_idx.rem_euclid(3) == 0 {
-                let shaft_x = 168.0 + h2 * 30.0;
+            if seg_idx.rem_euclid(2) == 0 {
+                let shaft_x = 152.0 + h2 * 25.0;
                 seg.spawn(PbrBundle {
                     mesh: sky.mesh_distant_elevator_shaft.clone(),
                     material: sky.mat_sky_tower_dark.clone(),
@@ -2315,20 +2480,102 @@ fn spawn_distant_infrastructure(
                 });
             }
 
-            // 4. Suspended transverse maintenance truss bridge
-            if seg_idx.rem_euclid(4) == 3 {
-                let bridge_x = -155.0 - h3 * 20.0;
+            // 4. Horizontal skybridge span in mid-background
+            if seg_idx.rem_euclid(3) == 1 {
+                let bridge_x = -145.0 - h3 * 20.0;
+                let bridge_mesh = if h2 > 0.5 {
+                    sky.mesh_distant_skybridge_long.clone()
+                } else {
+                    sky.mesh_sky_bridge_span.clone()
+                };
                 seg.spawn(PbrBundle {
-                    mesh: sky.mesh_distant_truss_bridge.clone(),
+                    mesh: bridge_mesh,
                     material: sky.mat_sky_steel.clone(),
-                    transform: Transform::from_xyz(bridge_x, 48.0, 0.0),
+                    transform: Transform::from_xyz(bridge_x, 56.0, 0.0),
                     ..default()
                 });
             }
 
-            // 5. Tiny distant window cluster panel
+            // 5. Distant high-speed mag-train silhouette gliding on the distant rail (authored sighting at 8580-8640m)
+            if distance >= 8580.0 && distance <= 8640.0 {
+                seg.spawn((
+                    PbrBundle {
+                        mesh: sky.mesh_distant_train_car.clone(),
+                        material: sky.mat_sky_steel.clone(),
+                        transform: Transform::from_xyz(-125.0, 23.3, 0.0),
+                        ..default()
+                    },
+                    SkyRailDistantTrain {
+                        speed: -52.0,
+                        min_local_z: -38.0,
+                        max_local_z: 38.0,
+                    },
+                ))
+                .with_children(|car| {
+                    // Cyan forward marker
+                    car.spawn(PbrBundle {
+                        mesh: sky.mesh_hazard_reflector.clone(),
+                        material: sky.mat_sky_cyan_glow.clone(),
+                        transform: Transform::from_xyz(0.0, 0.2, -11.0)
+                            .with_scale(Vec3::new(1.4, 1.4, 1.4)),
+                        ..default()
+                    });
+                    // Passenger window strip facing inward (+X)
+                    car.spawn(PbrBundle {
+                        mesh: sky.mesh_train_window_strip.clone(),
+                        material: sky.mat_sky_train_window.clone(),
+                        transform: Transform::from_xyz(1.75, 0.25, 0.0),
+                        ..default()
+                    });
+                    // Red tail marker
+                    car.spawn(PbrBundle {
+                        mesh: sky.mesh_hazard_reflector.clone(),
+                        material: sky.mat_sky_antenna_red.clone(),
+                        transform: Transform::from_xyz(0.0, 0.2, 11.0)
+                            .with_scale(Vec3::new(1.1, 1.1, 1.1)),
+                        ..default()
+                    });
+                });
+            }
+
+            // 6. Occasional distant cargo craft slowly cruising in mid-background (sparse movement)
+            if seg_idx.rem_euclid(4) == 2 {
+                let craft_x = 138.0 + h4 * 24.0;
+                let craft_y = 68.0 + h1 * 12.0;
+                seg.spawn((
+                    PbrBundle {
+                        mesh: sky.mesh_distant_traffic_craft.clone(),
+                        material: sky.mat_sky_steel.clone(),
+                        transform: Transform::from_xyz(craft_x, craft_y, 0.0),
+                        ..default()
+                    },
+                    SkyRailDistantCraft {
+                        speed: 16.0,
+                        min_local_z: -42.0,
+                        max_local_z: 42.0,
+                    },
+                ))
+                .with_children(|craft| {
+                    craft.spawn(PbrBundle {
+                        mesh: sky.mesh_hazard_reflector.clone(),
+                        material: sky.mat_sky_cyan_glow.clone(),
+                        transform: Transform::from_xyz(0.0, 0.2, 3.2)
+                            .with_scale(Vec3::new(1.2, 1.2, 1.2)),
+                        ..default()
+                    });
+                    craft.spawn(PbrBundle {
+                        mesh: sky.mesh_hazard_reflector.clone(),
+                        material: sky.mat_sky_amber_glow.clone(),
+                        transform: Transform::from_xyz(0.0, -0.2, -3.2)
+                            .with_scale(Vec3::new(1.0, 1.0, 1.0)),
+                        ..default()
+                    });
+                });
+            }
+
+            // 7. Tiny distant window cluster panel
             if seg_idx.rem_euclid(3) == 2 {
-                let win_x = 135.0 + h4 * 35.0;
+                let win_x = 142.0 + h4 * 30.0;
                 seg.spawn(PbrBundle {
                     mesh: sky.mesh_distant_window_cluster.clone(),
                     material: sky.mat_sky_window_amber_dim.clone(),
@@ -2338,8 +2585,8 @@ fn spawn_distant_infrastructure(
             }
         }
         SkyRailChapter::StormCorridor => {
-            // Chapter 3: Hostile storm corridor — industrial conduits, high transmission pylons,
-            // catenary cables cutting through storm mist.
+            // Chapter 3: Hostile storm corridor — industrial pipe networks, continuous parallel rail,
+            // crossing rail bridges, catenary power arrays, freight transport, and storm drones.
             // 1. Long industrial utility conduit pipe run at X = 118m
             seg.spawn(PbrBundle {
                 mesh: sky.mesh_utility_conduit_pipe.clone(),
@@ -2349,7 +2596,21 @@ fn spawn_distant_infrastructure(
                 ..default()
             });
 
-            // 2. High-altitude transmission mast with crossarms and catenary cable
+            // 2. Continuous parallel industrial rail line at X = -125m
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_distant_rail_span.clone(),
+                material: sky.mat_sky_storm_composite.clone(),
+                transform: Transform::from_xyz(-125.0, 22.0, 0.0),
+                ..default()
+            });
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_distant_rail_strip.clone(),
+                material: sky.mat_sky_mag_strip.clone(),
+                transform: Transform::from_xyz(-125.0, 22.35, 0.0),
+                ..default()
+            });
+
+            // 3. High-altitude transmission mast with crossarms and catenary cable
             if seg_idx.rem_euclid(2) == 1 {
                 let mast_x = -145.0 - h2 * 30.0;
                 seg.spawn(PbrBundle {
@@ -2379,16 +2640,87 @@ fn spawn_distant_infrastructure(
                     ..default()
                 });
             }
+
+            // 4. Distant crossing elevated rail bridge cutting through storm mist
+            if seg_idx.rem_euclid(3) == 0 {
+                let cross_x = 125.0 + h3 * 20.0;
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_distant_crossing_rail.clone(),
+                    material: sky.mat_sky_steel.clone(),
+                    transform: Transform::from_xyz(cross_x, 42.0, 0.0)
+                        .with_rotation(Quat::from_rotation_y(-0.35)),
+                    ..default()
+                });
+            }
+
+            // 5. Heavy industrial freight train gliding on the parallel rail (authored sighting at 8940-9000m)
+            if distance >= 8940.0 && distance <= 9000.0 {
+                seg.spawn((
+                    PbrBundle {
+                        mesh: sky.mesh_distant_train_car.clone(),
+                        material: sky.mat_sky_storm_composite.clone(),
+                        transform: Transform::from_xyz(-125.0, 23.3, 0.0),
+                        ..default()
+                    },
+                    SkyRailDistantTrain {
+                        speed: -38.0,
+                        min_local_z: -38.0,
+                        max_local_z: 38.0,
+                    },
+                ))
+                .with_children(|car| {
+                    car.spawn(PbrBundle {
+                        mesh: sky.mesh_hazard_reflector.clone(),
+                        material: sky.mat_sky_amber_glow.clone(),
+                        transform: Transform::from_xyz(0.0, 0.2, -11.0)
+                            .with_scale(Vec3::new(1.5, 1.5, 1.5)),
+                        ..default()
+                    });
+                    car.spawn(PbrBundle {
+                        mesh: sky.mesh_hazard_reflector.clone(),
+                        material: sky.mat_sky_antenna_red.clone(),
+                        transform: Transform::from_xyz(0.0, 0.2, 11.0)
+                            .with_scale(Vec3::new(1.2, 1.2, 1.2)),
+                        ..default()
+                    });
+                });
+            }
+
+            // 6. Occasional storm maintenance craft hovering / moving in upper cloud deck
+            if seg_idx.rem_euclid(5) == 3 {
+                seg.spawn((
+                    PbrBundle {
+                        mesh: sky.mesh_distant_traffic_craft.clone(),
+                        material: sky.mat_sky_storm_composite.clone(),
+                        transform: Transform::from_xyz(-142.0, 78.0, 0.0),
+                        ..default()
+                    },
+                    SkyRailDistantCraft {
+                        speed: 14.0,
+                        min_local_z: -35.0,
+                        max_local_z: 35.0,
+                    },
+                ))
+                .with_children(|craft| {
+                    craft.spawn(PbrBundle {
+                        mesh: sky.mesh_hazard_reflector.clone(),
+                        material: sky.mat_sky_amber_glow.clone(),
+                        transform: Transform::from_xyz(0.0, 0.0, 0.0)
+                            .with_scale(Vec3::new(1.3, 1.3, 1.3)),
+                        ..default()
+                    });
+                });
+            }
         }
         SkyRailChapter::BrokenSkyway => {
             // Chapter 4: Catastrophic infrastructure collapse — fractured parallel skyway,
-            // dangling severed cables, snapped maintenance spans.
-            // 1. Fractured distant parallel rail span plunging into abyss at X = 142m
+            // shattered crossing rail, dangling severed cables, emergency beacons.
+            // 1. Fractured distant parallel rail span plunging into abyss at X = 132m
             if seg_idx.rem_euclid(2) == 0 {
                 seg.spawn(PbrBundle {
                     mesh: sky.mesh_distant_rail_span.clone(),
                     material: sky.mat_sky_steel.clone(),
-                    transform: Transform::from_xyz(142.0, 20.0, 0.0)
+                    transform: Transform::from_xyz(132.0, 20.0, 0.0)
                         .with_rotation(Quat::from_rotation_x(-0.38)),
                     ..default()
                 });
@@ -2396,7 +2728,7 @@ fn spawn_distant_infrastructure(
                 seg.spawn(PbrBundle {
                     mesh: sky.mesh_distant_rail_pylon.clone(),
                     material: sky.mat_sky_pylon.clone(),
-                    transform: Transform::from_xyz(142.0, -8.0, 0.0)
+                    transform: Transform::from_xyz(132.0, -8.0, 0.0)
                         .with_rotation(Quat::from_rotation_z(0.18)),
                     ..default()
                 });
@@ -2404,7 +2736,7 @@ fn spawn_distant_infrastructure(
                 seg.spawn(PbrBundle {
                     mesh: sky.mesh_hanging_cable.clone(),
                     material: sky.mat_sky_steel.clone(),
-                    transform: Transform::from_xyz(141.0, 8.0, 0.0)
+                    transform: Transform::from_xyz(131.0, 8.0, 0.0)
                         .with_rotation(Quat::from_rotation_z(0.42)),
                     ..default()
                 });
@@ -2412,25 +2744,43 @@ fn spawn_distant_infrastructure(
                 seg.spawn(PbrBundle {
                     mesh: sky.mesh_hazard_reflector.clone(),
                     material: sky.mat_sky_emergency_red.clone(),
-                    transform: Transform::from_xyz(142.0, 22.0, 18.0)
+                    transform: Transform::from_xyz(132.0, 22.0, 18.0)
                         .with_scale(Vec3::new(2.8, 2.8, 2.8)),
                     ..default()
                 });
             }
 
-            // 2. Damaged maintenance truss
+            // 2. Fractured crossing rail bridge tilted into the chasm
             if seg_idx.rem_euclid(3) == 1 {
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_distant_crossing_rail.clone(),
+                    material: sky.mat_sky_steel.clone(),
+                    transform: Transform::from_xyz(-135.0, 32.0, 0.0)
+                        .with_rotation(Quat::from_rotation_z(-0.25)),
+                    ..default()
+                });
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_hazard_reflector.clone(),
+                    material: sky.mat_sky_emergency_red.clone(),
+                    transform: Transform::from_xyz(-135.0, 36.0, 0.0)
+                        .with_scale(Vec3::new(2.4, 2.4, 2.4)),
+                    ..default()
+                });
+            }
+
+            // 3. Damaged maintenance truss
+            if seg_idx.rem_euclid(4) == 2 {
                 seg.spawn(PbrBundle {
                     mesh: sky.mesh_distant_truss_bridge.clone(),
                     material: sky.mat_sky_steel.clone(),
-                    transform: Transform::from_xyz(-148.0, 36.0, 0.0)
-                        .with_rotation(Quat::from_rotation_z(-0.12)),
+                    transform: Transform::from_xyz(145.0, 42.0, 0.0)
+                        .with_rotation(Quat::from_rotation_z(-0.14)),
                     ..default()
                 });
                 seg.spawn(PbrBundle {
                     mesh: sky.mesh_hazard_reflector.clone(),
                     material: sky.mat_sky_amber_glow.clone(),
-                    transform: Transform::from_xyz(-148.0, 38.0, 0.0)
+                    transform: Transform::from_xyz(145.0, 44.0, 0.0)
                         .with_scale(Vec3::new(2.2, 2.2, 2.2)),
                     ..default()
                 });
@@ -2438,14 +2788,14 @@ fn spawn_distant_infrastructure(
         }
         SkyRailChapter::EchoApproach => {
             // Chapter 5: Artificial, ominous symmetry approaching ECHO facility.
-            // 1. Symmetrical vertical transit elevator shafts flanking at X = ±148m
+            // 1. Symmetrical vertical transit elevator shafts flanking at X = ±145m
             if seg_idx.rem_euclid(2) == 0 {
                 for side in [-1.0, 1.0] {
-                    let shaft_x = side * 148.0;
+                    let shaft_x = side * 145.0;
                     seg.spawn(PbrBundle {
                         mesh: sky.mesh_distant_elevator_shaft.clone(),
                         material: sky.mat_sky_echo_monolith.clone(),
-                        transform: Transform::from_xyz(shaft_x, 15.0, 0.0),
+                        transform: Transform::from_xyz(shaft_x, 16.0, 0.0),
                         ..default()
                     });
                     // Cyan telemetry marker nodes
@@ -2466,25 +2816,25 @@ fn spawn_distant_infrastructure(
                 }
             }
 
-            // 2. High overhead symmetrical transverse conduit spans
+            // 2. High overhead symmetrical crossing skybridge spans
             if seg_idx.rem_euclid(3) == 1 {
                 for side in [-1.0, 1.0] {
                     seg.spawn(PbrBundle {
-                        mesh: sky.mesh_distant_truss_bridge.clone(),
-                        material: sky.mat_sky_steel.clone(),
-                        transform: Transform::from_xyz(side * 140.0, 56.0, 0.0),
+                        mesh: sky.mesh_distant_skybridge_long.clone(),
+                        material: sky.mat_sky_echo_monolith.clone(),
+                        transform: Transform::from_xyz(side * 138.0, 58.0, 0.0),
                         ..default()
                     });
                 }
             }
 
-            // 3. Distant automated ECHO courier transit vehicle (rare authored sighting at 9780-9840m)
+            // 3. Distant automated ECHO courier transit vehicle (authored sighting at 9780-9840m)
             if distance >= 9780.0 && distance <= 9840.0 {
                 seg.spawn((
                     PbrBundle {
                         mesh: sky.mesh_distant_train_car.clone(),
                         material: sky.mat_sky_echo_monolith.clone(),
-                        transform: Transform::from_xyz(148.0, 23.4, 0.0),
+                        transform: Transform::from_xyz(145.0, 23.4, 0.0),
                         ..default()
                     },
                     SkyRailDistantTrain {
@@ -2499,6 +2849,32 @@ fn spawn_distant_infrastructure(
                         material: sky.mat_sky_cyan_glow.clone(),
                         transform: Transform::from_xyz(0.0, 0.2, -11.0)
                             .with_scale(Vec3::new(1.6, 1.6, 1.6)),
+                        ..default()
+                    });
+                });
+            }
+
+            // 4. Occasional autonomous ECHO courier drone / craft
+            if seg_idx.rem_euclid(5) == 2 {
+                seg.spawn((
+                    PbrBundle {
+                        mesh: sky.mesh_distant_traffic_craft.clone(),
+                        material: sky.mat_sky_echo_monolith.clone(),
+                        transform: Transform::from_xyz(-148.0, 82.0, 0.0),
+                        ..default()
+                    },
+                    SkyRailDistantCraft {
+                        speed: 22.0,
+                        min_local_z: -40.0,
+                        max_local_z: 40.0,
+                    },
+                ))
+                .with_children(|craft| {
+                    craft.spawn(PbrBundle {
+                        mesh: sky.mesh_hazard_reflector.clone(),
+                        material: sky.mat_sky_cyan_glow.clone(),
+                        transform: Transform::from_xyz(0.0, 0.0, 0.0)
+                            .with_scale(Vec3::new(1.5, 1.5, 1.5)),
                         ..default()
                     });
                 });
@@ -3158,6 +3534,14 @@ pub fn update_sky_rail_storm(
         (&SkyRailDistantDrone, &mut Transform),
         (Without<SkyRailDriftCloud>, Without<SkyRailDistantTrain>),
     >,
+    mut craft_q: Query<
+        (&SkyRailDistantCraft, &mut Transform),
+        (
+            Without<SkyRailDriftCloud>,
+            Without<SkyRailDistantTrain>,
+            Without<SkyRailDistantDrone>,
+        ),
+    >,
 ) {
     let dt = time.delta_seconds();
     let in_zone_5 = run_stats
@@ -3288,6 +3672,19 @@ pub fn update_sky_rail_storm(
         trans.translation.x = drone.base_pos.x + t.cos() * drone.hover_radius;
         trans.translation.y = drone.base_pos.y + (t * 1.3).sin() * (drone.hover_radius * 0.45);
         trans.translation.z = drone.base_pos.z + (t * 0.7).sin() * (drone.hover_radius * 0.6);
+    }
+
+    // 5. Very sparse distant transport craft motion in far background corridors
+    for (craft, mut trans) in craft_q.iter_mut() {
+        trans.translation.z += craft.speed * dt;
+        let span = craft.max_local_z - craft.min_local_z;
+        if span > 0.0 {
+            if trans.translation.z > craft.max_local_z {
+                trans.translation.z -= span;
+            } else if trans.translation.z < craft.min_local_z {
+                trans.translation.z += span;
+            }
+        }
     }
 }
 
@@ -3478,16 +3875,16 @@ mod tests {
             let cloud_x = 112.0 + h2 * 28.0;
             assert!(cloud_x >= 95.0, "Distant cloud flank must stay outside 95m");
 
-            let mast_x = 155.0 + h2 * 35.0;
+            let mast_x = 145.0 + h2 * 30.0;
             assert!(mast_x >= 95.0, "Distant mast must stay outside 95m");
 
-            let rail_x = 138.0_f32;
+            let rail_x = 125.0_f32;
             assert!(
                 rail_x >= 95.0,
                 "Distant parallel rail must stay outside 95m"
             );
 
-            let shaft_x = 148.0_f32;
+            let shaft_x = 145.0_f32;
             assert!(
                 shaft_x >= 95.0,
                 "Distant elevator shaft must stay outside 95m"
@@ -3510,6 +3907,32 @@ mod tests {
             z += span; // -50.0 + 76.0 = 26.0
         }
         assert!(z >= train.min_local_z && z <= train.max_local_z);
+    }
+
+    #[test]
+    fn test_sky_rail_distant_craft_kinematics_and_clearance() {
+        let craft = SkyRailDistantCraft {
+            speed: 16.0,
+            min_local_z: -42.0,
+            max_local_z: 42.0,
+        };
+        let mut z = 0.0;
+        let dt = 3.0;
+        z += craft.speed * dt; // 48.0
+        let span = craft.max_local_z - craft.min_local_z; // 84.0
+        if z > craft.max_local_z {
+            z -= span; // 48.0 - 84.0 = -36.0
+        }
+        assert!(z >= craft.min_local_z && z <= craft.max_local_z);
+
+        // Verify distant craft spawn positions remain far outside playable corridor (|X| >= 135m, Y >= 65m)
+        let craft_x = 138.0_f32;
+        let craft_y = 68.0_f32;
+        assert!(craft_x >= 95.0, "Distant craft X must remain outside 95m");
+        assert!(
+            craft_y >= 50.0,
+            "Distant craft Y must remain elevated in storm sky"
+        );
     }
 
     #[test]
