@@ -231,6 +231,53 @@ pub struct PoolAssets {
     pub mat_flooded_cable: Handle<StandardMaterial>,
     pub mat_cargo_container: Handle<StandardMaterial>,
     pub mat_cargo_wood: Handle<StandardMaterial>,
+
+    // Zone 5 Sky Rail Dedicated Obstacle Meshes & Materials
+    // A. Sky Rail Maintenance Gate (Low Obstacle)
+    pub mesh_sky_gate_frame: Handle<Mesh>,
+    pub mesh_sky_gate_hazard_panel: Handle<Mesh>,
+    pub mesh_sky_gate_top_rail: Handle<Mesh>,
+    pub mesh_sky_gate_stanchion: Handle<Mesh>,
+    pub mesh_sky_gate_foot: Handle<Mesh>,
+    pub mesh_sky_gate_sensor: Handle<Mesh>,
+
+    // B. Low-Clearance Aerodynamic Maintenance Beam (Overhead Obstacle)
+    pub mesh_sky_beam_body: Handle<Mesh>,
+    pub mesh_sky_beam_strut: Handle<Mesh>,
+    pub mesh_sky_beam_plate: Handle<Mesh>,
+    pub mesh_sky_beam_conduit: Handle<Mesh>,
+    pub mesh_sky_beam_tooth: Handle<Mesh>,
+
+    // C. Sky Rail Signal / Magnetic Maintenance Tower (Full-Height Column)
+    pub mesh_sky_tower_core: Handle<Mesh>,
+    pub mesh_sky_tower_pedestal: Handle<Mesh>,
+    pub mesh_sky_tower_collar: Handle<Mesh>,
+    pub mesh_sky_tower_truss: Handle<Mesh>,
+    pub mesh_sky_tower_beacon: Handle<Mesh>,
+    pub mesh_sky_tower_placard: Handle<Mesh>,
+
+    // D. Derelict Sky Rail Mag-Car (Static Vehicle)
+    pub mesh_sky_mag_car_body: Handle<Mesh>,
+    pub mesh_sky_mag_car_nose: Handle<Mesh>,
+    pub mesh_sky_mag_car_skirt: Handle<Mesh>,
+    pub mesh_sky_mag_car_windscreen: Handle<Mesh>,
+    pub mesh_sky_mag_car_window_strip: Handle<Mesh>,
+
+    // E. High-Speed Sky Mag-Train (Moving Vehicle)
+    pub mesh_sky_mag_train_body: Handle<Mesh>,
+    pub mesh_sky_mag_train_nose: Handle<Mesh>,
+    pub mesh_sky_mag_train_windscreen: Handle<Mesh>,
+    pub mesh_sky_mag_train_skirt: Handle<Mesh>,
+    pub mesh_sky_mag_train_fin: Handle<Mesh>,
+    pub mesh_sky_mag_train_headlamp: Handle<Mesh>,
+
+    // Zone 5 Obstacle Materials (90% darkness, 10% light)
+    pub mat_sky_obs_steel: Handle<StandardMaterial>,
+    pub mat_sky_obs_dark: Handle<StandardMaterial>,
+    pub mat_sky_obs_hazard_amber: Handle<StandardMaterial>,
+    pub mat_sky_obs_cyan_glow: Handle<StandardMaterial>,
+    pub mat_sky_obs_headlight: Handle<StandardMaterial>,
+    pub mat_sky_obs_red_beacon: Handle<StandardMaterial>,
 }
 
 #[derive(Resource, Default)]
@@ -255,6 +302,11 @@ pub struct EntityPool {
     pub flooded_pillars: Vec<Entity>,
     pub flooded_freight: Vec<Entity>,
     pub flooded_cargo: Vec<Entity>,
+    pub sky_rail_gates: Vec<Entity>,
+    pub sky_rail_beams: Vec<Entity>,
+    pub sky_rail_towers: Vec<Entity>,
+    pub sky_rail_cars: Vec<Entity>,
+    pub sky_rail_trains: Vec<Entity>,
     pub fragments: Vec<Entity>,
     pub data_chips: Vec<Entity>,
     pub powerups: Vec<Entity>,
@@ -283,6 +335,11 @@ impl EntityPool {
             PoolType::FloodedPumpColumn => self.flooded_pillars.pop(),
             PoolType::FloodedSubmergedTrain => self.flooded_freight.pop(),
             PoolType::FloodedMovingTrain => self.flooded_cargo.pop(),
+            PoolType::SkyRailMaintenanceGate => self.sky_rail_gates.pop(),
+            PoolType::SkyRailClearanceBeam => self.sky_rail_beams.pop(),
+            PoolType::SkyRailSignalTower => self.sky_rail_towers.pop(),
+            PoolType::SkyRailDerelictMagCar => self.sky_rail_cars.pop(),
+            PoolType::SkyRailMagTrain => self.sky_rail_trains.pop(),
             PoolType::EchoFragment => self.fragments.pop(),
             PoolType::DataChip => self.data_chips.pop(),
             PoolType::PowerUp => self.powerups.pop(),
@@ -311,6 +368,11 @@ impl EntityPool {
             PoolType::FloodedPumpColumn => self.flooded_pillars.push(entity),
             PoolType::FloodedSubmergedTrain => self.flooded_freight.push(entity),
             PoolType::FloodedMovingTrain => self.flooded_cargo.push(entity),
+            PoolType::SkyRailMaintenanceGate => self.sky_rail_gates.push(entity),
+            PoolType::SkyRailClearanceBeam => self.sky_rail_beams.push(entity),
+            PoolType::SkyRailSignalTower => self.sky_rail_towers.push(entity),
+            PoolType::SkyRailDerelictMagCar => self.sky_rail_cars.push(entity),
+            PoolType::SkyRailMagTrain => self.sky_rail_trains.push(entity),
             PoolType::EchoFragment => self.fragments.push(entity),
             PoolType::DataChip => self.data_chips.push(entity),
             PoolType::PowerUp => self.powerups.push(entity),
@@ -338,6 +400,11 @@ impl EntityPool {
             + self.flooded_pillars.len()
             + self.flooded_freight.len()
             + self.flooded_cargo.len()
+            + self.sky_rail_gates.len()
+            + self.sky_rail_beams.len()
+            + self.sky_rail_towers.len()
+            + self.sky_rail_cars.len()
+            + self.sky_rail_trains.len()
             + self.fragments.len()
             + self.data_chips.len()
             + self.powerups.len()
@@ -904,6 +971,75 @@ fn init_pool_assets(
         mat_cargo_wood: materials.add(StandardMaterial {
             base_color: Color::srgb(0.36, 0.24, 0.15),
             perceptual_roughness: 0.85,
+            ..default()
+        }),
+
+        // Zone 5 Sky Rail Dedicated Obstacle Meshes & Materials
+        mesh_sky_gate_frame: meshes.add(Cuboid::new(2.05, 0.65, 0.20)),
+        mesh_sky_gate_hazard_panel: meshes.add(Cuboid::new(1.95, 0.24, 0.06)),
+        mesh_sky_gate_top_rail: meshes.add(Cuboid::new(2.08, 0.08, 0.12)),
+        mesh_sky_gate_stanchion: meshes.add(Cuboid::new(0.12, 0.72, 0.24)),
+        mesh_sky_gate_foot: meshes.add(Cuboid::new(0.24, 0.06, 0.36)),
+        mesh_sky_gate_sensor: meshes.add(Cuboid::new(0.28, 0.16, 0.10)),
+
+        mesh_sky_beam_body: meshes.add(Cuboid::new(2.28, 0.32, 0.32)),
+        mesh_sky_beam_strut: meshes.add(Cuboid::new(0.14, 0.60, 0.24)),
+        mesh_sky_beam_plate: meshes.add(Cuboid::new(2.08, 0.16, 0.08)),
+        mesh_sky_beam_conduit: meshes.add(Cuboid::new(2.15, 0.06, 0.08)),
+        mesh_sky_beam_tooth: meshes.add(Cuboid::new(0.20, 0.18, 0.06)),
+
+        mesh_sky_tower_core: meshes.add(Cuboid::new(1.45, 3.50, 0.90)),
+        mesh_sky_tower_pedestal: meshes.add(Cuboid::new(1.70, 0.45, 1.10)),
+        mesh_sky_tower_collar: meshes.add(Cuboid::new(1.55, 0.25, 1.00)),
+        mesh_sky_tower_truss: meshes.add(Cuboid::new(0.12, 3.20, 0.20)),
+        mesh_sky_tower_beacon: meshes.add(Cylinder::new(0.08, 0.40)),
+        mesh_sky_tower_placard: meshes.add(Cuboid::new(1.10, 0.80, 0.06)),
+
+        mesh_sky_mag_car_body: meshes.add(Cuboid::new(2.15, 2.15, 10.5)),
+        mesh_sky_mag_car_nose: meshes.add(Cuboid::new(2.05, 1.60, 1.8)),
+        mesh_sky_mag_car_skirt: meshes.add(Cuboid::new(0.12, 0.22, 11.2)),
+        mesh_sky_mag_car_windscreen: meshes.add(Cuboid::new(1.75, 0.75, 0.08)),
+        mesh_sky_mag_car_window_strip: meshes.add(Cuboid::new(0.06, 0.32, 9.5)),
+
+        mesh_sky_mag_train_body: meshes.add(Cuboid::new(2.18, 2.20, 12.5)),
+        mesh_sky_mag_train_nose: meshes.add(Cuboid::new(2.08, 1.65, 2.4)),
+        mesh_sky_mag_train_windscreen: meshes.add(Cuboid::new(1.80, 0.80, 0.08)),
+        mesh_sky_mag_train_skirt: meshes.add(Cuboid::new(0.12, 0.24, 13.5)),
+        mesh_sky_mag_train_fin: meshes.add(Cuboid::new(0.08, 0.35, 1.8)),
+        mesh_sky_mag_train_headlamp: meshes.add(Cuboid::new(0.24, 0.16, 0.08)),
+
+        mat_sky_obs_steel: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.12, 0.15, 0.20),
+            metallic: 0.88,
+            perceptual_roughness: 0.35,
+            ..default()
+        }),
+        mat_sky_obs_dark: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.06, 0.08, 0.11),
+            metallic: 0.75,
+            perceptual_roughness: 0.45,
+            ..default()
+        }),
+        mat_sky_obs_hazard_amber: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.95, 0.52, 0.06),
+            emissive: LinearRgba::new(2.8, 1.2, 0.08, 1.0),
+            perceptual_roughness: 0.25,
+            ..default()
+        }),
+        mat_sky_obs_cyan_glow: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.08, 0.65, 0.82),
+            emissive: LinearRgba::new(0.35, 1.85, 2.4, 1.0),
+            perceptual_roughness: 0.20,
+            ..default()
+        }),
+        mat_sky_obs_headlight: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.85, 0.95, 1.0),
+            emissive: LinearRgba::new(3.5, 5.0, 6.5, 1.0),
+            ..default()
+        }),
+        mat_sky_obs_red_beacon: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.90, 0.06, 0.06),
+            emissive: LinearRgba::new(2.4, 0.12, 0.08, 1.0),
             ..default()
         }),
     };

@@ -26,6 +26,7 @@ pub fn resolve_obstacle_pool_type(obstacle_type: ObstacleType, distance: f32) ->
     let is_neon_district = zone_id == 2;
     let is_industrial_sector = zone_id == 3;
     let is_flooded_metro = zone_id == 4;
+    let is_sky_rail = zone_id == 5;
 
     match obstacle_type {
         ObstacleType::LowBarrier => {
@@ -35,6 +36,8 @@ pub fn resolve_obstacle_pool_type(obstacle_type: ObstacleType, distance: f32) ->
                 PoolType::IndustrialRoadBarrier
             } else if is_flooded_metro {
                 PoolType::FloodedBarrier
+            } else if is_sky_rail {
+                PoolType::SkyRailMaintenanceGate
             } else {
                 PoolType::LowBarrier
             }
@@ -46,6 +49,8 @@ pub fn resolve_obstacle_pool_type(obstacle_type: ObstacleType, distance: f32) ->
                 PoolType::IndustrialOverheadPipe
             } else if is_flooded_metro {
                 PoolType::FloodedPowerCable
+            } else if is_sky_rail {
+                PoolType::SkyRailClearanceBeam
             } else {
                 PoolType::HighHangingWire
             }
@@ -57,6 +62,8 @@ pub fn resolve_obstacle_pool_type(obstacle_type: ObstacleType, distance: f32) ->
                 PoolType::IndustrialSupportPillar
             } else if is_flooded_metro {
                 PoolType::FloodedPumpColumn
+            } else if is_sky_rail {
+                PoolType::SkyRailSignalTower
             } else {
                 PoolType::TallPillar
             }
@@ -68,6 +75,8 @@ pub fn resolve_obstacle_pool_type(obstacle_type: ObstacleType, distance: f32) ->
                 PoolType::IndustrialFreightTransport
             } else if is_flooded_metro {
                 PoolType::FloodedSubmergedTrain
+            } else if is_sky_rail {
+                PoolType::SkyRailDerelictMagCar
             } else {
                 PoolType::StaticTrain
             }
@@ -79,6 +88,8 @@ pub fn resolve_obstacle_pool_type(obstacle_type: ObstacleType, distance: f32) ->
                 PoolType::IndustrialCargoTransport
             } else if is_flooded_metro {
                 PoolType::FloodedMovingTrain
+            } else if is_sky_rail {
+                PoolType::SkyRailMagTrain
             } else {
                 PoolType::MovingTrain
             }

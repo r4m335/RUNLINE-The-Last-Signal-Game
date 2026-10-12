@@ -424,6 +424,12 @@ pub enum PoolType {
     FloodedPumpColumn,
     FloodedSubmergedTrain,
     FloodedMovingTrain,
+    // Zone 5 Sky Rail Dedicated Obstacles
+    SkyRailMaintenanceGate,
+    SkyRailClearanceBeam,
+    SkyRailSignalTower,
+    SkyRailDerelictMagCar,
+    SkyRailMagTrain,
     EchoFragment,
     DataChip,
     PowerUp,

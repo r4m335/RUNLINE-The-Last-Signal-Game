@@ -261,6 +261,14 @@ pub fn spawn_pattern_chunk(
                 | PoolType::FloodedSubmergedTrain
                 | PoolType::FloodedMovingTrain
         );
+        let is_zone_5 = matches!(
+            visual_pool_type,
+            PoolType::SkyRailMaintenanceGate
+                | PoolType::SkyRailClearanceBeam
+                | PoolType::SkyRailSignalTower
+                | PoolType::SkyRailDerelictMagCar
+                | PoolType::SkyRailMagTrain
+        );
 
         match obs_def.obstacle_type {
             ObstacleType::LowBarrier => {
@@ -337,6 +345,8 @@ pub fn spawn_pattern_chunk(
                     spawn_industrial_barrier(commands, pool_assets, pool, *obs_def, world_z);
                 } else if is_zone_4 {
                     spawn_flooded_barrier(commands, pool_assets, pool, *obs_def, world_z);
+                } else if is_zone_5 {
+                    spawn_sky_rail_maintenance_gate(commands, pool_assets, pool, *obs_def, world_z);
                 } else {
                     if let Some(entity) = pool.pop(PoolType::LowBarrier) {
                         commands.entity(entity).insert((
@@ -522,6 +532,8 @@ pub fn spawn_pattern_chunk(
                     spawn_industrial_overhead_pipe(commands, pool_assets, pool, *obs_def, world_z);
                 } else if is_zone_4 {
                     spawn_flooded_power_cable(commands, pool_assets, pool, *obs_def, world_z);
+                } else if is_zone_5 {
+                    spawn_sky_rail_clearance_beam(commands, pool_assets, pool, *obs_def, world_z);
                 } else {
                     if let Some(entity) = pool.pop(PoolType::HighHangingWire) {
                         commands.entity(entity).insert((
@@ -707,6 +719,8 @@ pub fn spawn_pattern_chunk(
                     spawn_industrial_support_pillar(commands, pool_assets, pool, *obs_def, world_z);
                 } else if is_zone_4 {
                     spawn_flooded_pump_column(commands, pool_assets, pool, *obs_def, world_z);
+                } else if is_zone_5 {
+                    spawn_sky_rail_signal_tower(commands, pool_assets, pool, *obs_def, world_z);
                 } else {
                     if let Some(entity) = pool.pop(PoolType::TallPillar) {
                         commands.entity(entity).insert((
@@ -967,6 +981,8 @@ pub fn spawn_pattern_chunk(
                     );
                 } else if is_zone_4 {
                     spawn_flooded_submerged_train(commands, pool_assets, pool, *obs_def, world_z);
+                } else if is_zone_5 {
+                    spawn_sky_rail_derelict_mag_car(commands, pool_assets, pool, *obs_def, world_z);
                 } else {
                     if let Some(entity) = pool.pop(PoolType::StaticTrain) {
                         commands.entity(entity).insert((
@@ -1249,6 +1265,8 @@ pub fn spawn_pattern_chunk(
                         world_z,
                         speed,
                     );
+                } else if is_zone_5 {
+                    spawn_sky_rail_mag_train(commands, pool_assets, pool, *obs_def, world_z, speed);
                 } else {
                     if let Some(entity) = pool.pop(PoolType::MovingTrain) {
                         commands.entity(entity).insert((
@@ -2567,6 +2585,457 @@ fn spawn_flooded_moving_train(
         });
 }
 
+// -------------------------------------------------------------
+// ZONE 5 — SKY RAIL DEDICATED OBSTACLE VISUALS
+// -------------------------------------------------------------
+
+fn sky_rail_active(
+    lane: Lane,
+    obstacle_type: ObstacleType,
+    size: Vec3,
+    world_z: f32,
+    pool_type: PoolType,
+) -> (ActiveObstacle, Despawnable, PooledItem) {
+    (
+        ActiveObstacle {
+            lane,
+            obstacle_type,
+            size,
+        },
+        Despawnable { z_center: world_z },
+        PooledItem {
+            pool_type,
+            is_active: true,
+        },
+    )
+}
+
+fn spawn_sky_rail_maintenance_gate(
+    commands: &mut Commands,
+    pool_assets: &PoolAssets,
+    pool: &mut EntityPool,
+    obs_def: ObstacleSpawnDef,
+    world_z: f32,
+) {
+    let active = sky_rail_active(
+        obs_def.lane,
+        ObstacleType::LowBarrier,
+        obs_def.size,
+        world_z,
+        PoolType::SkyRailMaintenanceGate,
+    );
+    if let Some(entity) = pool.pop(PoolType::SkyRailMaintenanceGate) {
+        commands.entity(entity).insert((
+            Transform::from_xyz(obs_def.lane.x_pos(), 0.42, world_z),
+            Visibility::Inherited,
+            active.0,
+            active.1,
+            active.2,
+        ));
+        return;
+    }
+    commands
+        .spawn((
+            // Main gate structural frame
+            PbrBundle {
+                mesh: pool_assets.mesh_sky_gate_frame.clone(),
+                material: pool_assets.mat_sky_obs_steel.clone(),
+                transform: Transform::from_xyz(obs_def.lane.x_pos(), 0.42, world_z),
+                ..default()
+            },
+            active.0,
+            active.1,
+            active.2,
+        ))
+        .with_children(|gate| {
+            // High-contrast amber hazard board
+            gate.spawn(PbrBundle {
+                mesh: pool_assets.mesh_sky_gate_hazard_panel.clone(),
+                material: pool_assets.mat_sky_obs_hazard_amber.clone(),
+                transform: Transform::from_xyz(0.0, 0.0, 0.08),
+                ..default()
+            });
+            // Top magnetic lockout rail
+            gate.spawn(PbrBundle {
+                mesh: pool_assets.mesh_sky_gate_top_rail.clone(),
+                material: pool_assets.mat_sky_obs_steel.clone(),
+                transform: Transform::from_xyz(0.0, 0.36, 0.0),
+                ..default()
+            });
+            // Side A-frame stanchions
+            for x in [-0.96, 0.96] {
+                gate.spawn(PbrBundle {
+                    mesh: pool_assets.mesh_sky_gate_stanchion.clone(),
+                    material: pool_assets.mat_sky_obs_steel.clone(),
+                    transform: Transform::from_xyz(x, -0.05, 0.0),
+                    ..default()
+                });
+                gate.spawn(PbrBundle {
+                    mesh: pool_assets.mesh_sky_gate_foot.clone(),
+                    material: pool_assets.mat_sky_obs_dark.clone(),
+                    transform: Transform::from_xyz(x, -0.38, 0.0),
+                    ..default()
+                });
+                // Amber warning beacon atop stanchion
+                gate.spawn(PbrBundle {
+                    mesh: pool_assets.mesh_barrier_strobe.clone(),
+                    material: pool_assets.mat_sky_obs_hazard_amber.clone(),
+                    transform: Transform::from_xyz(x, 0.38, 0.04),
+                    ..default()
+                });
+            }
+            // Central cyan magnetic flux sensor
+            gate.spawn(PbrBundle {
+                mesh: pool_assets.mesh_sky_gate_sensor.clone(),
+                material: pool_assets.mat_sky_obs_cyan_glow.clone(),
+                transform: Transform::from_xyz(0.0, -0.10, 0.12),
+                ..default()
+            });
+        });
+}
+
+fn spawn_sky_rail_clearance_beam(
+    commands: &mut Commands,
+    pool_assets: &PoolAssets,
+    pool: &mut EntityPool,
+    obs_def: ObstacleSpawnDef,
+    world_z: f32,
+) {
+    let active = sky_rail_active(
+        obs_def.lane,
+        ObstacleType::HighHangingWire,
+        obs_def.size,
+        world_z,
+        PoolType::SkyRailClearanceBeam,
+    );
+    if let Some(entity) = pool.pop(PoolType::SkyRailClearanceBeam) {
+        commands.entity(entity).insert((
+            Transform::from_xyz(obs_def.lane.x_pos(), 1.70, world_z),
+            Visibility::Inherited,
+            active.0,
+            active.1,
+            active.2,
+        ));
+        return;
+    }
+    commands
+        .spawn((
+            // Main horizontal aerodynamic gantry beam spanning the lane
+            PbrBundle {
+                mesh: pool_assets.mesh_sky_beam_body.clone(),
+                material: pool_assets.mat_sky_obs_steel.clone(),
+                transform: Transform::from_xyz(obs_def.lane.x_pos(), 1.70, world_z),
+                ..default()
+            },
+            active.0,
+            active.1,
+            active.2,
+        ))
+        .with_children(|beam| {
+            // Vertical side aerodynamic struts
+            for x in [-1.08, 1.08] {
+                beam.spawn(PbrBundle {
+                    mesh: pool_assets.mesh_sky_beam_strut.clone(),
+                    material: pool_assets.mat_sky_obs_dark.clone(),
+                    transform: Transform::from_xyz(x, 0.20, 0.0),
+                    ..default()
+                });
+                // Amber strobe at outer margins
+                beam.spawn(PbrBundle {
+                    mesh: pool_assets.mesh_barrier_strobe.clone(),
+                    material: pool_assets.mat_sky_obs_hazard_amber.clone(),
+                    transform: Transform::from_xyz(x, 0.24, 0.12),
+                    ..default()
+                });
+            }
+            // Prominent clearance warning face plate
+            beam.spawn(PbrBundle {
+                mesh: pool_assets.mesh_sky_beam_plate.clone(),
+                material: pool_assets.mat_sky_obs_hazard_amber.clone(),
+                transform: Transform::from_xyz(0.0, 0.02, 0.14),
+                ..default()
+            });
+            // Cyan magnetic conduit along top
+            beam.spawn(PbrBundle {
+                mesh: pool_assets.mesh_sky_beam_conduit.clone(),
+                material: pool_assets.mat_sky_obs_cyan_glow.clone(),
+                transform: Transform::from_xyz(0.0, 0.16, 0.10),
+                ..default()
+            });
+            // Downward clearance teeth marking ducking threshold
+            for x in [-0.60, 0.0, 0.60] {
+                beam.spawn(PbrBundle {
+                    mesh: pool_assets.mesh_sky_beam_tooth.clone(),
+                    material: pool_assets.mat_sky_obs_hazard_amber.clone(),
+                    transform: Transform::from_xyz(x, -0.20, 0.10),
+                    ..default()
+                });
+            }
+        });
+}
+
+fn spawn_sky_rail_signal_tower(
+    commands: &mut Commands,
+    pool_assets: &PoolAssets,
+    pool: &mut EntityPool,
+    obs_def: ObstacleSpawnDef,
+    world_z: f32,
+) {
+    let active = sky_rail_active(
+        obs_def.lane,
+        ObstacleType::TallPillar,
+        obs_def.size,
+        world_z,
+        PoolType::SkyRailSignalTower,
+    );
+    if let Some(entity) = pool.pop(PoolType::SkyRailSignalTower) {
+        commands.entity(entity).insert((
+            Transform::from_xyz(obs_def.lane.x_pos(), 2.0, world_z),
+            Visibility::Inherited,
+            active.0,
+            active.1,
+            active.2,
+        ));
+        return;
+    }
+    commands
+        .spawn((
+            // Main tower core
+            PbrBundle {
+                mesh: pool_assets.mesh_sky_tower_core.clone(),
+                material: pool_assets.mat_sky_obs_steel.clone(),
+                transform: Transform::from_xyz(obs_def.lane.x_pos(), 2.0, world_z),
+                ..default()
+            },
+            active.0,
+            active.1,
+            active.2,
+        ))
+        .with_children(|tower| {
+            // Reinforced track pedestal base
+            tower.spawn(PbrBundle {
+                mesh: pool_assets.mesh_sky_tower_pedestal.clone(),
+                material: pool_assets.mat_sky_obs_dark.clone(),
+                transform: Transform::from_xyz(0.0, -1.75, 0.0),
+                ..default()
+            });
+            // Cyan magnetic coil collar in center
+            tower.spawn(PbrBundle {
+                mesh: pool_assets.mesh_sky_tower_collar.clone(),
+                material: pool_assets.mat_sky_obs_cyan_glow.clone(),
+                transform: Transform::from_xyz(0.0, 0.05, 0.0),
+                ..default()
+            });
+            // Side structural bracing trusses
+            for x in [-0.78, 0.78] {
+                tower.spawn(PbrBundle {
+                    mesh: pool_assets.mesh_sky_tower_truss.clone(),
+                    material: pool_assets.mat_sky_obs_dark.clone(),
+                    transform: Transform::from_xyz(x, 0.0, 0.0),
+                    ..default()
+                });
+            }
+            // Front-facing amber warning placard
+            tower.spawn(PbrBundle {
+                mesh: pool_assets.mesh_sky_tower_placard.clone(),
+                material: pool_assets.mat_sky_obs_hazard_amber.clone(),
+                transform: Transform::from_xyz(0.0, -0.65, 0.52),
+                ..default()
+            });
+            // Pinnacle red aviation warning beacon on top
+            tower.spawn(PbrBundle {
+                mesh: pool_assets.mesh_sky_tower_beacon.clone(),
+                material: pool_assets.mat_sky_obs_red_beacon.clone(),
+                transform: Transform::from_xyz(0.0, 1.95, 0.0),
+                ..default()
+            });
+        });
+}
+
+fn spawn_sky_rail_derelict_mag_car(
+    commands: &mut Commands,
+    pool_assets: &PoolAssets,
+    pool: &mut EntityPool,
+    obs_def: ObstacleSpawnDef,
+    world_z: f32,
+) {
+    let active = sky_rail_active(
+        obs_def.lane,
+        ObstacleType::StaticTrain,
+        obs_def.size,
+        world_z,
+        PoolType::SkyRailDerelictMagCar,
+    );
+    if let Some(entity) = pool.pop(PoolType::SkyRailDerelictMagCar) {
+        commands.entity(entity).insert((
+            Transform::from_xyz(obs_def.lane.x_pos(), 1.25, world_z),
+            Visibility::Inherited,
+            active.0,
+            active.1,
+            active.2,
+        ));
+        return;
+    }
+    commands
+        .spawn((
+            SpatialBundle {
+                transform: Transform::from_xyz(obs_def.lane.x_pos(), 1.25, world_z),
+                ..default()
+            },
+            active.0,
+            active.1,
+            active.2,
+        ))
+        .with_children(|car| {
+            // Main aerodynamic dark body
+            car.spawn(PbrBundle {
+                mesh: pool_assets.mesh_sky_mag_car_body.clone(),
+                material: pool_assets.mat_sky_obs_steel.clone(),
+                transform: Transform::from_xyz(0.0, 0.0, 0.0),
+                ..default()
+            });
+            // Front aerodynamic sloped nose wedge (facing Kai at +Z)
+            car.spawn(PbrBundle {
+                mesh: pool_assets.mesh_sky_mag_car_nose.clone(),
+                material: pool_assets.mat_sky_obs_dark.clone(),
+                transform: Transform::from_xyz(0.0, -0.22, 5.25),
+                ..default()
+            });
+            // Front sloped dark windshield
+            car.spawn(PbrBundle {
+                mesh: pool_assets.mesh_sky_mag_car_windscreen.clone(),
+                material: pool_assets.mat_sky_obs_dark.clone(),
+                transform: Transform::from_xyz(0.0, 0.45, 5.15)
+                    .with_rotation(Quat::from_rotation_x(-0.25)),
+                ..default()
+            });
+            // Left & right cyan magnetic levitation guide runners
+            for x in [-1.05, 1.05] {
+                car.spawn(PbrBundle {
+                    mesh: pool_assets.mesh_sky_mag_car_skirt.clone(),
+                    material: pool_assets.mat_sky_obs_cyan_glow.clone(),
+                    transform: Transform::from_xyz(x, -0.85, 0.0),
+                    ..default()
+                });
+                car.spawn(PbrBundle {
+                    mesh: pool_assets.mesh_sky_mag_car_window_strip.clone(),
+                    material: pool_assets.mat_sky_obs_dark.clone(),
+                    transform: Transform::from_xyz(x * 1.02, 0.35, 0.0),
+                    ..default()
+                });
+            }
+            // Front emergency distress cluster: twin amber markers + upper red marker
+            for x in [-0.75, 0.75] {
+                car.spawn(PbrBundle {
+                    mesh: pool_assets.mesh_barrier_strobe.clone(),
+                    material: pool_assets.mat_sky_obs_hazard_amber.clone(),
+                    transform: Transform::from_xyz(x, -0.05, 5.75),
+                    ..default()
+                });
+            }
+            car.spawn(PbrBundle {
+                mesh: pool_assets.mesh_barrier_strobe.clone(),
+                material: pool_assets.mat_sky_obs_red_beacon.clone(),
+                transform: Transform::from_xyz(0.0, 0.95, 5.40),
+                ..default()
+            });
+        });
+}
+
+fn spawn_sky_rail_mag_train(
+    commands: &mut Commands,
+    pool_assets: &PoolAssets,
+    pool: &mut EntityPool,
+    obs_def: ObstacleSpawnDef,
+    world_z: f32,
+    speed: f32,
+) {
+    let active = sky_rail_active(
+        obs_def.lane,
+        ObstacleType::MovingTrain { speed },
+        obs_def.size,
+        world_z,
+        PoolType::SkyRailMagTrain,
+    );
+    if let Some(entity) = pool.pop(PoolType::SkyRailMagTrain) {
+        commands.entity(entity).insert((
+            Transform::from_xyz(obs_def.lane.x_pos(), 1.25, world_z),
+            Visibility::Inherited,
+            active.0,
+            MovingObstacle { speed },
+            active.1,
+            active.2,
+        ));
+        return;
+    }
+    commands
+        .spawn((
+            SpatialBundle {
+                transform: Transform::from_xyz(obs_def.lane.x_pos(), 1.25, world_z),
+                ..default()
+            },
+            active.0,
+            MovingObstacle { speed },
+            active.1,
+            active.2,
+        ))
+        .with_children(|train| {
+            // Main high-speed train body
+            train.spawn(PbrBundle {
+                mesh: pool_assets.mesh_sky_mag_train_body.clone(),
+                material: pool_assets.mat_sky_obs_steel.clone(),
+                transform: Transform::from_xyz(0.0, 0.0, 0.0),
+                ..default()
+            });
+            // Bullet aerodynamic nose cone (facing Kai at +Z)
+            train.spawn(PbrBundle {
+                mesh: pool_assets.mesh_sky_mag_train_nose.clone(),
+                material: pool_assets.mat_sky_obs_dark.clone(),
+                transform: Transform::from_xyz(0.0, -0.25, 6.45),
+                ..default()
+            });
+            // Panoramic sloped cockpit windscreen
+            train.spawn(PbrBundle {
+                mesh: pool_assets.mesh_sky_mag_train_windscreen.clone(),
+                material: pool_assets.mat_sky_obs_dark.clone(),
+                transform: Transform::from_xyz(0.0, 0.48, 6.30)
+                    .with_rotation(Quat::from_rotation_x(-0.30)),
+                ..default()
+            });
+            // Piercing high-intensity headlamps cutting through the storm
+            for x in [-0.72, 0.72] {
+                train.spawn(PbrBundle {
+                    mesh: pool_assets.mesh_sky_mag_train_headlamp.clone(),
+                    material: pool_assets.mat_sky_obs_headlight.clone(),
+                    transform: Transform::from_xyz(x, -0.05, 7.02),
+                    ..default()
+                });
+            }
+            // Glowing cyan magnetic levitation flux runners along bottom skirts
+            for x in [-1.06, 1.06] {
+                train.spawn(PbrBundle {
+                    mesh: pool_assets.mesh_sky_mag_train_skirt.clone(),
+                    material: pool_assets.mat_sky_obs_cyan_glow.clone(),
+                    transform: Transform::from_xyz(x, -0.88, 0.0),
+                    ..default()
+                });
+            }
+            // Rooftop aerodynamic stabilizer fin & red emergency beacon
+            train.spawn(PbrBundle {
+                mesh: pool_assets.mesh_sky_mag_train_fin.clone(),
+                material: pool_assets.mat_sky_obs_dark.clone(),
+                transform: Transform::from_xyz(0.0, 1.25, 3.5),
+                ..default()
+            });
+            train.spawn(PbrBundle {
+                mesh: pool_assets.mesh_barrier_strobe.clone(),
+                material: pool_assets.mat_sky_obs_red_beacon.clone(),
+                transform: Transform::from_xyz(0.0, 1.15, 6.25),
+                ..default()
+            });
+        });
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -2791,41 +3260,69 @@ mod tests {
     }
 
     #[test]
-    fn test_obstacle_visual_selection_zones_5_to_7_protected() {
-        let test_distances = [
-            ZONES[4].start_distance,
-            ZONES[5].start_distance,
-            ZONES[6].start_distance,
-        ];
+    fn test_obstacle_visual_selection_zone_5_sky_rail() {
+        let test_distances = [8000.0, 8300.0, 8700.0, 9200.0, 9650.0, 9999.0];
+        for &dist in &test_distances {
+            assert_eq!(
+                resolve_obstacle_pool_type(ObstacleType::LowBarrier, dist),
+                PoolType::SkyRailMaintenanceGate,
+                "Zone 5 must select a Sky Rail maintenance gate"
+            );
+            assert_eq!(
+                resolve_obstacle_pool_type(ObstacleType::HighHangingWire, dist),
+                PoolType::SkyRailClearanceBeam,
+                "Zone 5 must select a Sky Rail clearance beam"
+            );
+            assert_eq!(
+                resolve_obstacle_pool_type(ObstacleType::TallPillar, dist),
+                PoolType::SkyRailSignalTower,
+                "Zone 5 must select a Sky Rail signal tower"
+            );
+            assert_eq!(
+                resolve_obstacle_pool_type(ObstacleType::StaticTrain, dist),
+                PoolType::SkyRailDerelictMagCar,
+                "Zone 5 must select a Sky Rail derelict mag-car"
+            );
+            assert_eq!(
+                resolve_obstacle_pool_type(ObstacleType::MovingTrain { speed: 10.0 }, dist),
+                PoolType::SkyRailMagTrain,
+                "Zone 5 must select a Sky Rail mag-train"
+            );
+        }
+    }
+
+    #[test]
+    fn test_obstacle_visual_selection_zones_6_to_7_protected() {
+        let test_distances = [ZONES[5].start_distance, ZONES[6].start_distance];
         for &dist in &test_distances {
             assert_eq!(
                 resolve_obstacle_pool_type(ObstacleType::LowBarrier, dist),
                 PoolType::LowBarrier,
-                "Post-Zone-4 distance {}m must not use Zone 4 visuals",
+                "Post-Zone-5 distance {}m must not use Zone 5 visuals",
                 dist
             );
             assert_eq!(
                 resolve_obstacle_pool_type(ObstacleType::HighHangingWire, dist),
                 PoolType::HighHangingWire,
-                "Post-Zone-4 distance {}m must not use Zone 4 visuals",
+                "Post-Zone-5 distance {}m must not use Zone 5 visuals",
                 dist
             );
             assert_eq!(
                 resolve_obstacle_pool_type(ObstacleType::TallPillar, dist),
                 PoolType::TallPillar,
-                "Post-Zone-4 distance {}m must not use Zone 4 visuals",
+                "Post-Zone-5 distance {}m must not use Zone 5 visuals",
                 dist
             );
             assert_eq!(
                 resolve_obstacle_pool_type(ObstacleType::StaticTrain, dist),
                 PoolType::StaticTrain,
-                "Post-Zone-4 distance {}m must not use Zone 4 visuals",
+                "Post-Zone-5 distance {}m must not use Zone 5 visuals",
                 dist
             );
             assert_eq!(
                 resolve_obstacle_pool_type(ObstacleType::MovingTrain { speed: 10.0 }, dist),
                 PoolType::MovingTrain,
-                "Post-Zone-4 distance {}m must not use Zone 4 visuals",
+                "Post-Zone-5 distance {}m must not use Zone 5 visuals",
                 dist
             );
         }
@@ -2854,6 +3351,11 @@ mod tests {
         let e_flooded_pillar = Entity::from_raw(18);
         let e_flooded_freight = Entity::from_raw(19);
         let e_flooded_cargo = Entity::from_raw(20);
+        let e_sky_rail_gate = Entity::from_raw(21);
+        let e_sky_rail_beam = Entity::from_raw(22);
+        let e_sky_rail_tower = Entity::from_raw(23);
+        let e_sky_rail_car = Entity::from_raw(24);
+        let e_sky_rail_train = Entity::from_raw(25);
 
         // Push all into respective pools
         pool.push(PoolType::LowBarrier, e_metro_barrier);
@@ -2876,6 +3378,11 @@ mod tests {
         pool.push(PoolType::FloodedPumpColumn, e_flooded_pillar);
         pool.push(PoolType::FloodedSubmergedTrain, e_flooded_freight);
         pool.push(PoolType::FloodedMovingTrain, e_flooded_cargo);
+        pool.push(PoolType::SkyRailMaintenanceGate, e_sky_rail_gate);
+        pool.push(PoolType::SkyRailClearanceBeam, e_sky_rail_beam);
+        pool.push(PoolType::SkyRailSignalTower, e_sky_rail_tower);
+        pool.push(PoolType::SkyRailDerelictMagCar, e_sky_rail_car);
+        pool.push(PoolType::SkyRailMagTrain, e_sky_rail_train);
 
         // Verify vectors are isolated
         assert_eq!(pool.barriers.len(), 1);
@@ -2898,6 +3405,11 @@ mod tests {
         assert_eq!(pool.flooded_pillars.len(), 1);
         assert_eq!(pool.flooded_freight.len(), 1);
         assert_eq!(pool.flooded_cargo.len(), 1);
+        assert_eq!(pool.sky_rail_gates.len(), 1);
+        assert_eq!(pool.sky_rail_beams.len(), 1);
+        assert_eq!(pool.sky_rail_towers.len(), 1);
+        assert_eq!(pool.sky_rail_cars.len(), 1);
+        assert_eq!(pool.sky_rail_trains.len(), 1);
 
         // Pop from Zone 2 pools
         assert_eq!(pool.pop(PoolType::NeonRoadBarrier), Some(e_neon_barrier));
@@ -2949,6 +3461,25 @@ mod tests {
             pool.pop(PoolType::FloodedMovingTrain),
             Some(e_flooded_cargo)
         );
+
+        // Zone 5 pools remain isolated
+        assert_eq!(
+            pool.pop(PoolType::SkyRailMaintenanceGate),
+            Some(e_sky_rail_gate)
+        );
+        assert_eq!(
+            pool.pop(PoolType::SkyRailClearanceBeam),
+            Some(e_sky_rail_beam)
+        );
+        assert_eq!(
+            pool.pop(PoolType::SkyRailSignalTower),
+            Some(e_sky_rail_tower)
+        );
+        assert_eq!(
+            pool.pop(PoolType::SkyRailDerelictMagCar),
+            Some(e_sky_rail_car)
+        );
+        assert_eq!(pool.pop(PoolType::SkyRailMagTrain), Some(e_sky_rail_train));
 
         // Zone 1 pools remain fully intact
         assert_eq!(pool.pop(PoolType::LowBarrier), Some(e_metro_barrier));
