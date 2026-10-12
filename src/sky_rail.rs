@@ -187,6 +187,11 @@ pub struct SkyRailAssets {
     pub mesh_distant_window_cluster: Handle<Mesh>,
     pub mesh_cloud_bank_flank: Handle<Mesh>,
 
+    // Midground Infrastructure Meshes (55–105m Layered Depth)
+    pub mesh_midground_needle_tower: Handle<Mesh>,
+    pub mesh_midground_truss_girder: Handle<Mesh>,
+    pub mesh_midground_bracket: Handle<Mesh>,
+
     // Cloud Abyss & Atmospheric Depth Meshes (850m Altitude)
     pub mesh_cloud_deck_vast: Handle<Mesh>,
     pub mesh_cloud_strata_low: Handle<Mesh>,
@@ -208,7 +213,11 @@ pub struct SkyRailAssets {
     pub mat_sky_echo_monolith: Handle<StandardMaterial>,
     pub mat_sky_hazard_stripe: Handle<StandardMaterial>,
 
-    // Skyline & Cloud Abyss Materials (90% darkness, 10% light)
+    // Midground Materials (55–105m Readable Blue-Gray Silhouettes)
+    pub mat_sky_midground_steel: Handle<StandardMaterial>,
+    pub mat_sky_midground_concrete: Handle<StandardMaterial>,
+
+    // Skyline & Cloud Abyss Materials (Readable Dark Atmospheric Depth)
     pub mat_sky_tower_dark: Handle<StandardMaterial>,
     pub mat_sky_tower_distant: Handle<StandardMaterial>,
     pub mat_sky_window_dim: Handle<StandardMaterial>,
@@ -309,6 +318,11 @@ pub fn init_sky_rail_assets(
         mesh_distant_window_cluster: meshes.add(Cuboid::new(6.0, 12.0, 0.35)),
         mesh_cloud_bank_flank: meshes.add(Cuboid::new(90.0, 16.0, 40.0)),
 
+        // Midground Infrastructure Meshes (55–105m Layered Depth)
+        mesh_midground_needle_tower: meshes.add(Cuboid::new(8.0, 110.0, 8.0)),
+        mesh_midground_truss_girder: meshes.add(Cuboid::new(32.0, 2.0, 2.4)),
+        mesh_midground_bracket: meshes.add(Cuboid::new(1.2, 12.0, 1.2)),
+
         // Cloud Abyss & Atmospheric Depth Meshes
         mesh_cloud_deck_vast: meshes.add(Cuboid::new(380.0, 12.0, 40.0)),
         mesh_cloud_strata_low: meshes.add(Cuboid::new(440.0, 14.0, 40.0)),
@@ -379,9 +393,10 @@ pub fn init_sky_rail_assets(
             ..default()
         }),
         mat_sky_echo_monolith: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.032, 0.040, 0.052),
+            base_color: Color::srgb(0.045, 0.055, 0.072),
             metallic: 0.85,
             perceptual_roughness: 0.28,
+            emissive: LinearRgba::new(0.010, 0.016, 0.025, 1.0),
             ..default()
         }),
         mat_sky_hazard_stripe: materials.add(StandardMaterial {
@@ -391,47 +406,67 @@ pub fn init_sky_rail_assets(
             ..default()
         }),
 
-        // Skyline & Cloud Abyss Materials (90% darkness, 10% light)
+        // Midground Materials (55–105m Readable Blue-Gray Silhouettes)
+        mat_sky_midground_steel: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.12, 0.15, 0.21),
+            metallic: 0.65,
+            perceptual_roughness: 0.45,
+            emissive: LinearRgba::new(0.020, 0.030, 0.048, 1.0),
+            ..default()
+        }),
+        mat_sky_midground_concrete: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.14, 0.17, 0.23),
+            metallic: 0.25,
+            perceptual_roughness: 0.70,
+            emissive: LinearRgba::new(0.016, 0.024, 0.038, 1.0),
+            ..default()
+        }),
+
+        // Skyline & Cloud Abyss Materials (Readable Dark Atmospheric Depth)
         mat_sky_tower_dark: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.045, 0.055, 0.075),
-            metallic: 0.85,
-            perceptual_roughness: 0.38,
+            base_color: Color::srgb(0.075, 0.098, 0.145),
+            metallic: 0.75,
+            perceptual_roughness: 0.42,
+            emissive: LinearRgba::new(0.014, 0.022, 0.036, 1.0),
             ..default()
         }),
         mat_sky_tower_distant: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.025, 0.035, 0.05),
-            metallic: 0.70,
+            base_color: Color::srgb(0.048, 0.068, 0.098),
+            metallic: 0.60,
             perceptual_roughness: 0.55,
+            emissive: LinearRgba::new(0.012, 0.018, 0.030, 1.0),
             ..default()
         }),
         mat_sky_window_dim: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.06, 0.18, 0.26),
-            emissive: LinearRgba::new(0.06, 0.28, 0.42, 1.0),
-            perceptual_roughness: 0.35,
+            base_color: Color::srgb(0.08, 0.22, 0.32),
+            emissive: LinearRgba::new(0.12, 0.42, 0.65, 1.0),
+            perceptual_roughness: 0.30,
             ..default()
         }),
         mat_sky_window_amber_dim: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.25, 0.14, 0.04),
-            emissive: LinearRgba::new(0.45, 0.22, 0.03, 1.0),
-            perceptual_roughness: 0.40,
+            base_color: Color::srgb(0.35, 0.18, 0.05),
+            emissive: LinearRgba::new(0.70, 0.35, 0.06, 1.0),
+            perceptual_roughness: 0.35,
             ..default()
         }),
         mat_sky_antenna_red: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.85, 0.06, 0.06),
-            emissive: LinearRgba::new(1.85, 0.08, 0.05, 1.0),
+            base_color: Color::srgb(0.95, 0.08, 0.08),
+            emissive: LinearRgba::new(2.40, 0.12, 0.08, 1.0),
             perceptual_roughness: 0.20,
             ..default()
         }),
         mat_sky_cloud_abyss: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.02, 0.028, 0.042),
-            perceptual_roughness: 0.96,
+            base_color: Color::srgb(0.040, 0.055, 0.082),
+            perceptual_roughness: 0.92,
             metallic: 0.0,
+            emissive: LinearRgba::new(0.010, 0.016, 0.026, 1.0),
             ..default()
         }),
         mat_sky_cloud_ceiling: materials.add(StandardMaterial {
-            base_color: Color::srgb(0.014, 0.02, 0.03),
-            perceptual_roughness: 0.98,
+            base_color: Color::srgb(0.028, 0.038, 0.055),
+            perceptual_roughness: 0.95,
             metallic: 0.0,
+            emissive: LinearRgba::new(0.008, 0.012, 0.020, 1.0),
             ..default()
         }),
     };
@@ -477,10 +512,13 @@ pub fn spawn_sky_rail_segment(
             // 5. Cloud Abyss Ocean & Storm Cloud Ceiling (850m Altitude)
             spawn_cloud_abyss(seg, sky);
 
-            // 6. Aurelia Megatower Skyline Silhouettes (Dark Cyberpunk Megastructures)
+            // 6. Aurelia Megatower Skyline Silhouettes (Far Background: |X| >= 110m)
             spawn_skyline_megatowers(seg, sky, distance);
 
-            // 6b. Deep Background Infrastructure Layers (90–220m Layered Depth & Distant Transit)
+            // 6b. Midground Infrastructure Silhouettes (|X| in [55m, 105m])
+            spawn_midground_scenery(seg, sky, distance, chapter);
+
+            // 6c. Deep Background Infrastructure Layers (Far Background: |X| >= 108m)
             spawn_distant_infrastructure(seg, sky, distance, chapter);
 
             // 7. Chapter-Specific Visual Dressing
@@ -760,6 +798,22 @@ fn spawn_skyline_megatowers(seg: &mut ChildBuilder, sky: &SkyRailAssets, distanc
                     transform: Transform::from_xyz(titan_x, 15.0, titan_z),
                     ..default()
                 });
+                // Vertical structural rib accents on inward face
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_tower_window_slit_v.clone(),
+                    material: sky.mat_sky_midground_steel.clone(),
+                    transform: Transform::from_xyz(titan_x - side * 17.5, 20.0, titan_z)
+                        .with_scale(Vec3::new(1.0, 2.8, 1.2)),
+                    ..default()
+                });
+                // Horizontal crossband rib
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_tower_window_slit_h.clone(),
+                    material: sky.mat_sky_midground_steel.clone(),
+                    transform: Transform::from_xyz(titan_x - side * 17.5, 45.0, titan_z)
+                        .with_scale(Vec3::new(1.0, 1.5, 1.2)),
+                    ..default()
+                });
                 // Distant warning beacon blinking in cloud mist
                 seg.spawn(PbrBundle {
                     mesh: sky.mesh_hazard_reflector.clone(),
@@ -892,6 +946,14 @@ fn spawn_skyline_megatowers(seg: &mut ChildBuilder, sky: &SkyRailAssets, distanc
                         .with_scale(Vec3::new(1.6, 1.8, 1.6)),
                     ..default()
                 });
+                // Dim cyan window slit columns giving structural scale
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_tower_window_slit_v.clone(),
+                    material: sky.mat_sky_window_dim.clone(),
+                    transform: Transform::from_xyz(titan_x + 35.0, 42.0, 0.0)
+                        .with_scale(Vec3::new(1.4, 2.2, 1.4)),
+                    ..default()
+                });
                 seg.spawn(PbrBundle {
                     mesh: sky.mesh_hazard_reflector.clone(),
                     material: sky.mat_sky_antenna_red.clone(),
@@ -912,6 +974,14 @@ fn spawn_skyline_megatowers(seg: &mut ChildBuilder, sky: &SkyRailAssets, distanc
                     material: sky.mat_sky_tower_dark.clone(),
                     transform: Transform::from_xyz(titan_x, 25.0, 0.0)
                         .with_rotation(Quat::from_rotation_z(titan_side * 0.06)),
+                    ..default()
+                });
+                // Tilted structural brace along fractured tower
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_pylon_bracket.clone(),
+                    material: sky.mat_sky_steel.clone(),
+                    transform: Transform::from_xyz(titan_x - titan_side * 28.0, 32.0, 0.0)
+                        .with_rotation(Quat::from_rotation_z(titan_side * 0.25)),
                     ..default()
                 });
                 seg.spawn(PbrBundle {
@@ -950,6 +1020,319 @@ fn spawn_skyline_megatowers(seg: &mut ChildBuilder, sky: &SkyRailAssets, distanc
                         material: sky.mat_sky_cyan_glow.clone(),
                         transform: Transform::from_xyz(bastion_x, 45.0 + 150.0 + 10.0, 0.0)
                             .with_scale(Vec3::new(3.5, 3.5, 3.5)),
+                        ..default()
+                    });
+                }
+            }
+        }
+    }
+}
+
+// -------------------------------------------------------------
+// MIDGROUND INFRASTRUCTURE SILHOUETTES (55–105M LAYERED DEPTH)
+// -------------------------------------------------------------
+
+fn spawn_midground_scenery(
+    seg: &mut ChildBuilder,
+    sky: &SkyRailAssets,
+    distance: f32,
+    chapter: SkyRailChapter,
+) {
+    let seg_idx = (distance / 40.0).floor() as i32;
+    let h1 = ((seg_idx.wrapping_mul(23) + 9).rem_euclid(100)) as f32 / 100.0;
+    let h2 = ((seg_idx.wrapping_mul(41) + 15).rem_euclid(100)) as f32 / 100.0;
+    let h3 = ((seg_idx.wrapping_mul(67) + 27).rem_euclid(100)) as f32 / 100.0;
+
+    match chapter {
+        SkyRailChapter::SkyRailEmergence => {
+            // Chapter 1: First emergence from underground portal.
+            // Sparse midground silhouettes: slender high-rise needle towers and pylon columns at 60-85m.
+            if seg_idx.rem_euclid(3) == 0 {
+                let tower_side = if h1 > 0.5 { -1.0 } else { 1.0 };
+                let tower_x = tower_side * (65.0 + h2 * 18.0);
+                // Slender midground needle tower rising 110m
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_midground_needle_tower.clone(),
+                    material: sky.mat_sky_midground_steel.clone(),
+                    transform: Transform::from_xyz(tower_x, 25.0, 0.0),
+                    ..default()
+                });
+                // Vertical structural rib accents on face
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_tower_window_slit_v.clone(),
+                    material: sky.mat_sky_midground_concrete.clone(),
+                    transform: Transform::from_xyz(tower_x - tower_side * 4.2, 30.0, 0.0)
+                        .with_scale(Vec3::new(1.0, 1.4, 0.6)),
+                    ..default()
+                });
+                // Structural antenna spire atop pinnacle
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_tower_antenna_spire.clone(),
+                    material: sky.mat_sky_steel.clone(),
+                    transform: Transform::from_xyz(tower_x, 25.0 + 55.0 + 19.0, 0.0)
+                        .with_scale(Vec3::new(1.2, 1.0, 1.2)),
+                    ..default()
+                });
+                // Red aviation warning beacon on apex
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_hazard_reflector.clone(),
+                    material: sky.mat_sky_antenna_red.clone(),
+                    transform: Transform::from_xyz(tower_x, 25.0 + 55.0 + 38.0, 0.0)
+                        .with_scale(Vec3::new(3.2, 3.2, 3.2)),
+                    ..default()
+                });
+            }
+
+            if seg_idx.rem_euclid(4) == 2 {
+                let pylon_x = 72.0 + h3 * 16.0;
+                // Deep midground viaduct pylon column plunging 90m down into the cloud ocean
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_distant_rail_pylon.clone(),
+                    material: sky.mat_sky_midground_concrete.clone(),
+                    transform: Transform::from_xyz(pylon_x, -25.0, 0.0),
+                    ..default()
+                });
+                // Foundation diagonal cross-brace
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_midground_bracket.clone(),
+                    material: sky.mat_sky_midground_steel.clone(),
+                    transform: Transform::from_xyz(pylon_x, -2.0, 0.0)
+                        .with_rotation(Quat::from_rotation_z(0.52)),
+                    ..default()
+                });
+            }
+        }
+        SkyRailChapter::UpperAurelia => {
+            // Chapter 2: Colossal Upper Aurelia — multi-layered city perspective (55-95m).
+            // 1. Stepped corporate midground tower at X in [-72m, -94m]
+            if seg_idx.rem_euclid(2) == 0 {
+                let tower_x = -72.0 - h1 * 22.0;
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_tower_obelisk.clone(),
+                    material: sky.mat_sky_midground_steel.clone(),
+                    transform: Transform::from_xyz(tower_x, 38.0, 0.0)
+                        .with_scale(Vec3::new(0.72, 0.65, 0.72)),
+                    ..default()
+                });
+                // Stepped crown pinnacle
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_tower_stepped_crown.clone(),
+                    material: sky.mat_sky_steel.clone(),
+                    transform: Transform::from_xyz(tower_x, 38.0 + 72.0 + 12.0, 0.0)
+                        .with_scale(Vec3::new(0.85, 0.85, 0.85)),
+                    ..default()
+                });
+                // Amber window strips on face
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_tower_window_slit_v.clone(),
+                    material: sky.mat_sky_window_amber_dim.clone(),
+                    transform: Transform::from_xyz(tower_x + 6.8, 36.0, 0.0)
+                        .with_scale(Vec3::new(1.2, 1.4, 0.8)),
+                    ..default()
+                });
+                // Red aviation beacon
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_hazard_reflector.clone(),
+                    material: sky.mat_sky_antenna_red.clone(),
+                    transform: Transform::from_xyz(tower_x, 38.0 + 72.0 + 26.0, 0.0)
+                        .with_scale(Vec3::new(3.0, 3.0, 3.0)),
+                    ..default()
+                });
+            }
+
+            // 2. Suspended midground maintenance bridge span at X in [68m, 88m]
+            if seg_idx.rem_euclid(3) == 1 {
+                let bridge_x = 68.0 + h2 * 20.0;
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_midground_truss_girder.clone(),
+                    material: sky.mat_sky_midground_steel.clone(),
+                    transform: Transform::from_xyz(bridge_x, 32.0, 0.0),
+                    ..default()
+                });
+                // Vertical support column beneath
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_distant_rail_pylon.clone(),
+                    material: sky.mat_sky_midground_concrete.clone(),
+                    transform: Transform::from_xyz(bridge_x, -12.0, 0.0),
+                    ..default()
+                });
+                // Amber service beacon on bridge center
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_hazard_reflector.clone(),
+                    material: sky.mat_sky_amber_glow.clone(),
+                    transform: Transform::from_xyz(bridge_x, 33.6, 0.0)
+                        .with_scale(Vec3::new(2.0, 2.0, 2.0)),
+                    ..default()
+                });
+            }
+
+            // 3. Parallel midground rail fragment passing at X in [64m, 82m]
+            if seg_idx.rem_euclid(4) == 2 {
+                let rail_x = 64.0 + h3 * 18.0;
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_distant_rail_span.clone(),
+                    material: sky.mat_sky_midground_steel.clone(),
+                    transform: Transform::from_xyz(rail_x, 18.0, 0.0),
+                    ..default()
+                });
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_distant_rail_strip.clone(),
+                    material: sky.mat_sky_mag_strip.clone(),
+                    transform: Transform::from_xyz(rail_x, 18.35, 0.0),
+                    ..default()
+                });
+            }
+        }
+        SkyRailChapter::StormCorridor => {
+            // Chapter 3: Hostile storm corridor — heavy transmission pylons, catenary cables, sensor spines.
+            // 1. Midground heavy transmission pylon at X in [-66m, -86m]
+            if seg_idx.rem_euclid(2) == 1 {
+                let mast_x = -66.0 - h2 * 20.0;
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_transmission_mast.clone(),
+                    material: sky.mat_sky_storm_composite.clone(),
+                    transform: Transform::from_xyz(mast_x, 32.0, 0.0)
+                        .with_scale(Vec3::new(1.3, 1.0, 1.3)),
+                    ..default()
+                });
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_transmission_arm.clone(),
+                    material: sky.mat_sky_midground_steel.clone(),
+                    transform: Transform::from_xyz(mast_x, 65.0, 0.0),
+                    ..default()
+                });
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_hazard_reflector.clone(),
+                    material: sky.mat_sky_antenna_red.clone(),
+                    transform: Transform::from_xyz(mast_x, 75.0, 0.0)
+                        .with_scale(Vec3::new(3.5, 3.5, 3.5)),
+                    ..default()
+                });
+                // Hanging catenary power cable
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_hanging_cable.clone(),
+                    material: sky.mat_sky_midground_steel.clone(),
+                    transform: Transform::from_xyz(mast_x + 9.0, 64.5, 0.0),
+                    ..default()
+                });
+            }
+
+            // 2. Midground atmospheric storm monitoring sensor tower at X in [72m, 92m]
+            if seg_idx.rem_euclid(3) == 0 {
+                let sensor_x = 72.0 + h1 * 20.0;
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_storm_spine_tower.clone(),
+                    material: sky.mat_sky_storm_composite.clone(),
+                    transform: Transform::from_xyz(sensor_x, 42.0, 0.0)
+                        .with_scale(Vec3::new(0.85, 0.72, 0.85)),
+                    ..default()
+                });
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_hazard_reflector.clone(),
+                    material: sky.mat_sky_cyan_glow.clone(),
+                    transform: Transform::from_xyz(sensor_x, 58.0, 0.0)
+                        .with_scale(Vec3::new(2.2, 2.2, 2.2)),
+                    ..default()
+                });
+            }
+        }
+        SkyRailChapter::BrokenSkyway => {
+            // Chapter 4: Catastrophic infrastructure collapse in midground!
+            // 1. Severed midground skyway viaduct section at X in [66m, 84m]
+            if seg_idx.rem_euclid(2) == 0 {
+                let severed_x = 66.0 + h2 * 18.0;
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_distant_rail_span.clone(),
+                    material: sky.mat_sky_midground_steel.clone(),
+                    transform: Transform::from_xyz(severed_x, 20.0, 0.0)
+                        .with_rotation(Quat::from_rotation_x(-0.35)),
+                    ..default()
+                });
+                // Fractured pier
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_collapsed_pier.clone(),
+                    material: sky.mat_sky_midground_concrete.clone(),
+                    transform: Transform::from_xyz(severed_x, -10.0, 0.0)
+                        .with_scale(Vec3::new(0.75, 0.75, 0.75))
+                        .with_rotation(Quat::from_rotation_z(0.22)),
+                    ..default()
+                });
+                // Dangling severed cables plunging down into void
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_hanging_cable.clone(),
+                    material: sky.mat_sky_midground_steel.clone(),
+                    transform: Transform::from_xyz(severed_x - 1.2, 7.0, 0.0)
+                        .with_rotation(Quat::from_rotation_z(0.38)),
+                    ..default()
+                });
+                // Flashing red emergency hazard strobe
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_hazard_reflector.clone(),
+                    material: sky.mat_sky_emergency_red.clone(),
+                    transform: Transform::from_xyz(severed_x, 22.0, 18.0)
+                        .with_scale(Vec3::new(2.8, 2.8, 2.8)),
+                    ..default()
+                });
+            }
+
+            // 2. Broken maintenance catwalk at X in [-68m, -86m]
+            if seg_idx.rem_euclid(3) == 1 {
+                let cat_x = -68.0 - h3 * 18.0;
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_midground_truss_girder.clone(),
+                    material: sky.mat_sky_midground_steel.clone(),
+                    transform: Transform::from_xyz(cat_x, 28.0, 0.0)
+                        .with_rotation(Quat::from_rotation_z(-0.16)),
+                    ..default()
+                });
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_hazard_reflector.clone(),
+                    material: sky.mat_sky_amber_glow.clone(),
+                    transform: Transform::from_xyz(cat_x, 30.0, 0.0)
+                        .with_scale(Vec3::new(2.2, 2.2, 2.2)),
+                    ..default()
+                });
+            }
+        }
+        SkyRailChapter::EchoApproach => {
+            // Chapter 5: Severe artificial mathematical symmetry approaching ECHO citadel.
+            // 1. Symmetrical midground monolith bastions flanking at X = ±(66m - 80m)
+            if seg_idx.rem_euclid(2) == 0 {
+                for side in [-1.0, 1.0] {
+                    let bastion_x = side * (66.0 + h1 * 14.0);
+                    seg.spawn(PbrBundle {
+                        mesh: sky.mesh_echo_monolith_pylon.clone(),
+                        material: sky.mat_sky_echo_monolith.clone(),
+                        transform: Transform::from_xyz(bastion_x, 32.0, 0.0)
+                            .with_scale(Vec3::new(1.4, 1.7, 1.4)),
+                        ..default()
+                    });
+                    // Glowing cyan telemetry vertical strip
+                    seg.spawn(PbrBundle {
+                        mesh: sky.mesh_tower_window_slit_v.clone(),
+                        material: sky.mat_sky_cyan_glow.clone(),
+                        transform: Transform::from_xyz(bastion_x - side * 1.6, 32.0, 0.0)
+                            .with_scale(Vec3::new(0.8, 1.2, 0.8)),
+                        ..default()
+                    });
+                    // Cyan pinnacle marker beacon
+                    seg.spawn(PbrBundle {
+                        mesh: sky.mesh_hazard_reflector.clone(),
+                        material: sky.mat_sky_cyan_glow.clone(),
+                        transform: Transform::from_xyz(bastion_x, 52.0, 0.0)
+                            .with_scale(Vec3::new(2.6, 2.6, 2.6)),
+                        ..default()
+                    });
+                }
+            }
+
+            // 2. High transverse conduit truss bridging high between X = ±65m
+            if seg_idx.rem_euclid(3) == 1 {
+                for side in [-1.0, 1.0] {
+                    seg.spawn(PbrBundle {
+                        mesh: sky.mesh_midground_truss_girder.clone(),
+                        material: sky.mat_sky_echo_monolith.clone(),
+                        transform: Transform::from_xyz(side * 65.0, 48.0, 0.0),
                         ..default()
                     });
                 }
@@ -1932,8 +2315,8 @@ pub fn update_sky_rail_storm(
             storm_state.flash_elapsed = 0.0;
             if let Some(ref sky) = assets {
                 if let Some(mat) = materials.get_mut(&sky.mat_sky_cloud_ceiling) {
-                    mat.emissive = LinearRgba::BLACK;
-                    mat.base_color = Color::srgb(0.014, 0.02, 0.03);
+                    mat.emissive = LinearRgba::new(0.008, 0.012, 0.020, 1.0);
+                    mat.base_color = Color::srgb(0.028, 0.038, 0.055);
                 }
             }
         }
@@ -1999,8 +2382,8 @@ pub fn update_sky_rail_storm(
                     0.030 + intensity * 0.95,
                 );
             } else {
-                mat.emissive = LinearRgba::BLACK;
-                mat.base_color = Color::srgb(0.014, 0.02, 0.03);
+                mat.emissive = LinearRgba::new(0.008, 0.012, 0.020, 1.0);
+                mat.base_color = Color::srgb(0.028, 0.038, 0.055);
             }
         }
     }
@@ -2238,5 +2621,34 @@ mod tests {
             z += span; // -50.0 + 76.0 = 26.0
         }
         assert!(z >= train.min_local_z && z <= train.max_local_z);
+    }
+
+    #[test]
+    fn test_sky_rail_midground_infrastructure_clearance() {
+        // Verify that midground infrastructure strictly remains within 55m..105m band
+        for d in (8000..10000).step_by(20) {
+            let seg_idx = (d as f32 / 40.0).floor() as i32;
+            let h1 = ((seg_idx.wrapping_mul(23) + 9).rem_euclid(100)) as f32 / 100.0;
+            let h2 = ((seg_idx.wrapping_mul(41) + 15).rem_euclid(100)) as f32 / 100.0;
+            let h3 = ((seg_idx.wrapping_mul(67) + 27).rem_euclid(100)) as f32 / 100.0;
+
+            let tower_x = 65.0 + h2 * 18.0;
+            assert!(
+                tower_x >= 55.0 && tower_x <= 105.0,
+                "Midground tower must stay in [55m, 105m]"
+            );
+
+            let pylon_x = 72.0 + h3 * 16.0;
+            assert!(
+                pylon_x >= 55.0 && pylon_x <= 105.0,
+                "Midground pylon must stay in [55m, 105m]"
+            );
+
+            let upper_x = 72.0 + h1 * 22.0;
+            assert!(
+                upper_x >= 55.0 && upper_x <= 105.0,
+                "Upper midground tower must stay in [55m, 105m]"
+            );
+        }
     }
 }
