@@ -1,5 +1,5 @@
 use crate::environment::EnvironmentAssets;
-use crate::types::{Despawnable, Lane, TrackSegmentMarker};
+use crate::types::{AppState, Despawnable, GameRunStats, Lane, TrackSegmentMarker};
 use bevy::prelude::*;
 
 // -------------------------------------------------------------
@@ -72,6 +72,32 @@ pub fn forbidden_line_variant(distance: f32) -> u8 {
 }
 
 // -------------------------------------------------------------
+// DYNAMIC ALARM & VENTILATION COMPONENTS
+// -------------------------------------------------------------
+
+#[derive(Component)]
+pub struct ForbiddenLineFan {
+    pub speed: f32,
+}
+
+#[derive(Resource, Debug)]
+pub struct ForbiddenLineAlarmState {
+    pub timer: f32,
+    pub pulse: f32,
+    pub anomaly_shimmer: f32,
+}
+
+impl Default for ForbiddenLineAlarmState {
+    fn default() -> Self {
+        Self {
+            timer: 0.0,
+            pulse: 1.0,
+            anomaly_shimmer: 1.0,
+        }
+    }
+}
+
+// -------------------------------------------------------------
 // ASSETS RESOURCE
 // -------------------------------------------------------------
 
@@ -102,6 +128,24 @@ pub struct ForbiddenLineAssets {
     pub mesh_hydraulic_ram: Handle<Mesh>,
     pub mesh_interlock_panel: Handle<Mesh>,
 
+    // Trackside Machinery & Storytelling
+    pub mesh_exhaust_fan_housing: Handle<Mesh>,
+    pub mesh_exhaust_fan_blade: Handle<Mesh>,
+    pub mesh_coolant_pipe: Handle<Mesh>,
+    pub mesh_pipe_flange: Handle<Mesh>,
+    pub mesh_capacitor_tower: Handle<Mesh>,
+    pub mesh_stabilizer_coil: Handle<Mesh>,
+    pub mesh_cable_tray_hanging: Handle<Mesh>,
+    pub mesh_hanging_cable: Handle<Mesh>,
+    pub mesh_airlock_wall_door: Handle<Mesh>,
+    pub mesh_terminal_kiosk: Handle<Mesh>,
+    pub mesh_terminal_screen: Handle<Mesh>,
+    pub mesh_spatial_fracture_shard: Handle<Mesh>,
+    pub mesh_echo_energy_fissure: Handle<Mesh>,
+    pub mesh_laser_scanner_curtain: Handle<Mesh>,
+    pub mesh_sheared_rebar_bundle: Handle<Mesh>,
+    pub mesh_hazard_bollard: Handle<Mesh>,
+
     // Landmark Hero Meshes
     pub mesh_gate_portal_frame: Handle<Mesh>,
     pub mesh_gate_warning_header: Handle<Mesh>,
@@ -127,6 +171,11 @@ pub struct ForbiddenLineAssets {
     pub mat_cyan_echo_anomaly: Handle<StandardMaterial>,
     pub mat_containment_grate: Handle<StandardMaterial>,
     pub mat_rubble_concrete: Handle<StandardMaterial>,
+    pub mat_coolant_cryo_pipe: Handle<StandardMaterial>,
+    pub mat_terminal_screen_alert: Handle<StandardMaterial>,
+    pub mat_laser_scanner_curtain: Handle<StandardMaterial>,
+    pub mat_exposed_rebar: Handle<StandardMaterial>,
+    pub mat_echo_singularity_crystal: Handle<StandardMaterial>,
 }
 
 pub fn init_forbidden_line_assets(
@@ -161,6 +210,24 @@ pub fn init_forbidden_line_assets(
         mesh_warning_lens: meshes.add(Sphere::new(0.16)),
         mesh_hydraulic_ram: meshes.add(Cylinder::new(0.18, 3.4)),
         mesh_interlock_panel: meshes.add(Cuboid::new(0.15, 3.2, 2.8)),
+
+        // Trackside Machinery & Storytelling
+        mesh_exhaust_fan_housing: meshes.add(Cuboid::new(2.4, 2.4, 0.6)),
+        mesh_exhaust_fan_blade: meshes.add(Cuboid::new(2.0, 0.35, 0.08)),
+        mesh_coolant_pipe: meshes.add(Cylinder::new(0.20, length)),
+        mesh_pipe_flange: meshes.add(Cylinder::new(0.32, 0.15)),
+        mesh_capacitor_tower: meshes.add(Cuboid::new(1.2, 3.8, 1.6)),
+        mesh_stabilizer_coil: meshes.add(Cuboid::new(1.4, 1.6, 2.2)),
+        mesh_cable_tray_hanging: meshes.add(Cuboid::new(0.65, 0.14, length)),
+        mesh_hanging_cable: meshes.add(Cylinder::new(0.04, 8.0)),
+        mesh_airlock_wall_door: meshes.add(Cuboid::new(0.22, 3.8, 3.2)),
+        mesh_terminal_kiosk: meshes.add(Cuboid::new(0.35, 1.2, 0.75)),
+        mesh_terminal_screen: meshes.add(Cuboid::new(0.06, 0.75, 0.55)),
+        mesh_spatial_fracture_shard: meshes.add(Cuboid::new(0.85, 2.6, 0.85)),
+        mesh_echo_energy_fissure: meshes.add(Cuboid::new(0.14, 0.04, 4.4)),
+        mesh_laser_scanner_curtain: meshes.add(Cuboid::new(2.2, 4.2, 0.04)),
+        mesh_sheared_rebar_bundle: meshes.add(Cylinder::new(0.045, 1.8)),
+        mesh_hazard_bollard: meshes.add(Cuboid::new(0.32, 1.1, 0.32)),
 
         // Landmark Hero Geometry
         mesh_gate_portal_frame: meshes.add(Cuboid::new(14.2, 11.0, 3.2)),
@@ -245,20 +312,123 @@ pub fn init_forbidden_line_assets(
             perceptual_roughness: 0.92,
             ..default()
         }),
+        mat_coolant_cryo_pipe: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.12, 0.18, 0.22),
+            metallic: 0.82,
+            perceptual_roughness: 0.30,
+            reflectance: 0.70,
+            ..default()
+        }),
+        mat_terminal_screen_alert: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.30, 0.05, 0.02),
+            emissive: LinearRgba::new(2.4, 0.40, 0.08, 1.0),
+            metallic: 0.2,
+            perceptual_roughness: 0.25,
+            ..default()
+        }),
+        mat_laser_scanner_curtain: materials.add(StandardMaterial {
+            base_color: Color::srgba(0.85, 0.05, 0.10, 0.35),
+            emissive: LinearRgba::new(2.2, 0.06, 0.08, 1.0),
+            alpha_mode: AlphaMode::Blend,
+            cull_mode: None,
+            ..default()
+        }),
+        mat_exposed_rebar: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.24, 0.14, 0.09),
+            metallic: 0.80,
+            perceptual_roughness: 0.75,
+            ..default()
+        }),
+        mat_echo_singularity_crystal: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.05, 0.45, 0.55),
+            emissive: LinearRgba::new(0.10, 2.6, 3.4, 1.0),
+            metallic: 0.5,
+            perceptual_roughness: 0.15,
+            reflectance: 0.90,
+            ..default()
+        }),
     };
 
     commands.insert_resource(assets);
 }
 
 // -------------------------------------------------------------
-// PLUGIN DEFINITION
+// PLUGIN DEFINITION & DYNAMIC SYSTEMS
 // -------------------------------------------------------------
 
 pub struct ForbiddenLinePlugin;
 
 impl Plugin for ForbiddenLinePlugin {
-    fn build(&self, _app: &mut App) {
-        // Reserved for future dynamic systems (spatial flicker, emergency audio triggers)
+    fn build(&self, app: &mut App) {
+        app.init_resource::<ForbiddenLineAlarmState>();
+        app.add_systems(
+            Update,
+            (update_forbidden_line_alarms, animate_forbidden_line_fans)
+                .run_if(in_state(AppState::InGame)),
+        );
+    }
+}
+
+pub fn update_forbidden_line_alarms(
+    time: Res<Time>,
+    run_stats: Option<Res<GameRunStats>>,
+    mut alarm_state: ResMut<ForbiddenLineAlarmState>,
+    fl_assets: Option<Res<ForbiddenLineAssets>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    let Some(fl) = fl_assets else { return };
+
+    let in_zone_6 = run_stats
+        .as_ref()
+        .map(|s| s.distance >= 9950.0 && s.distance <= 12050.0)
+        .unwrap_or(true);
+
+    if !in_zone_6 {
+        return;
+    }
+
+    let dt = time.delta_seconds();
+    alarm_state.timer += dt;
+
+    // Atmospheric rhythmic alarm pulse (1.6s cycle)
+    let cycle = (alarm_state.timer * 3.9).sin();
+    let pulse_factor = 0.7 + 0.3 * cycle.max(0.0).powi(2);
+    alarm_state.pulse = pulse_factor;
+
+    // Erratic cyan anomaly shimmer (harmonic intermodulation)
+    let shimmer = 0.8 + 0.2 * (alarm_state.timer * 8.5).sin() * (alarm_state.timer * 13.2).cos();
+    alarm_state.anomaly_shimmer = shimmer;
+
+    // Modulate crimson warning glow material emissive
+    if let Some(mat) = materials.get_mut(&fl.mat_crimson_warning_glow) {
+        let base_emissive = LinearRgba::new(3.2, 0.08, 0.14, 1.0);
+        mat.emissive = LinearRgba::new(
+            base_emissive.red * pulse_factor,
+            base_emissive.green * pulse_factor,
+            base_emissive.blue * pulse_factor,
+            1.0,
+        );
+    }
+
+    // Modulate cyan ECHO anomaly material emissive
+    if let Some(mat) = materials.get_mut(&fl.mat_cyan_echo_anomaly) {
+        let base_emissive = LinearRgba::new(0.08, 1.8, 2.1, 1.0);
+        mat.emissive = LinearRgba::new(
+            base_emissive.red * shimmer,
+            base_emissive.green * shimmer,
+            base_emissive.blue * shimmer,
+            1.0,
+        );
+    }
+}
+
+pub fn animate_forbidden_line_fans(
+    time: Res<Time>,
+    mut fan_q: Query<(&mut Transform, &ForbiddenLineFan)>,
+) {
+    let dt = time.delta_seconds();
+    for (mut trans, fan) in fan_q.iter_mut() {
+        trans.rotate_z(fan.speed * dt);
     }
 }
 
@@ -580,7 +750,7 @@ fn spawn_bunker_shell(seg: &mut ChildBuilder, fl: &ForbiddenLineAssets, variant:
 }
 
 // -------------------------------------------------------------
-// 4. CHAPTER DRESSINGS
+// 4. CHAPTER DRESSINGS & ENVIRONMENTAL STORYTELLING
 // -------------------------------------------------------------
 
 /// Chapter 1: Quarantine Approach (10,000–10,300m)
@@ -629,6 +799,70 @@ fn spawn_quarantine_approach_dressing(
             ..default()
         });
     }
+
+    // Cryogenic coolant pipe lines running overhead
+    seg.spawn(PbrBundle {
+        mesh: fl.mesh_coolant_pipe.clone(),
+        material: fl.mat_coolant_cryo_pipe.clone(),
+        transform: Transform::from_xyz(-4.2, 6.8, 0.0)
+            .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
+        ..default()
+    });
+    seg.spawn(PbrBundle {
+        mesh: fl.mesh_coolant_pipe.clone(),
+        material: fl.mat_coolant_cryo_pipe.clone(),
+        transform: Transform::from_xyz(4.2, 6.8, 0.0)
+            .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
+        ..default()
+    });
+
+    // Coolant pipe connection flanges
+    for z in [-8.0, 8.0] {
+        seg.spawn(PbrBundle {
+            mesh: fl.mesh_pipe_flange.clone(),
+            material: fl.mat_hydraulic_steel.clone(),
+            transform: Transform::from_xyz(-4.2, 6.8, z)
+                .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
+            ..default()
+        });
+        seg.spawn(PbrBundle {
+            mesh: fl.mesh_pipe_flange.clone(),
+            material: fl.mat_hydraulic_steel.clone(),
+            transform: Transform::from_xyz(4.2, 6.8, z)
+                .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
+            ..default()
+        });
+    }
+
+    // Wall-mounted security monitoring terminal with alert screen
+    seg.spawn(PbrBundle {
+        mesh: fl.mesh_terminal_kiosk.clone(),
+        material: fl.mat_armoured_panel.clone(),
+        transform: Transform::from_xyz(-5.1, 2.2, 6.0),
+        ..default()
+    });
+    seg.spawn(PbrBundle {
+        mesh: fl.mesh_terminal_screen.clone(),
+        material: fl.mat_terminal_screen_alert.clone(),
+        transform: Transform::from_xyz(-4.9, 2.4, 6.0),
+        ..default()
+    });
+
+    // Recessed quarantine airlock doors in sidewalls
+    if variant == 1 {
+        seg.spawn(PbrBundle {
+            mesh: fl.mesh_airlock_wall_door.clone(),
+            material: fl.mat_containment_black_steel.clone(),
+            transform: Transform::from_xyz(-5.35, 2.2, -6.0),
+            ..default()
+        });
+        seg.spawn(PbrBundle {
+            mesh: fl.mesh_warning_lens.clone(),
+            material: fl.mat_crimson_warning_glow.clone(),
+            transform: Transform::from_xyz(-5.2, 3.8, -6.0),
+            ..default()
+        });
+    }
 }
 
 /// Chapter 2: Restricted Transit (10,300–10,700m)
@@ -645,6 +879,17 @@ fn spawn_restricted_transit_dressing(
         transform: Transform::from_xyz(0.0, 5.8, 0.0),
         ..default()
     });
+
+    // Semi-translucent scanning laser curtain across each running lane
+    for lane_idx in -1..=1 {
+        let cx = Lane::from_index(lane_idx).x_pos();
+        seg.spawn(PbrBundle {
+            mesh: fl.mesh_laser_scanner_curtain.clone(),
+            material: fl.mat_laser_scanner_curtain.clone(),
+            transform: Transform::from_xyz(cx, 2.4, 0.0),
+            ..default()
+        });
+    }
 
     // Scanner sensor pods with alternating crimson/amber status lights
     for lane_idx in -1..=1 {
@@ -669,20 +914,53 @@ fn spawn_restricted_transit_dressing(
         });
     }
 
-    // Wall-mounted surveillance pods
+    // Trackside high-voltage capacitor towers outside the curbs (x = ±5.1m)
+    seg.spawn(PbrBundle {
+        mesh: fl.mesh_capacitor_tower.clone(),
+        material: fl.mat_containment_black_steel.clone(),
+        transform: Transform::from_xyz(-5.1, 2.0, -10.0),
+        ..default()
+    });
+    seg.spawn(PbrBundle {
+        mesh: fl.mesh_capacitor_tower.clone(),
+        material: fl.mat_containment_black_steel.clone(),
+        transform: Transform::from_xyz(5.1, 2.0, 10.0),
+        ..default()
+    });
+
+    // Heavy overhead exhaust fan in ceiling vault
+    seg.spawn(PbrBundle {
+        mesh: fl.mesh_exhaust_fan_housing.clone(),
+        material: fl.mat_armoured_panel.clone(),
+        transform: Transform::from_xyz(0.0, 7.3, 0.0),
+        ..default()
+    });
+    seg.spawn((
+        PbrBundle {
+            mesh: fl.mesh_exhaust_fan_blade.clone(),
+            material: fl.mat_hydraulic_steel.clone(),
+            transform: Transform::from_xyz(0.0, 7.3, 0.0),
+            ..default()
+        },
+        ForbiddenLineFan { speed: 1.8 },
+    ));
+
+    // Security barricade bollards flanking the outer shoulders
     if variant == 2 {
-        seg.spawn(PbrBundle {
-            mesh: fl.mesh_security_pod.clone(),
-            material: fl.mat_hydraulic_steel.clone(),
-            transform: Transform::from_xyz(-4.6, 4.8, -8.0),
-            ..default()
-        });
-        seg.spawn(PbrBundle {
-            mesh: fl.mesh_security_pod.clone(),
-            material: fl.mat_hydraulic_steel.clone(),
-            transform: Transform::from_xyz(4.6, 4.8, 8.0),
-            ..default()
-        });
+        for z in [-6.0, 6.0] {
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_hazard_bollard.clone(),
+                material: fl.mat_hydraulic_steel.clone(),
+                transform: Transform::from_xyz(-4.8, 0.55, z),
+                ..default()
+            });
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_hazard_bollard.clone(),
+                material: fl.mat_hydraulic_steel.clone(),
+                transform: Transform::from_xyz(4.8, 0.55, z),
+                ..default()
+            });
+        }
     }
 }
 
@@ -699,29 +977,58 @@ fn spawn_reality_fracture_dressing(seg: &mut ChildBuilder, fl: &ForbiddenLineAss
         ..default()
     });
 
-    // Cold cyan ECHO resonance conduits flanking the sidewalls (restrained accents)
-    for z in [-12.0, 12.0] {
+    // Cold cyan ECHO energy fissures running along the floor and outer curbs
+    for z in [-10.0, 10.0] {
         seg.spawn(PbrBundle {
-            mesh: fl.mesh_crimson_stripe.clone(),
+            mesh: fl.mesh_echo_energy_fissure.clone(),
             material: fl.mat_cyan_echo_anomaly.clone(),
-            transform: Transform::from_xyz(-4.9, 3.2, z),
+            transform: Transform::from_xyz(-3.8, 0.06, z).with_rotation(Quat::from_rotation_y(0.2)),
             ..default()
         });
         seg.spawn(PbrBundle {
-            mesh: fl.mesh_crimson_stripe.clone(),
+            mesh: fl.mesh_echo_energy_fissure.clone(),
             material: fl.mat_cyan_echo_anomaly.clone(),
-            transform: Transform::from_xyz(4.9, 3.2, z),
+            transform: Transform::from_xyz(3.8, 0.06, z).with_rotation(Quat::from_rotation_y(-0.2)),
             ..default()
         });
     }
 
-    // Tilted containment bracket
+    // Floating spatial fracture shards hovering at tilted angles outside the tracks
+    seg.spawn(PbrBundle {
+        mesh: fl.mesh_spatial_fracture_shard.clone(),
+        material: fl.mat_containment_black_steel.clone(),
+        transform: Transform::from_xyz(-5.1, 3.4, 0.0).with_rotation(Quat::from_euler(
+            EulerRot::YXZ,
+            0.4,
+            0.25,
+            0.15,
+        )),
+        ..default()
+    });
+    seg.spawn(PbrBundle {
+        mesh: fl.mesh_spatial_fracture_shard.clone(),
+        material: fl.mat_containment_black_steel.clone(),
+        transform: Transform::from_xyz(5.1, 3.4, 0.0).with_rotation(Quat::from_euler(
+            EulerRot::YXZ,
+            -0.4,
+            -0.25,
+            -0.15,
+        )),
+        ..default()
+    });
+
+    // Corrupted wall terminal with glitching alert screen
     if variant == 1 {
         seg.spawn(PbrBundle {
-            mesh: fl.mesh_conduit_bracket.clone(),
-            material: fl.mat_cyan_echo_anomaly.clone(),
-            transform: Transform::from_xyz(-4.8, 5.0, 4.0)
-                .with_rotation(Quat::from_rotation_y(0.4)),
+            mesh: fl.mesh_terminal_kiosk.clone(),
+            material: fl.mat_armoured_panel.clone(),
+            transform: Transform::from_xyz(5.1, 2.2, -4.0),
+            ..default()
+        });
+        seg.spawn(PbrBundle {
+            mesh: fl.mesh_terminal_screen.clone(),
+            material: fl.mat_terminal_screen_alert.clone(),
+            transform: Transform::from_xyz(4.9, 2.4, -4.0),
             ..default()
         });
     }
@@ -755,6 +1062,34 @@ fn spawn_ground_zero_dressing(seg: &mut ChildBuilder, fl: &ForbiddenLineAssets, 
             ..default()
         });
     }
+
+    // Sheared structural rebar bundles protruding from fractured concrete
+    seg.spawn(PbrBundle {
+        mesh: fl.mesh_sheared_rebar_bundle.clone(),
+        material: fl.mat_exposed_rebar.clone(),
+        transform: Transform::from_xyz(-4.7, 1.2, 2.0).with_rotation(Quat::from_rotation_z(0.35)),
+        ..default()
+    });
+    seg.spawn(PbrBundle {
+        mesh: fl.mesh_sheared_rebar_bundle.clone(),
+        material: fl.mat_exposed_rebar.clone(),
+        transform: Transform::from_xyz(4.7, 1.2, -2.0).with_rotation(Quat::from_rotation_z(-0.35)),
+        ..default()
+    });
+
+    // Magnetic rail stabilizer coil with emergency flash
+    seg.spawn(PbrBundle {
+        mesh: fl.mesh_stabilizer_coil.clone(),
+        material: fl.mat_containment_black_steel.clone(),
+        transform: Transform::from_xyz(-5.1, 0.9, -6.0),
+        ..default()
+    });
+    seg.spawn(PbrBundle {
+        mesh: fl.mesh_warning_lens.clone(),
+        material: fl.mat_crimson_warning_glow.clone(),
+        transform: Transform::from_xyz(-4.6, 1.6, -6.0),
+        ..default()
+    });
 
     // Emergency red lockdown beacons on fractured columns
     seg.spawn(PbrBundle {
@@ -815,6 +1150,28 @@ fn spawn_final_containment_dressing(
             ..default()
         });
     }
+
+    // Heavy catenary power cable tray suspended below the ceiling
+    seg.spawn(PbrBundle {
+        mesh: fl.mesh_cable_tray_hanging.clone(),
+        material: fl.mat_hydraulic_steel.clone(),
+        transform: Transform::from_xyz(0.0, 6.6, 0.0),
+        ..default()
+    });
+
+    // Hanging high-voltage catenary cable loops suspended from ceiling vaults
+    seg.spawn(PbrBundle {
+        mesh: fl.mesh_hanging_cable.clone(),
+        material: fl.mat_hydraulic_steel.clone(),
+        transform: Transform::from_xyz(-2.2, 6.8, 0.0),
+        ..default()
+    });
+    seg.spawn(PbrBundle {
+        mesh: fl.mesh_hanging_cable.clone(),
+        material: fl.mat_hydraulic_steel.clone(),
+        transform: Transform::from_xyz(2.2, 6.8, 0.0),
+        ..default()
+    });
 }
 
 // -------------------------------------------------------------
@@ -832,7 +1189,7 @@ fn spawn_forbidden_line_landmark(
         // Landmark 1: Quarantine Gate (~10,120m)
         // Towering security portal marking the transition into the classified facility.
         ForbiddenLineLandmark::QuarantineGate => {
-            // Monumental portal frame spanning over the corridor (high clearance y = 6.4m)
+            // Monumental portal frame spanning over the corridor (high clearance y = 6.2m)
             seg.spawn(PbrBundle {
                 mesh: fl.mesh_gate_portal_frame.clone(),
                 material: fl.mat_containment_black_steel.clone(),
@@ -859,6 +1216,22 @@ fn spawn_forbidden_line_landmark(
                 mesh: fl.mesh_gate_sentry_pylon.clone(),
                 material: fl.mat_armoured_panel.clone(),
                 transform: Transform::from_xyz(5.6, 4.8, 0.0),
+                ..default()
+            });
+
+            // Heavy hydraulic lockdown arms clamped to outer pillars
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_hydraulic_ram.clone(),
+                material: fl.mat_hydraulic_steel.clone(),
+                transform: Transform::from_xyz(-4.9, 3.8, 1.4)
+                    .with_rotation(Quat::from_rotation_z(0.3)),
+                ..default()
+            });
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_hydraulic_ram.clone(),
+                material: fl.mat_hydraulic_steel.clone(),
+                transform: Transform::from_xyz(4.9, 3.8, 1.4)
+                    .with_rotation(Quat::from_rotation_z(-0.3)),
                 ..default()
             });
 
@@ -895,6 +1268,17 @@ fn spawn_forbidden_line_landmark(
                 transform: Transform::from_xyz(0.0, 6.2, 3.0),
                 ..default()
             });
+
+            // Laser scanner curtain curtains over each lane
+            for lane_idx in -1..=1 {
+                let cx = Lane::from_index(lane_idx).x_pos();
+                seg.spawn(PbrBundle {
+                    mesh: fl.mesh_laser_scanner_curtain.clone(),
+                    material: fl.mat_laser_scanner_curtain.clone(),
+                    transform: Transform::from_xyz(cx, 2.8, -3.0),
+                    ..default()
+                });
+            }
 
             // Lateral fortified pillboxes outside running lanes (x = ±5.4m)
             seg.spawn(PbrBundle {
@@ -968,7 +1352,7 @@ fn spawn_forbidden_line_landmark(
             // Cold cyan ECHO anomaly singularity coils (elevated safely at y = 8.5m)
             seg.spawn(PbrBundle {
                 mesh: fl.mesh_echo_singularity_core.clone(),
-                material: fl.mat_cyan_echo_anomaly.clone(),
+                material: fl.mat_echo_singularity_crystal.clone(),
                 transform: Transform::from_xyz(0.0, 8.5, 0.0),
                 ..default()
             });
@@ -1004,6 +1388,15 @@ fn spawn_forbidden_line_landmark(
                 material: fl.mat_rubble_concrete.clone(),
                 transform: Transform::from_xyz(5.0, 0.6, 4.0)
                     .with_rotation(Quat::from_rotation_y(-0.5)),
+                ..default()
+            });
+
+            // Sheared rebar bundles in rubble pile
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_sheared_rebar_bundle.clone(),
+                material: fl.mat_exposed_rebar.clone(),
+                transform: Transform::from_xyz(-4.6, 1.4, -4.0)
+                    .with_rotation(Quat::from_rotation_z(0.4)),
                 ..default()
             });
 
@@ -1287,5 +1680,24 @@ mod tests {
             BOSS_MILESTONE_7_DISTANCE, 12000.0,
             "Zone 7 encounter milestone must remain exactly at 12,000m"
         );
+    }
+
+    #[test]
+    fn test_forbidden_line_alarm_state_modulation() {
+        let mut alarm = ForbiddenLineAlarmState::default();
+        assert_eq!(alarm.timer, 0.0);
+        assert_eq!(alarm.pulse, 1.0);
+
+        // Simulate alarm cycle progression
+        for dt in [0.1, 0.2, 0.5, 1.0, 1.6] {
+            alarm.timer += dt;
+            let cycle = (alarm.timer * 3.9).sin();
+            let pulse_factor = 0.7 + 0.3 * cycle.max(0.0).powi(2);
+            assert!(
+                pulse_factor >= 0.7 && pulse_factor <= 1.0,
+                "Pulse factor {} must stay bounded in [0.7, 1.0]",
+                pulse_factor
+            );
+        }
     }
 }
