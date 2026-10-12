@@ -96,6 +96,16 @@ pub struct SkyRailDistantCraft {
     pub max_local_z: f32,
 }
 
+#[derive(Component, Debug, Clone)]
+pub struct SkyRailDriftSmoke {
+    pub base_pos: Vec3,
+    pub drift_speed_x: f32,
+    pub drift_amp_x: f32,
+    pub rise_speed_y: f32,
+    pub rise_amp_y: f32,
+    pub phase: f32,
+}
+
 #[derive(Resource, Debug)]
 pub struct SkyRailStormState {
     pub flash_timer: f32,
@@ -248,6 +258,19 @@ pub struct SkyRailAssets {
     pub mesh_distant_crossing_rail: Handle<Mesh>,
     pub mesh_distant_traffic_craft: Handle<Mesh>,
 
+    // Distant Industrial Refinery & Megastructure Meshes
+    pub mesh_refinery_storage_sphere: Handle<Mesh>,
+    pub mesh_refinery_distillation_column: Handle<Mesh>,
+    pub mesh_stepped_brutalist_arcology: Handle<Mesh>,
+    pub mesh_industrial_pipe_manifold: Handle<Mesh>,
+
+    // Cinematic Smoke & Atmospheric Haze Meshes
+    pub mesh_smoke_plume_puff_large: Handle<Mesh>,
+    pub mesh_smoke_plume_puff_medium: Handle<Mesh>,
+    pub mesh_smoke_plume_puff_small: Handle<Mesh>,
+    pub mesh_smoke_bank_horizontal: Handle<Mesh>,
+    pub mesh_smoke_strata_drift: Handle<Mesh>,
+
     // Track & Infrastructure Materials
     pub mat_sky_steel: Handle<StandardMaterial>,
     pub mat_sky_tread: Handle<StandardMaterial>,
@@ -287,6 +310,11 @@ pub struct SkyRailAssets {
     // Micro-Infrastructure & Environmental Wear Materials
     pub mat_sky_weathered_iron: Handle<StandardMaterial>,
     pub mat_sky_cloud_wisp: Handle<StandardMaterial>,
+
+    // Cinematic Smoke & Atmospheric Haze Materials
+    pub mat_sky_smoke_industrial_dense: Handle<StandardMaterial>,
+    pub mat_sky_smoke_haze_bank: Handle<StandardMaterial>,
+    pub mat_sky_smoke_wisp_drift: Handle<StandardMaterial>,
 }
 
 pub fn init_sky_rail_assets(
@@ -425,6 +453,19 @@ pub fn init_sky_rail_assets(
         mesh_tower_cluster_block: meshes.add(Cuboid::new(34.0, 110.0, 30.0)),
         mesh_distant_crossing_rail: meshes.add(Cuboid::new(130.0, 1.2, 4.0)),
         mesh_distant_traffic_craft: meshes.add(Cuboid::new(3.0, 1.2, 5.5)),
+
+        // Distant Industrial Refinery & Megastructure Meshes
+        mesh_refinery_storage_sphere: meshes.add(Cylinder::new(11.0, 18.0)),
+        mesh_refinery_distillation_column: meshes.add(Cylinder::new(3.8, 70.0)),
+        mesh_stepped_brutalist_arcology: meshes.add(Cuboid::new(54.0, 76.0, 38.0)),
+        mesh_industrial_pipe_manifold: meshes.add(Cuboid::new(38.0, 2.2, 4.2)),
+
+        // Cinematic Smoke & Atmospheric Haze Meshes
+        mesh_smoke_plume_puff_large: meshes.add(Cuboid::new(24.0, 18.0, 22.0)),
+        mesh_smoke_plume_puff_medium: meshes.add(Cuboid::new(15.0, 12.0, 14.0)),
+        mesh_smoke_plume_puff_small: meshes.add(Cuboid::new(9.0, 8.0, 9.0)),
+        mesh_smoke_bank_horizontal: meshes.add(Cuboid::new(96.0, 16.0, 44.0)),
+        mesh_smoke_strata_drift: meshes.add(Cuboid::new(64.0, 8.0, 32.0)),
 
         // Materials Palette
         mat_sky_steel: materials.add(StandardMaterial {
@@ -617,6 +658,38 @@ pub fn init_sky_rail_assets(
             emissive: LinearRgba::new(0.018, 0.025, 0.038, 1.0),
             ..default()
         }),
+
+        // Cinematic Smoke & Atmospheric Haze Materials (Layered Alpha Blending, Dark Cyberpunk Tones)
+        mat_sky_smoke_industrial_dense: materials.add(StandardMaterial {
+            base_color: Color::srgba(0.028, 0.035, 0.048, 0.72),
+            alpha_mode: AlphaMode::Blend,
+            perceptual_roughness: 0.98,
+            metallic: 0.0,
+            emissive: LinearRgba::new(0.006, 0.008, 0.012, 1.0),
+            cull_mode: None,
+            double_sided: true,
+            ..default()
+        }),
+        mat_sky_smoke_haze_bank: materials.add(StandardMaterial {
+            base_color: Color::srgba(0.042, 0.054, 0.072, 0.52),
+            alpha_mode: AlphaMode::Blend,
+            perceptual_roughness: 0.96,
+            metallic: 0.0,
+            emissive: LinearRgba::new(0.008, 0.012, 0.018, 1.0),
+            cull_mode: None,
+            double_sided: true,
+            ..default()
+        }),
+        mat_sky_smoke_wisp_drift: materials.add(StandardMaterial {
+            base_color: Color::srgba(0.058, 0.074, 0.098, 0.36),
+            alpha_mode: AlphaMode::Blend,
+            perceptual_roughness: 0.95,
+            metallic: 0.0,
+            emissive: LinearRgba::new(0.010, 0.014, 0.022, 1.0),
+            cull_mode: None,
+            double_sided: true,
+            ..default()
+        }),
     };
 
     commands.insert_resource(assets);
@@ -662,6 +735,9 @@ pub fn spawn_sky_rail_segment(
 
             // 5. Cloud Abyss Ocean & Storm Cloud Ceiling (850m Altitude)
             spawn_cloud_abyss(seg, sky);
+
+            // 5b. Cinematic Atmospheric Smoke & Industrial Pollution Plumes
+            spawn_cinematic_smoke_atmosphere(seg, sky, distance, chapter);
 
             // 6. Aurelia Megatower Skyline Silhouettes (Far Background: |X| >= 110m)
             spawn_skyline_megatowers(seg, sky, distance);
@@ -1079,13 +1155,313 @@ fn spawn_cloud_abyss(seg: &mut ChildBuilder, sky: &SkyRailAssets) {
             base_x: 58.0,
             amplitude: 5.5,
             speed: 0.21,
-            phase: 2.7,
+            phase: 2.3,
         },
     ));
 }
 
 // -------------------------------------------------------------
-// DARK CITY SKYLINE (DISTANT MONUMENTAL TITANS & OPEN CHASM)
+// CINEMATIC SMOKE ATMOSPHERE & INDUSTRIAL POLLUTION PLUMES
+// -------------------------------------------------------------
+
+fn spawn_cinematic_smoke_atmosphere(
+    seg: &mut ChildBuilder,
+    sky: &SkyRailAssets,
+    distance: f32,
+    chapter: SkyRailChapter,
+) {
+    let seg_idx = (distance / 40.0).floor() as i32;
+    let h1 = ((seg_idx.wrapping_mul(29) + 7).rem_euclid(100)) as f32 / 100.0;
+    let h2 = ((seg_idx.wrapping_mul(43) + 17).rem_euclid(100)) as f32 / 100.0;
+    let h3 = ((seg_idx.wrapping_mul(61) + 29).rem_euclid(100)) as f32 / 100.0;
+    let h4 = ((seg_idx.wrapping_mul(79) + 37).rem_euclid(100)) as f32 / 100.0;
+
+    let primary_side = if seg_idx.rem_euclid(2) == 0 {
+        -1.0
+    } else {
+        1.0
+    };
+    let secondary_side = -primary_side;
+
+    // 1. Broad Horizontal Atmospheric Smoke Bank (partially veils lower city & tower bases)
+    let bank_x = primary_side * (125.0 + h1 * 35.0);
+    let bank_y = -4.0 + h2 * 14.0;
+    let bank_z = -10.0 + h3 * 20.0;
+    seg.spawn((
+        PbrBundle {
+            mesh: sky.mesh_smoke_bank_horizontal.clone(),
+            material: sky.mat_sky_smoke_haze_bank.clone(),
+            transform: Transform::from_xyz(bank_x, bank_y, bank_z).with_scale(Vec3::new(
+                1.0 + h4 * 0.25,
+                0.85 + h1 * 0.35,
+                1.0 + h2 * 0.2,
+            )),
+            ..default()
+        },
+        SkyRailDriftSmoke {
+            base_pos: Vec3::new(bank_x, bank_y, bank_z),
+            drift_speed_x: 0.10,
+            drift_amp_x: 10.0,
+            rise_speed_y: 0.08,
+            rise_amp_y: 2.2,
+            phase: h2 * 3.14,
+        },
+    ));
+
+    // 2. Midground Wispy Smoke Strata (Layer A/B transition: 75m–95m)
+    if seg_idx.rem_euclid(2) == 1 {
+        let wisp_x = secondary_side * (75.0 + h3 * 18.0);
+        let wisp_y = 16.0 + h4 * 16.0;
+        let wisp_z = 8.0 - h1 * 16.0;
+        seg.spawn((
+            PbrBundle {
+                mesh: sky.mesh_smoke_strata_drift.clone(),
+                material: sky.mat_sky_smoke_wisp_drift.clone(),
+                transform: Transform::from_xyz(wisp_x, wisp_y, wisp_z)
+                    .with_rotation(Quat::from_rotation_y(secondary_side * 0.18)),
+                ..default()
+            },
+            SkyRailDriftSmoke {
+                base_pos: Vec3::new(wisp_x, wisp_y, wisp_z),
+                drift_speed_x: 0.22,
+                drift_amp_x: 8.0,
+                rise_speed_y: 0.14,
+                rise_amp_y: 3.0,
+                phase: h4 * 3.14 + 1.2,
+            },
+        ));
+    }
+
+    // 3. Chapter-Specific Industrial Smoke Plumes & Environmental Smog
+    match chapter {
+        SkyRailChapter::SkyRailEmergence => {
+            // Chapter 1: Transitional emergence — sparse plumes rising from distant exhaust ports
+            if seg_idx.rem_euclid(3) == 1 {
+                let plume_x = secondary_side * (145.0 + h2 * 25.0);
+                let plume_z = -12.0 + h3 * 24.0;
+                let tiers = [
+                    (22.0, &sky.mesh_smoke_plume_puff_small, 0.0, 0.15, 4.0),
+                    (
+                        36.0,
+                        &sky.mesh_smoke_plume_puff_medium,
+                        secondary_side * 4.5,
+                        0.18,
+                        7.0,
+                    ),
+                    (
+                        52.0,
+                        &sky.mesh_smoke_plume_puff_large,
+                        secondary_side * 11.0,
+                        0.20,
+                        10.0,
+                    ),
+                ];
+                for (tier_y, mesh, offset_x, drift_spd, amp) in tiers {
+                    let pos = Vec3::new(plume_x + offset_x, tier_y, plume_z);
+                    seg.spawn((
+                        PbrBundle {
+                            mesh: (*mesh).clone(),
+                            material: sky.mat_sky_smoke_industrial_dense.clone(),
+                            transform: Transform::from_xyz(pos.x, pos.y, pos.z),
+                            ..default()
+                        },
+                        SkyRailDriftSmoke {
+                            base_pos: pos,
+                            drift_speed_x: drift_spd,
+                            drift_amp_x: amp,
+                            rise_speed_y: 0.10,
+                            rise_amp_y: 2.5,
+                            phase: h1 * 3.14 + tier_y * 0.05,
+                        },
+                    ));
+                }
+            }
+        }
+        SkyRailChapter::UpperAurelia => {
+            // Chapter 2: Upper Aurelia — rising industrial plumes between corporate megatowers
+            let plume_x = secondary_side * (138.0 + h3 * 30.0);
+            let plume_z = -8.0 + h1 * 18.0;
+            let tiers = [
+                (28.0, &sky.mesh_smoke_plume_puff_small, 0.0, 0.14, 5.0),
+                (
+                    44.0,
+                    &sky.mesh_smoke_plume_puff_medium,
+                    secondary_side * 5.0,
+                    0.17,
+                    8.0,
+                ),
+                (
+                    62.0,
+                    &sky.mesh_smoke_plume_puff_large,
+                    secondary_side * 12.0,
+                    0.21,
+                    12.0,
+                ),
+                (
+                    80.0,
+                    &sky.mesh_smoke_plume_puff_large,
+                    secondary_side * 20.0,
+                    0.24,
+                    15.0,
+                ),
+            ];
+            for (tier_y, mesh, offset_x, drift_spd, amp) in tiers {
+                let pos = Vec3::new(plume_x + offset_x, tier_y, plume_z);
+                seg.spawn((
+                    PbrBundle {
+                        mesh: (*mesh).clone(),
+                        material: sky.mat_sky_smoke_industrial_dense.clone(),
+                        transform: Transform::from_xyz(pos.x, pos.y, pos.z),
+                        ..default()
+                    },
+                    SkyRailDriftSmoke {
+                        base_pos: pos,
+                        drift_speed_x: drift_spd,
+                        drift_amp_x: amp,
+                        rise_speed_y: 0.09,
+                        rise_amp_y: 2.8,
+                        phase: h2 * 3.14 + tier_y * 0.04,
+                    },
+                ));
+            }
+        }
+        SkyRailChapter::StormCorridor => {
+            // Chapter 3: Storm Corridor — massive turbulent industrial plumes from refinery stacks
+            // and cooling towers, interacting with storm lightning
+            let plume_x = primary_side * (135.0 + h1 * 32.0);
+            let plume_z = 6.0 - h2 * 18.0;
+            let tiers = [
+                (32.0, &sky.mesh_smoke_plume_puff_medium, 0.0, 0.16, 6.0),
+                (
+                    48.0,
+                    &sky.mesh_smoke_plume_puff_large,
+                    primary_side * 6.5,
+                    0.20,
+                    10.0,
+                ),
+                (
+                    66.0,
+                    &sky.mesh_smoke_plume_puff_large,
+                    primary_side * 15.0,
+                    0.25,
+                    14.0,
+                ),
+                (
+                    86.0,
+                    &sky.mesh_smoke_plume_puff_large,
+                    primary_side * 24.0,
+                    0.28,
+                    18.0,
+                ),
+            ];
+            for (tier_y, mesh, offset_x, drift_spd, amp) in tiers {
+                let pos = Vec3::new(plume_x + offset_x, tier_y, plume_z);
+                seg.spawn((
+                    PbrBundle {
+                        mesh: (*mesh).clone(),
+                        material: sky.mat_sky_smoke_industrial_dense.clone(),
+                        transform: Transform::from_xyz(pos.x, pos.y, pos.z)
+                            .with_scale(Vec3::new(1.2, 1.2, 1.2)),
+                        ..default()
+                    },
+                    SkyRailDriftSmoke {
+                        base_pos: pos,
+                        drift_speed_x: drift_spd,
+                        drift_amp_x: amp,
+                        rise_speed_y: 0.12,
+                        rise_amp_y: 3.5,
+                        phase: h3 * 3.14 + tier_y * 0.06,
+                    },
+                ));
+            }
+
+            // Low-lying churning chasm smog deck partially veiling lower city
+            let chasm_haze_x = secondary_side * (115.0 + h4 * 35.0);
+            seg.spawn((
+                PbrBundle {
+                    mesh: sky.mesh_smoke_bank_horizontal.clone(),
+                    material: sky.mat_sky_smoke_haze_bank.clone(),
+                    transform: Transform::from_xyz(chasm_haze_x, -10.0, 0.0)
+                        .with_scale(Vec3::new(1.3, 1.5, 1.2)),
+                    ..default()
+                },
+                SkyRailDriftSmoke {
+                    base_pos: Vec3::new(chasm_haze_x, -10.0, 0.0),
+                    drift_speed_x: 0.12,
+                    drift_amp_x: 12.0,
+                    rise_speed_y: 0.06,
+                    rise_amp_y: 2.0,
+                    phase: h1 * 3.14,
+                },
+            ));
+        }
+        SkyRailChapter::BrokenSkyway => {
+            // Chapter 4: Broken Skyway — smoldering smoke from damaged power conduits & shattered viaducts
+            let plume_x = primary_side * (122.0 + h2 * 28.0);
+            let plume_z = -6.0 + h4 * 16.0;
+            let tiers = [
+                (18.0, &sky.mesh_smoke_plume_puff_small, 0.0, 0.15, 4.0),
+                (
+                    32.0,
+                    &sky.mesh_smoke_plume_puff_medium,
+                    primary_side * 5.0,
+                    0.19,
+                    7.0,
+                ),
+                (
+                    48.0,
+                    &sky.mesh_smoke_plume_puff_large,
+                    primary_side * 12.0,
+                    0.22,
+                    11.0,
+                ),
+            ];
+            for (tier_y, mesh, offset_x, drift_spd, amp) in tiers {
+                let pos = Vec3::new(plume_x + offset_x, tier_y, plume_z);
+                seg.spawn((
+                    PbrBundle {
+                        mesh: (*mesh).clone(),
+                        material: sky.mat_sky_smoke_industrial_dense.clone(),
+                        transform: Transform::from_xyz(pos.x, pos.y, pos.z),
+                        ..default()
+                    },
+                    SkyRailDriftSmoke {
+                        base_pos: pos,
+                        drift_speed_x: drift_spd,
+                        drift_amp_x: amp,
+                        rise_speed_y: 0.10,
+                        rise_amp_y: 2.6,
+                        phase: h4 * 3.14 + tier_y * 0.05,
+                    },
+                ));
+            }
+        }
+        SkyRailChapter::EchoApproach => {
+            // Chapter 5: ECHO Approach — cold, high-altitude stratified haze framing the monolith
+            let echo_haze_x = secondary_side * 142.0;
+            seg.spawn((
+                PbrBundle {
+                    mesh: sky.mesh_smoke_bank_horizontal.clone(),
+                    material: sky.mat_sky_smoke_haze_bank.clone(),
+                    transform: Transform::from_xyz(echo_haze_x, 22.0, 0.0)
+                        .with_scale(Vec3::new(1.1, 0.9, 1.1)),
+                    ..default()
+                },
+                SkyRailDriftSmoke {
+                    base_pos: Vec3::new(echo_haze_x, 22.0, 0.0),
+                    drift_speed_x: 0.08,
+                    drift_amp_x: 8.0,
+                    rise_speed_y: 0.05,
+                    rise_amp_y: 1.5,
+                    phase: 0.0,
+                },
+            ));
+        }
+    }
+}
+
+// -------------------------------------------------------------
+// DARK CITY SKYLINE (DISTANT MONUMENTAL TITANS & COMPOUND CLUSTERS)
 // -------------------------------------------------------------
 
 fn spawn_skyline_megatowers(seg: &mut ChildBuilder, sky: &SkyRailAssets, distance: f32) {
@@ -1097,10 +1473,10 @@ fn spawn_skyline_megatowers(seg: &mut ChildBuilder, sky: &SkyRailAssets, distanc
     let h3 = ((seg_idx.wrapping_mul(59) + 23).rem_euclid(100)) as f32 / 100.0;
     let h4 = ((seg_idx.wrapping_mul(83) + 31).rem_euclid(100)) as f32 / 100.0;
 
-    // Distant Jagged Lightning Electric Discharges (sparse, between towers at |X| in [115m, 165m])
+    // Distant Jagged Lightning Electric Discharges (sparse, between towers at |X| in [125m, 165m])
     if seg_idx.rem_euclid(3) == 2 {
         let bolt_side = if h3 > 0.5 { -1.0 } else { 1.0 };
-        let bolt_x = bolt_side * (125.0 + h4 * 35.0);
+        let bolt_x = bolt_side * (130.0 + h4 * 35.0);
         let bolt_z = -12.0 + h1 * 24.0;
         // Main lightning trunk descending from storm ceiling
         seg.spawn(PbrBundle {
@@ -1219,8 +1595,9 @@ fn spawn_skyline_megatowers(seg: &mut ChildBuilder, sky: &SkyRailAssets, distanc
             let cluster_x = primary_side * (140.0 + h1 * 40.0);
             let cluster_z = -10.0 + h2 * 20.0;
 
-            // 1. Primary Megatitan (alternates between cylindrical titan and colossal rectangular arcology)
-            if h3 > 0.5 {
+            // 1. Primary Megatitan (3-way architectural silhouette variation)
+            if h3 > 0.66 {
+                // Cylindrical megatitan
                 seg.spawn(PbrBundle {
                     mesh: sky.mesh_tower_cylinder_large.clone(),
                     material: sky.mat_sky_tower_dark.clone(),
@@ -1234,7 +1611,23 @@ fn spawn_skyline_megatowers(seg: &mut ChildBuilder, sky: &SkyRailAssets, distanc
                         .with_scale(Vec3::new(1.6, 1.6, 1.6)),
                     ..default()
                 });
+            } else if h3 > 0.33 {
+                // Wide stepped brutalist corporate arcology
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_stepped_brutalist_arcology.clone(),
+                    material: sky.mat_sky_tower_dark.clone(),
+                    transform: Transform::from_xyz(cluster_x, 36.0, cluster_z),
+                    ..default()
+                });
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_tower_antenna_spire.clone(),
+                    material: sky.mat_sky_steel.clone(),
+                    transform: Transform::from_xyz(cluster_x, 82.0, cluster_z)
+                        .with_scale(Vec3::new(1.3, 1.3, 1.3)),
+                    ..default()
+                });
             } else {
+                // Monumental rectangular megatitan
                 seg.spawn(PbrBundle {
                     mesh: sky.mesh_distant_megatitan.clone(),
                     material: sky.mat_sky_tower_dark.clone(),
@@ -1339,8 +1732,8 @@ fn spawn_skyline_megatowers(seg: &mut ChildBuilder, sky: &SkyRailAssets, distanc
             });
         }
         SkyRailChapter::StormCorridor => {
-            // Chapter 3: Storm Corridor — industrial power infrastructure, cooling towers,
-            // atmospheric storm spires, and lightning-revealed industrial blocks.
+            // Chapter 3: Storm Corridor — industrial refinery complex, cooling towers, distillation columns,
+            // atmospheric storm spires, spherical gas storage tanks, and pipe manifolds.
             let complex_x = primary_side * (138.0 + h1 * 42.0);
             let complex_z = -12.0 + h2 * 24.0;
 
@@ -1369,7 +1762,7 @@ fn spawn_skyline_megatowers(seg: &mut ChildBuilder, sky: &SkyRailAssets, distanc
                 ..default()
             });
 
-            // 3. High industrial vent stack
+            // 3. High industrial vent stack with red warning beacon
             let vent_x = complex_x - primary_side * 22.0;
             seg.spawn(PbrBundle {
                 mesh: sky.mesh_industrial_vent_stack.clone(),
@@ -1385,7 +1778,40 @@ fn spawn_skyline_megatowers(seg: &mut ChildBuilder, sky: &SkyRailAssets, distanc
                 ..default()
             });
 
-            // 4. Horizontal utility conduit span connecting industrial complex
+            // 4. Industrial Refinery Distillation Column with structural rings
+            let column_x = complex_x + primary_side * 42.0;
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_refinery_distillation_column.clone(),
+                material: sky.mat_sky_storm_composite.clone(),
+                transform: Transform::from_xyz(column_x, 36.0, complex_z - 4.0),
+                ..default()
+            });
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_hazard_reflector.clone(),
+                material: sky.mat_sky_antenna_red.clone(),
+                transform: Transform::from_xyz(column_x, 72.0, complex_z - 4.0)
+                    .with_scale(Vec3::new(2.4, 2.4, 2.4)),
+                ..default()
+            });
+
+            // 5. Pressurized spherical/cylindrical refinery storage tanks
+            let sphere_x = complex_x - primary_side * 34.0;
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_refinery_storage_sphere.clone(),
+                material: sky.mat_sky_steel.clone(),
+                transform: Transform::from_xyz(sphere_x, 12.0, complex_z + 10.0),
+                ..default()
+            });
+
+            // 6. Multi-tier industrial pipe manifold rack connecting refinery units
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_industrial_pipe_manifold.clone(),
+                material: sky.mat_sky_steel.clone(),
+                transform: Transform::from_xyz((complex_x + column_x) * 0.5, 20.0, complex_z),
+                ..default()
+            });
+
+            // 7. Horizontal utility conduit span connecting industrial complex
             seg.spawn(PbrBundle {
                 mesh: sky.mesh_utility_conduit_pipe.clone(),
                 material: sky.mat_sky_steel.clone(),
@@ -1394,7 +1820,7 @@ fn spawn_skyline_megatowers(seg: &mut ChildBuilder, sky: &SkyRailAssets, distanc
                 ..default()
             });
 
-            // 5. Far monolithic industrial slab silhouetted against storm lightning (secondary flank)
+            // 8. Far monolithic industrial slab silhouetted against storm lightning (secondary flank)
             let far_slab_x = secondary_side * (245.0 + h4 * 50.0);
             seg.spawn(PbrBundle {
                 mesh: sky.mesh_tower_slab.clone(),
@@ -1413,7 +1839,7 @@ fn spawn_skyline_megatowers(seg: &mut ChildBuilder, sky: &SkyRailAssets, distanc
         }
         SkyRailChapter::BrokenSkyway => {
             // Chapter 4: Broken Skyway — catastrophic infrastructure collapse.
-            // Fractured titans, tilted cluster blocks, severed skybridges, emergency beacons.
+            // Fractured titans, tilted brutalist arcologies, shattered distillation stacks, emergency beacons.
             let titan_x = primary_side * (142.0 + h3 * 45.0);
             let titan_z = -8.0 + h1 * 16.0;
 
@@ -1442,13 +1868,13 @@ fn spawn_skyline_megatowers(seg: &mut ChildBuilder, sky: &SkyRailAssets, distanc
                 ..default()
             });
 
-            // 2. Tilted broken cluster block
-            let broken_block_x = titan_x + primary_side * 26.0;
+            // 2. Fractured stepped brutalist arcology block
+            let broken_block_x = titan_x + primary_side * 30.0;
             seg.spawn(PbrBundle {
-                mesh: sky.mesh_tower_cluster_block.clone(),
+                mesh: sky.mesh_stepped_brutalist_arcology.clone(),
                 material: sky.mat_sky_tower_dark.clone(),
-                transform: Transform::from_xyz(broken_block_x, 18.0, titan_z + 6.0)
-                    .with_rotation(Quat::from_rotation_z(-primary_side * 0.12)),
+                transform: Transform::from_xyz(broken_block_x, 22.0, titan_z + 6.0)
+                    .with_rotation(Quat::from_rotation_z(-primary_side * 0.10)),
                 ..default()
             });
 
@@ -1474,7 +1900,7 @@ fn spawn_skyline_megatowers(seg: &mut ChildBuilder, sky: &SkyRailAssets, distanc
         }
         SkyRailChapter::EchoApproach => {
             // Chapter 5: ECHO Approach — artificial mathematical symmetry approaching ECHO monolith.
-            // Symmetrical monolithic bastions on both flanks with cyan telemetry accents.
+            // Symmetrical monolithic bastions and stepped brutalist arcology flanks with cyan telemetry accents.
             for side in [-1.0, 1.0] {
                 let bastion_x = side * (142.0 + h1 * 22.0);
                 // Primary ECHO monolith slab
@@ -1485,18 +1911,18 @@ fn spawn_skyline_megatowers(seg: &mut ChildBuilder, sky: &SkyRailAssets, distanc
                         .with_scale(Vec3::new(1.4, 2.0, 1.4)),
                     ..default()
                 });
-                // Flanking stepped bastion block
+                // Flanking stepped brutalist arcology bastion
                 seg.spawn(PbrBundle {
-                    mesh: sky.mesh_tower_cluster_block.clone(),
+                    mesh: sky.mesh_stepped_brutalist_arcology.clone(),
                     material: sky.mat_sky_echo_monolith.clone(),
-                    transform: Transform::from_xyz(bastion_x + side * 28.0, 32.0, 6.0),
+                    transform: Transform::from_xyz(bastion_x + side * 34.0, 36.0, 6.0),
                     ..default()
                 });
                 // Symmetrical horizontal skybridge span
                 seg.spawn(PbrBundle {
                     mesh: sky.mesh_distant_skybridge_long.clone(),
                     material: sky.mat_sky_echo_monolith.clone(),
-                    transform: Transform::from_xyz(bastion_x + side * 14.0, 72.0, 3.0),
+                    transform: Transform::from_xyz(bastion_x + side * 17.0, 72.0, 3.0),
                     ..default()
                 });
                 // Cold cyan vertical telemetry window slit
@@ -3542,6 +3968,15 @@ pub fn update_sky_rail_storm(
             Without<SkyRailDistantDrone>,
         ),
     >,
+    mut smoke_q: Query<
+        (&SkyRailDriftSmoke, &mut Transform),
+        (
+            Without<SkyRailDriftCloud>,
+            Without<SkyRailDistantTrain>,
+            Without<SkyRailDistantDrone>,
+            Without<SkyRailDistantCraft>,
+        ),
+    >,
 ) {
     let dt = time.delta_seconds();
     let in_zone_5 = run_stats
@@ -3562,6 +3997,18 @@ pub fn update_sky_rail_storm(
                 }
                 if let Some(mat) = materials.get_mut(&sky.mat_sky_cloud_cumulus) {
                     mat.emissive = LinearRgba::new(0.04, 0.06, 0.10, 1.0);
+                }
+                if let Some(mat) = materials.get_mut(&sky.mat_sky_lightning) {
+                    mat.emissive = LinearRgba::new(0.0, 0.0, 0.0, 1.0);
+                }
+                if let Some(mat) = materials.get_mut(&sky.mat_sky_smoke_industrial_dense) {
+                    mat.emissive = LinearRgba::new(0.006, 0.008, 0.012, 1.0);
+                }
+                if let Some(mat) = materials.get_mut(&sky.mat_sky_smoke_haze_bank) {
+                    mat.emissive = LinearRgba::new(0.008, 0.012, 0.018, 1.0);
+                }
+                if let Some(mat) = materials.get_mut(&sky.mat_sky_smoke_wisp_drift) {
+                    mat.emissive = LinearRgba::new(0.010, 0.014, 0.022, 1.0);
                 }
             }
         }
@@ -3651,6 +4098,43 @@ pub fn update_sky_rail_storm(
                 mat.emissive = LinearRgba::new(0.0, 0.0, 0.0, 1.0);
             }
         }
+        // Subtly illuminate smoke plumes and horizontal haze banks during lightning flash
+        if let Some(mat) = materials.get_mut(&sky.mat_sky_smoke_industrial_dense) {
+            if intensity > 0.001 {
+                mat.emissive = LinearRgba::new(
+                    0.006 + intensity * 0.45,
+                    0.008 + intensity * 0.58,
+                    0.012 + intensity * 0.85,
+                    1.0,
+                );
+            } else {
+                mat.emissive = LinearRgba::new(0.006, 0.008, 0.012, 1.0);
+            }
+        }
+        if let Some(mat) = materials.get_mut(&sky.mat_sky_smoke_haze_bank) {
+            if intensity > 0.001 {
+                mat.emissive = LinearRgba::new(
+                    0.008 + intensity * 0.60,
+                    0.012 + intensity * 0.78,
+                    0.018 + intensity * 1.10,
+                    1.0,
+                );
+            } else {
+                mat.emissive = LinearRgba::new(0.008, 0.012, 0.018, 1.0);
+            }
+        }
+        if let Some(mat) = materials.get_mut(&sky.mat_sky_smoke_wisp_drift) {
+            if intensity > 0.001 {
+                mat.emissive = LinearRgba::new(
+                    0.010 + intensity * 0.75,
+                    0.014 + intensity * 0.95,
+                    0.022 + intensity * 1.35,
+                    1.0,
+                );
+            } else {
+                mat.emissive = LinearRgba::new(0.010, 0.014, 0.022, 1.0);
+            }
+        }
     }
 
     // 3. Lightweight distant mag-train transit movement
@@ -3685,6 +4169,14 @@ pub fn update_sky_rail_storm(
                 trans.translation.z += span;
             }
         }
+    }
+
+    // 6. Subtle wind-driven cinematic smoke drift and slow buoyant rise
+    for (smoke, mut trans) in smoke_q.iter_mut() {
+        let t = elapsed * smoke.drift_speed_x + smoke.phase;
+        trans.translation.x = smoke.base_pos.x + t.sin() * smoke.drift_amp_x;
+        trans.translation.y =
+            smoke.base_pos.y + (t * smoke.rise_speed_y).sin().abs() * smoke.rise_amp_y;
     }
 }
 
@@ -4082,6 +4574,77 @@ mod tests {
                 bridge_x >= 55.0,
                 "Ch2 hanging pod bridge must stay >= 55.0m"
             );
+        }
+    }
+
+    #[test]
+    fn test_sky_rail_smoke_clearance() {
+        // Verify that smoke entities across all chapters strictly remain >= 70m from the track center
+        for d in (8000..10000).step_by(20) {
+            let seg_idx = (d as f32 / 40.0).floor() as i32;
+            let h1 = ((seg_idx.wrapping_mul(29) + 7).rem_euclid(100)) as f32 / 100.0;
+            let h2 = ((seg_idx.wrapping_mul(43) + 17).rem_euclid(100)) as f32 / 100.0;
+            let h3 = ((seg_idx.wrapping_mul(61) + 29).rem_euclid(100)) as f32 / 100.0;
+            let h4 = ((seg_idx.wrapping_mul(79) + 37).rem_euclid(100)) as f32 / 100.0;
+
+            // 1. Horizontal smoke bank: 125m - 160m
+            let bank_x = 125.0 + h1 * 35.0;
+            assert!(
+                bank_x >= 115.0,
+                "Smoke bank X ({}) must remain outside 115m",
+                bank_x
+            );
+
+            // 2. Midground wisp strata: 75m - 93m
+            let wisp_x = 75.0 + h3 * 18.0;
+            assert!(
+                wisp_x >= 70.0,
+                "Smoke wisp X ({}) must remain outside 70m",
+                wisp_x
+            );
+
+            // 3. Industrial plumes
+            let ch1_plume_x = 145.0 + h2 * 25.0;
+            assert!(ch1_plume_x >= 115.0);
+
+            let ch2_plume_x = 138.0 + h3 * 30.0;
+            assert!(ch2_plume_x >= 115.0);
+
+            let ch3_plume_x = 135.0 + h1 * 32.0;
+            assert!(ch3_plume_x >= 115.0);
+
+            let ch4_plume_x = 122.0 + h2 * 28.0;
+            assert!(ch4_plume_x >= 115.0);
+
+            let ch5_haze_x = 142.0_f32;
+            assert!(ch5_haze_x >= 115.0);
+        }
+    }
+
+    #[test]
+    fn test_sky_rail_smoke_kinematics() {
+        let smoke = SkyRailDriftSmoke {
+            base_pos: Vec3::new(125.0, 14.0, 0.0),
+            drift_speed_x: 0.15,
+            drift_amp_x: 10.0,
+            rise_speed_y: 0.10,
+            rise_amp_y: 3.0,
+            phase: 1.5,
+        };
+
+        for step in 0..200 {
+            let elapsed = step as f32 * 0.2;
+            let t = elapsed * smoke.drift_speed_x + smoke.phase;
+            let x = smoke.base_pos.x + t.sin() * smoke.drift_amp_x;
+            let y = smoke.base_pos.y + (t * smoke.rise_speed_y).sin().abs() * smoke.rise_amp_y;
+
+            // X offset must remain bounded within amplitude
+            assert!((x - smoke.base_pos.x).abs() <= smoke.drift_amp_x + 1e-4);
+            // Y offset must remain positive and bounded within amplitude
+            assert!(y >= smoke.base_pos.y - 1e-4);
+            assert!(y <= smoke.base_pos.y + smoke.rise_amp_y + 1e-4);
+            // Must stay well outside track corridor
+            assert!(x >= 100.0);
         }
     }
 }
