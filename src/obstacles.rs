@@ -27,6 +27,7 @@ pub fn resolve_obstacle_pool_type(obstacle_type: ObstacleType, distance: f32) ->
     let is_industrial_sector = zone_id == 3;
     let is_flooded_metro = zone_id == 4;
     let is_sky_rail = zone_id == 5;
+    let is_forbidden_line = zone_id == 6;
 
     match obstacle_type {
         ObstacleType::LowBarrier => {
@@ -38,6 +39,8 @@ pub fn resolve_obstacle_pool_type(obstacle_type: ObstacleType, distance: f32) ->
                 PoolType::FloodedBarrier
             } else if is_sky_rail {
                 PoolType::SkyRailMaintenanceGate
+            } else if is_forbidden_line {
+                PoolType::ForbiddenQuarantineBarrier
             } else {
                 PoolType::LowBarrier
             }
@@ -51,6 +54,8 @@ pub fn resolve_obstacle_pool_type(obstacle_type: ObstacleType, distance: f32) ->
                 PoolType::FloodedPowerCable
             } else if is_sky_rail {
                 PoolType::SkyRailClearanceBeam
+            } else if is_forbidden_line {
+                PoolType::ForbiddenConduitBundle
             } else {
                 PoolType::HighHangingWire
             }
@@ -64,6 +69,8 @@ pub fn resolve_obstacle_pool_type(obstacle_type: ObstacleType, distance: f32) ->
                 PoolType::FloodedPumpColumn
             } else if is_sky_rail {
                 PoolType::SkyRailSignalTower
+            } else if is_forbidden_line {
+                PoolType::ForbiddenContainmentPillar
             } else {
                 PoolType::TallPillar
             }
@@ -77,6 +84,8 @@ pub fn resolve_obstacle_pool_type(obstacle_type: ObstacleType, distance: f32) ->
                 PoolType::FloodedSubmergedTrain
             } else if is_sky_rail {
                 PoolType::SkyRailDerelictMagCar
+            } else if is_forbidden_line {
+                PoolType::ForbiddenFacilityTransport
             } else {
                 PoolType::StaticTrain
             }
@@ -90,6 +99,8 @@ pub fn resolve_obstacle_pool_type(obstacle_type: ObstacleType, distance: f32) ->
                 PoolType::FloodedMovingTrain
             } else if is_sky_rail {
                 PoolType::SkyRailMagTrain
+            } else if is_forbidden_line {
+                PoolType::ForbiddenHeavyMover
             } else {
                 PoolType::MovingTrain
             }

@@ -430,6 +430,12 @@ pub enum PoolType {
     SkyRailSignalTower,
     SkyRailDerelictMagCar,
     SkyRailMagTrain,
+    // Zone 6 Forbidden Line Dedicated Obstacles
+    ForbiddenQuarantineBarrier,
+    ForbiddenConduitBundle,
+    ForbiddenContainmentPillar,
+    ForbiddenFacilityTransport,
+    ForbiddenHeavyMover,
     EchoFragment,
     DataChip,
     PowerUp,

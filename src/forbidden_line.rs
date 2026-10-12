@@ -2319,8 +2319,12 @@ mod tests {
             outer_curb_x
         );
         assert!(
+            (-bunker_wall_x - left_lane_x).abs() >= 3.0,
+            "Left bunker wall must maintain at least 3.0m clearance from lane centers"
+        );
+        assert!(
             (bunker_wall_x - right_lane_x).abs() >= 3.0,
-            "Bunker wall must maintain at least 3.0m clearance from lane centers"
+            "Right bunker wall must maintain at least 3.0m clearance from lane centers"
         );
 
         // Verify upper background catwalk clearance

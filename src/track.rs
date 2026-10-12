@@ -272,6 +272,14 @@ pub fn spawn_pattern_chunk(
                 | PoolType::SkyRailDerelictMagCar
                 | PoolType::SkyRailMagTrain
         );
+        let is_zone_6 = matches!(
+            visual_pool_type,
+            PoolType::ForbiddenQuarantineBarrier
+                | PoolType::ForbiddenConduitBundle
+                | PoolType::ForbiddenContainmentPillar
+                | PoolType::ForbiddenFacilityTransport
+                | PoolType::ForbiddenHeavyMover
+        );
 
         match obs_def.obstacle_type {
             ObstacleType::LowBarrier => {
@@ -350,6 +358,14 @@ pub fn spawn_pattern_chunk(
                     spawn_flooded_barrier(commands, pool_assets, pool, *obs_def, world_z);
                 } else if is_zone_5 {
                     spawn_sky_rail_maintenance_gate(commands, pool_assets, pool, *obs_def, world_z);
+                } else if is_zone_6 {
+                    spawn_forbidden_quarantine_barrier(
+                        commands,
+                        pool_assets,
+                        pool,
+                        *obs_def,
+                        world_z,
+                    );
                 } else {
                     if let Some(entity) = pool.pop(PoolType::LowBarrier) {
                         commands.entity(entity).insert((
@@ -537,6 +553,8 @@ pub fn spawn_pattern_chunk(
                     spawn_flooded_power_cable(commands, pool_assets, pool, *obs_def, world_z);
                 } else if is_zone_5 {
                     spawn_sky_rail_clearance_beam(commands, pool_assets, pool, *obs_def, world_z);
+                } else if is_zone_6 {
+                    spawn_forbidden_conduit_bundle(commands, pool_assets, pool, *obs_def, world_z);
                 } else {
                     if let Some(entity) = pool.pop(PoolType::HighHangingWire) {
                         commands.entity(entity).insert((
@@ -724,6 +742,14 @@ pub fn spawn_pattern_chunk(
                     spawn_flooded_pump_column(commands, pool_assets, pool, *obs_def, world_z);
                 } else if is_zone_5 {
                     spawn_sky_rail_signal_tower(commands, pool_assets, pool, *obs_def, world_z);
+                } else if is_zone_6 {
+                    spawn_forbidden_containment_pillar(
+                        commands,
+                        pool_assets,
+                        pool,
+                        *obs_def,
+                        world_z,
+                    );
                 } else {
                     if let Some(entity) = pool.pop(PoolType::TallPillar) {
                         commands.entity(entity).insert((
@@ -986,6 +1012,14 @@ pub fn spawn_pattern_chunk(
                     spawn_flooded_submerged_train(commands, pool_assets, pool, *obs_def, world_z);
                 } else if is_zone_5 {
                     spawn_sky_rail_derelict_mag_car(commands, pool_assets, pool, *obs_def, world_z);
+                } else if is_zone_6 {
+                    spawn_forbidden_facility_transport(
+                        commands,
+                        pool_assets,
+                        pool,
+                        *obs_def,
+                        world_z,
+                    );
                 } else {
                     if let Some(entity) = pool.pop(PoolType::StaticTrain) {
                         commands.entity(entity).insert((
@@ -1270,6 +1304,15 @@ pub fn spawn_pattern_chunk(
                     );
                 } else if is_zone_5 {
                     spawn_sky_rail_mag_train(commands, pool_assets, pool, *obs_def, world_z, speed);
+                } else if is_zone_6 {
+                    spawn_forbidden_heavy_mover(
+                        commands,
+                        pool_assets,
+                        pool,
+                        *obs_def,
+                        world_z,
+                        speed,
+                    );
                 } else {
                     if let Some(entity) = pool.pop(PoolType::MovingTrain) {
                         commands.entity(entity).insert((
@@ -3041,6 +3084,336 @@ fn spawn_sky_rail_mag_train(
         });
 }
 
+fn forbidden_active(
+    lane: Lane,
+    obstacle_type: ObstacleType,
+    size: Vec3,
+    world_z: f32,
+    pool_type: PoolType,
+) -> (ActiveObstacle, Despawnable, PooledItem) {
+    (
+        ActiveObstacle {
+            lane,
+            obstacle_type,
+            size,
+        },
+        Despawnable { z_center: world_z },
+        PooledItem {
+            pool_type,
+            is_active: true,
+        },
+    )
+}
+
+fn spawn_forbidden_quarantine_barrier(
+    commands: &mut Commands,
+    pool_assets: &PoolAssets,
+    pool: &mut EntityPool,
+    obs_def: ObstacleSpawnDef,
+    world_z: f32,
+) {
+    let active = forbidden_active(
+        obs_def.lane,
+        ObstacleType::LowBarrier,
+        obs_def.size,
+        world_z,
+        PoolType::ForbiddenQuarantineBarrier,
+    );
+    if let Some(entity) = pool.pop(PoolType::ForbiddenQuarantineBarrier) {
+        commands.entity(entity).insert((
+            Transform::from_xyz(obs_def.lane.x_pos(), 0.42, world_z),
+            Visibility::Inherited,
+            active.0,
+            active.1,
+            active.2,
+        ));
+        return;
+    }
+    commands
+        .spawn((
+            PbrBundle {
+                mesh: pool_assets.mesh_forbidden_gate_frame.clone(),
+                material: pool_assets.mat_forbidden_obs_steel.clone(),
+                transform: Transform::from_xyz(obs_def.lane.x_pos(), 0.42, world_z),
+                ..default()
+            },
+            active.0,
+            active.1,
+            active.2,
+        ))
+        .with_children(|barrier| {
+            barrier.spawn(PbrBundle {
+                mesh: pool_assets.mesh_forbidden_gate_plate.clone(),
+                material: pool_assets.mat_forbidden_obs_concrete.clone(),
+                transform: Transform::from_xyz(0.0, 0.0, 0.04),
+                ..default()
+            });
+            barrier.spawn(PbrBundle {
+                mesh: pool_assets.mesh_forbidden_gate_hazard_stripe.clone(),
+                material: pool_assets.mat_forbidden_obs_amber.clone(),
+                transform: Transform::from_xyz(0.0, -0.22, 0.12),
+                ..default()
+            });
+            for x in [-0.92, 0.92] {
+                barrier.spawn(PbrBundle {
+                    mesh: pool_assets.mesh_forbidden_gate_strobe.clone(),
+                    material: pool_assets.mat_forbidden_obs_crimson.clone(),
+                    transform: Transform::from_xyz(x, 0.38, 0.05),
+                    ..default()
+                });
+            }
+        });
+}
+
+fn spawn_forbidden_conduit_bundle(
+    commands: &mut Commands,
+    pool_assets: &PoolAssets,
+    pool: &mut EntityPool,
+    obs_def: ObstacleSpawnDef,
+    world_z: f32,
+) {
+    let active = forbidden_active(
+        obs_def.lane,
+        ObstacleType::HighHangingWire,
+        obs_def.size,
+        world_z,
+        PoolType::ForbiddenConduitBundle,
+    );
+    if let Some(entity) = pool.pop(PoolType::ForbiddenConduitBundle) {
+        commands.entity(entity).insert((
+            Transform::from_xyz(obs_def.lane.x_pos(), 1.7, world_z),
+            Visibility::Inherited,
+            active.0,
+            active.1,
+            active.2,
+        ));
+        return;
+    }
+    commands
+        .spawn((
+            PbrBundle {
+                mesh: pool_assets.mesh_forbidden_conduit_bracket.clone(),
+                material: pool_assets.mat_forbidden_obs_steel.clone(),
+                transform: Transform::from_xyz(obs_def.lane.x_pos(), 1.7, world_z),
+                ..default()
+            },
+            active.0,
+            active.1,
+            active.2,
+        ))
+        .with_children(|wire| {
+            wire.spawn(PbrBundle {
+                mesh: pool_assets.mesh_forbidden_conduit_core.clone(),
+                material: pool_assets.mat_forbidden_obs_concrete.clone(),
+                transform: Transform::from_xyz(0.0, -0.06, 0.0),
+                ..default()
+            });
+            for x in [-0.65, 0.0, 0.65] {
+                wire.spawn(PbrBundle {
+                    mesh: pool_assets.mesh_forbidden_conduit_spark.clone(),
+                    material: pool_assets.mat_forbidden_obs_cyan.clone(),
+                    transform: Transform::from_xyz(x, -0.15, 0.08),
+                    ..default()
+                });
+            }
+            wire.spawn(PbrBundle {
+                mesh: pool_assets.mesh_wire_chevron.clone(),
+                material: pool_assets.mat_wire_chevron.clone(),
+                transform: Transform::from_xyz(0.0, -0.34, 0.0),
+                ..default()
+            });
+        });
+}
+
+fn spawn_forbidden_containment_pillar(
+    commands: &mut Commands,
+    pool_assets: &PoolAssets,
+    pool: &mut EntityPool,
+    obs_def: ObstacleSpawnDef,
+    world_z: f32,
+) {
+    let active = forbidden_active(
+        obs_def.lane,
+        ObstacleType::TallPillar,
+        obs_def.size,
+        world_z,
+        PoolType::ForbiddenContainmentPillar,
+    );
+    if let Some(entity) = pool.pop(PoolType::ForbiddenContainmentPillar) {
+        commands.entity(entity).insert((
+            Transform::from_xyz(obs_def.lane.x_pos(), 2.0, world_z),
+            Visibility::Inherited,
+            active.0,
+            active.1,
+            active.2,
+        ));
+        return;
+    }
+    commands
+        .spawn((
+            PbrBundle {
+                mesh: pool_assets.mesh_forbidden_pillar_shaft.clone(),
+                material: pool_assets.mat_forbidden_obs_concrete.clone(),
+                transform: Transform::from_xyz(obs_def.lane.x_pos(), 2.0, world_z),
+                ..default()
+            },
+            active.0,
+            active.1,
+            active.2,
+        ))
+        .with_children(|pillar| {
+            pillar.spawn(PbrBundle {
+                mesh: pool_assets.mesh_forbidden_pillar_rib.clone(),
+                material: pool_assets.mat_forbidden_obs_steel.clone(),
+                transform: Transform::from_xyz(0.0, 0.0, 0.0),
+                ..default()
+            });
+            for y in [-1.2, 1.2] {
+                pillar.spawn(PbrBundle {
+                    mesh: pool_assets.mesh_forbidden_pillar_collar.clone(),
+                    material: pool_assets.mat_forbidden_obs_steel.clone(),
+                    transform: Transform::from_xyz(0.0, y, 0.0),
+                    ..default()
+                });
+            }
+            pillar.spawn(PbrBundle {
+                mesh: pool_assets.mesh_forbidden_pillar_beacon.clone(),
+                material: pool_assets.mat_forbidden_obs_crimson.clone(),
+                transform: Transform::from_xyz(0.0, 1.95, 0.45),
+                ..default()
+            });
+        });
+}
+
+fn spawn_forbidden_facility_transport(
+    commands: &mut Commands,
+    pool_assets: &PoolAssets,
+    pool: &mut EntityPool,
+    obs_def: ObstacleSpawnDef,
+    world_z: f32,
+) {
+    let active = forbidden_active(
+        obs_def.lane,
+        ObstacleType::StaticTrain,
+        obs_def.size,
+        world_z,
+        PoolType::ForbiddenFacilityTransport,
+    );
+    if let Some(entity) = pool.pop(PoolType::ForbiddenFacilityTransport) {
+        commands.entity(entity).insert((
+            Transform::from_xyz(obs_def.lane.x_pos(), 1.25, world_z),
+            Visibility::Inherited,
+            active.0,
+            active.1,
+            active.2,
+        ));
+        return;
+    }
+    commands
+        .spawn((
+            PbrBundle {
+                mesh: pool_assets.mesh_forbidden_transport_chassis.clone(),
+                material: pool_assets.mat_forbidden_obs_steel.clone(),
+                transform: Transform::from_xyz(obs_def.lane.x_pos(), 1.25, world_z),
+                ..default()
+            },
+            active.0,
+            active.1,
+            active.2,
+        ))
+        .with_children(|transport| {
+            transport.spawn(PbrBundle {
+                mesh: pool_assets.mesh_forbidden_transport_nose.clone(),
+                material: pool_assets.mat_forbidden_obs_concrete.clone(),
+                transform: Transform::from_xyz(0.0, -0.25, 5.2),
+                ..default()
+            });
+            for x in [-1.05, 1.05] {
+                transport.spawn(PbrBundle {
+                    mesh: pool_assets.mesh_forbidden_transport_skirt.clone(),
+                    material: pool_assets.mat_forbidden_obs_steel.clone(),
+                    transform: Transform::from_xyz(x, -0.85, 0.0),
+                    ..default()
+                });
+            }
+            for z in [-5.8, 5.8] {
+                transport.spawn(PbrBundle {
+                    mesh: pool_assets.mesh_forbidden_transport_marker.clone(),
+                    material: pool_assets.mat_forbidden_obs_crimson.clone(),
+                    transform: Transform::from_xyz(0.0, 1.05, z),
+                    ..default()
+                });
+            }
+        });
+}
+
+fn spawn_forbidden_heavy_mover(
+    commands: &mut Commands,
+    pool_assets: &PoolAssets,
+    pool: &mut EntityPool,
+    obs_def: ObstacleSpawnDef,
+    world_z: f32,
+    speed: f32,
+) {
+    let active = forbidden_active(
+        obs_def.lane,
+        ObstacleType::MovingTrain { speed },
+        obs_def.size,
+        world_z,
+        PoolType::ForbiddenHeavyMover,
+    );
+    if let Some(entity) = pool.pop(PoolType::ForbiddenHeavyMover) {
+        commands.entity(entity).insert((
+            Transform::from_xyz(obs_def.lane.x_pos(), 1.25, world_z),
+            Visibility::Inherited,
+            active.0,
+            MovingObstacle { speed },
+            active.1,
+            active.2,
+        ));
+        return;
+    }
+    commands
+        .spawn((
+            SpatialBundle {
+                transform: Transform::from_xyz(obs_def.lane.x_pos(), 1.25, world_z),
+                ..default()
+            },
+            active.0,
+            MovingObstacle { speed },
+            active.1,
+            active.2,
+        ))
+        .with_children(|mover| {
+            mover.spawn(PbrBundle {
+                mesh: pool_assets.mesh_forbidden_mover_chassis.clone(),
+                material: pool_assets.mat_forbidden_obs_steel.clone(),
+                transform: Transform::from_xyz(0.0, 0.0, 0.0),
+                ..default()
+            });
+            mover.spawn(PbrBundle {
+                mesh: pool_assets.mesh_forbidden_mover_wedge.clone(),
+                material: pool_assets.mat_forbidden_obs_concrete.clone(),
+                transform: Transform::from_xyz(0.0, -0.15, 6.2),
+                ..default()
+            });
+            for x in [-0.65, 0.65] {
+                mover.spawn(PbrBundle {
+                    mesh: pool_assets.mesh_forbidden_mover_headlamp.clone(),
+                    material: pool_assets.mat_forbidden_obs_amber.clone(),
+                    transform: Transform::from_xyz(x, -0.15, 7.1),
+                    ..default()
+                });
+            }
+            mover.spawn(PbrBundle {
+                mesh: pool_assets.mesh_forbidden_mover_strobe.clone(),
+                material: pool_assets.mat_forbidden_obs_crimson.clone(),
+                transform: Transform::from_xyz(0.0, 1.30, 5.5),
+                ..default()
+            });
+        });
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -3297,37 +3670,74 @@ mod tests {
     }
 
     #[test]
-    fn test_obstacle_visual_selection_zones_6_to_7_protected() {
-        let test_distances = [ZONES[5].start_distance, ZONES[6].start_distance];
+    fn test_obstacle_visual_selection_zone_6_forbidden_line() {
+        let test_distances = [10000.0, 10500.0, 11000.0, 11500.0, 11999.0];
+        for &dist in &test_distances {
+            assert_eq!(
+                resolve_obstacle_pool_type(ObstacleType::LowBarrier, dist),
+                PoolType::ForbiddenQuarantineBarrier,
+                "Zone 6 distance {}m must select Forbidden Line quarantine barrier",
+                dist
+            );
+            assert_eq!(
+                resolve_obstacle_pool_type(ObstacleType::HighHangingWire, dist),
+                PoolType::ForbiddenConduitBundle,
+                "Zone 6 distance {}m must select Forbidden Line conduit bundle",
+                dist
+            );
+            assert_eq!(
+                resolve_obstacle_pool_type(ObstacleType::TallPillar, dist),
+                PoolType::ForbiddenContainmentPillar,
+                "Zone 6 distance {}m must select Forbidden Line containment pillar",
+                dist
+            );
+            assert_eq!(
+                resolve_obstacle_pool_type(ObstacleType::StaticTrain, dist),
+                PoolType::ForbiddenFacilityTransport,
+                "Zone 6 distance {}m must select Forbidden Line facility transport",
+                dist
+            );
+            assert_eq!(
+                resolve_obstacle_pool_type(ObstacleType::MovingTrain { speed: 10.0 }, dist),
+                PoolType::ForbiddenHeavyMover,
+                "Zone 6 distance {}m must select Forbidden Line heavy mover",
+                dist
+            );
+        }
+    }
+
+    #[test]
+    fn test_obstacle_visual_selection_zone_7_protected() {
+        let test_distances = [ZONES[6].start_distance, 13000.0];
         for &dist in &test_distances {
             assert_eq!(
                 resolve_obstacle_pool_type(ObstacleType::LowBarrier, dist),
                 PoolType::LowBarrier,
-                "Post-Zone-5 distance {}m must not use Zone 5 visuals",
+                "Post-Zone-6 distance {}m must fall back to default LowBarrier",
                 dist
             );
             assert_eq!(
                 resolve_obstacle_pool_type(ObstacleType::HighHangingWire, dist),
                 PoolType::HighHangingWire,
-                "Post-Zone-5 distance {}m must not use Zone 5 visuals",
+                "Post-Zone-6 distance {}m must fall back to default HighHangingWire",
                 dist
             );
             assert_eq!(
                 resolve_obstacle_pool_type(ObstacleType::TallPillar, dist),
                 PoolType::TallPillar,
-                "Post-Zone-5 distance {}m must not use Zone 5 visuals",
+                "Post-Zone-6 distance {}m must fall back to default TallPillar",
                 dist
             );
             assert_eq!(
                 resolve_obstacle_pool_type(ObstacleType::StaticTrain, dist),
                 PoolType::StaticTrain,
-                "Post-Zone-5 distance {}m must not use Zone 5 visuals",
+                "Post-Zone-6 distance {}m must fall back to default StaticTrain",
                 dist
             );
             assert_eq!(
                 resolve_obstacle_pool_type(ObstacleType::MovingTrain { speed: 10.0 }, dist),
                 PoolType::MovingTrain,
-                "Post-Zone-5 distance {}m must not use Zone 5 visuals",
+                "Post-Zone-6 distance {}m must fall back to default MovingTrain",
                 dist
             );
         }
@@ -3361,6 +3771,11 @@ mod tests {
         let e_sky_rail_tower = Entity::from_raw(23);
         let e_sky_rail_car = Entity::from_raw(24);
         let e_sky_rail_train = Entity::from_raw(25);
+        let e_forbidden_barrier = Entity::from_raw(26);
+        let e_forbidden_conduit = Entity::from_raw(27);
+        let e_forbidden_pillar = Entity::from_raw(28);
+        let e_forbidden_transport = Entity::from_raw(29);
+        let e_forbidden_mover = Entity::from_raw(30);
 
         // Push all into respective pools
         pool.push(PoolType::LowBarrier, e_metro_barrier);
@@ -3388,6 +3803,11 @@ mod tests {
         pool.push(PoolType::SkyRailSignalTower, e_sky_rail_tower);
         pool.push(PoolType::SkyRailDerelictMagCar, e_sky_rail_car);
         pool.push(PoolType::SkyRailMagTrain, e_sky_rail_train);
+        pool.push(PoolType::ForbiddenQuarantineBarrier, e_forbidden_barrier);
+        pool.push(PoolType::ForbiddenConduitBundle, e_forbidden_conduit);
+        pool.push(PoolType::ForbiddenContainmentPillar, e_forbidden_pillar);
+        pool.push(PoolType::ForbiddenFacilityTransport, e_forbidden_transport);
+        pool.push(PoolType::ForbiddenHeavyMover, e_forbidden_mover);
 
         // Verify vectors are isolated
         assert_eq!(pool.barriers.len(), 1);
@@ -3415,6 +3835,33 @@ mod tests {
         assert_eq!(pool.sky_rail_towers.len(), 1);
         assert_eq!(pool.sky_rail_cars.len(), 1);
         assert_eq!(pool.sky_rail_trains.len(), 1);
+        assert_eq!(pool.forbidden_barriers.len(), 1);
+        assert_eq!(pool.forbidden_conduits.len(), 1);
+        assert_eq!(pool.forbidden_pillars.len(), 1);
+        assert_eq!(pool.forbidden_transports.len(), 1);
+        assert_eq!(pool.forbidden_movers.len(), 1);
+
+        // Pop from Zone 6 pools
+        assert_eq!(
+            pool.pop(PoolType::ForbiddenQuarantineBarrier),
+            Some(e_forbidden_barrier)
+        );
+        assert_eq!(
+            pool.pop(PoolType::ForbiddenConduitBundle),
+            Some(e_forbidden_conduit)
+        );
+        assert_eq!(
+            pool.pop(PoolType::ForbiddenContainmentPillar),
+            Some(e_forbidden_pillar)
+        );
+        assert_eq!(
+            pool.pop(PoolType::ForbiddenFacilityTransport),
+            Some(e_forbidden_transport)
+        );
+        assert_eq!(
+            pool.pop(PoolType::ForbiddenHeavyMover),
+            Some(e_forbidden_mover)
+        );
 
         // Pop from Zone 2 pools
         assert_eq!(pool.pop(PoolType::NeonRoadBarrier), Some(e_neon_barrier));

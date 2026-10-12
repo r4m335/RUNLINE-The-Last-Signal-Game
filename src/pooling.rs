@@ -278,6 +278,32 @@ pub struct PoolAssets {
     pub mat_sky_obs_cyan_glow: Handle<StandardMaterial>,
     pub mat_sky_obs_headlight: Handle<StandardMaterial>,
     pub mat_sky_obs_red_beacon: Handle<StandardMaterial>,
+
+    // Zone 6 Forbidden Line Dedicated Obstacles
+    pub mesh_forbidden_gate_frame: Handle<Mesh>,
+    pub mesh_forbidden_gate_plate: Handle<Mesh>,
+    pub mesh_forbidden_gate_strobe: Handle<Mesh>,
+    pub mesh_forbidden_gate_hazard_stripe: Handle<Mesh>,
+    pub mesh_forbidden_conduit_bracket: Handle<Mesh>,
+    pub mesh_forbidden_conduit_core: Handle<Mesh>,
+    pub mesh_forbidden_conduit_spark: Handle<Mesh>,
+    pub mesh_forbidden_pillar_shaft: Handle<Mesh>,
+    pub mesh_forbidden_pillar_rib: Handle<Mesh>,
+    pub mesh_forbidden_pillar_collar: Handle<Mesh>,
+    pub mesh_forbidden_pillar_beacon: Handle<Mesh>,
+    pub mesh_forbidden_transport_chassis: Handle<Mesh>,
+    pub mesh_forbidden_transport_nose: Handle<Mesh>,
+    pub mesh_forbidden_transport_skirt: Handle<Mesh>,
+    pub mesh_forbidden_transport_marker: Handle<Mesh>,
+    pub mesh_forbidden_mover_chassis: Handle<Mesh>,
+    pub mesh_forbidden_mover_wedge: Handle<Mesh>,
+    pub mesh_forbidden_mover_headlamp: Handle<Mesh>,
+    pub mesh_forbidden_mover_strobe: Handle<Mesh>,
+    pub mat_forbidden_obs_steel: Handle<StandardMaterial>,
+    pub mat_forbidden_obs_concrete: Handle<StandardMaterial>,
+    pub mat_forbidden_obs_crimson: Handle<StandardMaterial>,
+    pub mat_forbidden_obs_amber: Handle<StandardMaterial>,
+    pub mat_forbidden_obs_cyan: Handle<StandardMaterial>,
 }
 
 #[derive(Resource, Default)]
@@ -307,6 +333,11 @@ pub struct EntityPool {
     pub sky_rail_towers: Vec<Entity>,
     pub sky_rail_cars: Vec<Entity>,
     pub sky_rail_trains: Vec<Entity>,
+    pub forbidden_barriers: Vec<Entity>,
+    pub forbidden_conduits: Vec<Entity>,
+    pub forbidden_pillars: Vec<Entity>,
+    pub forbidden_transports: Vec<Entity>,
+    pub forbidden_movers: Vec<Entity>,
     pub fragments: Vec<Entity>,
     pub data_chips: Vec<Entity>,
     pub powerups: Vec<Entity>,
@@ -340,6 +371,11 @@ impl EntityPool {
             PoolType::SkyRailSignalTower => self.sky_rail_towers.pop(),
             PoolType::SkyRailDerelictMagCar => self.sky_rail_cars.pop(),
             PoolType::SkyRailMagTrain => self.sky_rail_trains.pop(),
+            PoolType::ForbiddenQuarantineBarrier => self.forbidden_barriers.pop(),
+            PoolType::ForbiddenConduitBundle => self.forbidden_conduits.pop(),
+            PoolType::ForbiddenContainmentPillar => self.forbidden_pillars.pop(),
+            PoolType::ForbiddenFacilityTransport => self.forbidden_transports.pop(),
+            PoolType::ForbiddenHeavyMover => self.forbidden_movers.pop(),
             PoolType::EchoFragment => self.fragments.pop(),
             PoolType::DataChip => self.data_chips.pop(),
             PoolType::PowerUp => self.powerups.pop(),
@@ -373,6 +409,11 @@ impl EntityPool {
             PoolType::SkyRailSignalTower => self.sky_rail_towers.push(entity),
             PoolType::SkyRailDerelictMagCar => self.sky_rail_cars.push(entity),
             PoolType::SkyRailMagTrain => self.sky_rail_trains.push(entity),
+            PoolType::ForbiddenQuarantineBarrier => self.forbidden_barriers.push(entity),
+            PoolType::ForbiddenConduitBundle => self.forbidden_conduits.push(entity),
+            PoolType::ForbiddenContainmentPillar => self.forbidden_pillars.push(entity),
+            PoolType::ForbiddenFacilityTransport => self.forbidden_transports.push(entity),
+            PoolType::ForbiddenHeavyMover => self.forbidden_movers.push(entity),
             PoolType::EchoFragment => self.fragments.push(entity),
             PoolType::DataChip => self.data_chips.push(entity),
             PoolType::PowerUp => self.powerups.push(entity),
@@ -405,6 +446,11 @@ impl EntityPool {
             + self.sky_rail_towers.len()
             + self.sky_rail_cars.len()
             + self.sky_rail_trains.len()
+            + self.forbidden_barriers.len()
+            + self.forbidden_conduits.len()
+            + self.forbidden_pillars.len()
+            + self.forbidden_transports.len()
+            + self.forbidden_movers.len()
             + self.fragments.len()
             + self.data_chips.len()
             + self.powerups.len()
@@ -1040,6 +1086,62 @@ fn init_pool_assets(
         mat_sky_obs_red_beacon: materials.add(StandardMaterial {
             base_color: Color::srgb(0.90, 0.06, 0.06),
             emissive: LinearRgba::new(2.4, 0.12, 0.08, 1.0),
+            ..default()
+        }),
+
+        // Zone 6 Forbidden Line Dedicated Obstacles
+        mesh_forbidden_gate_frame: meshes.add(Cuboid::new(2.10, 0.85, 0.35)),
+        mesh_forbidden_gate_plate: meshes.add(Cuboid::new(1.88, 0.60, 0.12)),
+        mesh_forbidden_gate_strobe: meshes.add(Sphere::new(0.12)),
+        mesh_forbidden_gate_hazard_stripe: meshes.add(Cuboid::new(1.78, 0.10, 0.04)),
+
+        mesh_forbidden_conduit_bracket: meshes.add(Cuboid::new(2.24, 0.22, 0.35)),
+        mesh_forbidden_conduit_core: meshes.add(Cuboid::new(2.18, 0.28, 0.22)),
+        mesh_forbidden_conduit_spark: meshes.add(Sphere::new(0.08)),
+
+        mesh_forbidden_pillar_shaft: meshes.add(Cuboid::new(1.78, 3.95, 1.18)),
+        mesh_forbidden_pillar_rib: meshes.add(Cuboid::new(1.98, 3.80, 0.22)),
+        mesh_forbidden_pillar_collar: meshes.add(Cuboid::new(2.05, 0.40, 1.35)),
+        mesh_forbidden_pillar_beacon: meshes.add(Sphere::new(0.15)),
+
+        mesh_forbidden_transport_chassis: meshes.add(Cuboid::new(2.18, 2.45, 11.8)),
+        mesh_forbidden_transport_nose: meshes.add(Cuboid::new(2.08, 1.95, 1.8)),
+        mesh_forbidden_transport_skirt: meshes.add(Cuboid::new(0.12, 0.25, 11.2)),
+        mesh_forbidden_transport_marker: meshes.add(Sphere::new(0.16)),
+
+        mesh_forbidden_mover_chassis: meshes.add(Cuboid::new(2.18, 2.45, 13.8)),
+        mesh_forbidden_mover_wedge: meshes.add(Cuboid::new(2.10, 2.15, 2.2)),
+        mesh_forbidden_mover_headlamp: meshes.add(Cuboid::new(0.35, 0.22, 0.12)),
+        mesh_forbidden_mover_strobe: meshes.add(Sphere::new(0.16)),
+
+        mat_forbidden_obs_steel: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.08, 0.08, 0.10),
+            metallic: 0.88,
+            perceptual_roughness: 0.32,
+            ..default()
+        }),
+        mat_forbidden_obs_concrete: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.12, 0.12, 0.15),
+            metallic: 0.12,
+            perceptual_roughness: 0.88,
+            ..default()
+        }),
+        mat_forbidden_obs_crimson: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.92, 0.04, 0.08),
+            emissive: LinearRgba::new(3.8, 0.08, 0.14, 1.0),
+            perceptual_roughness: 0.20,
+            ..default()
+        }),
+        mat_forbidden_obs_amber: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.95, 0.55, 0.04),
+            emissive: LinearRgba::new(2.4, 1.1, 0.05, 1.0),
+            perceptual_roughness: 0.25,
+            ..default()
+        }),
+        mat_forbidden_obs_cyan: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.06, 0.55, 0.75),
+            emissive: LinearRgba::new(0.08, 2.0, 2.4, 1.0),
+            perceptual_roughness: 0.18,
             ..default()
         }),
     };

@@ -7,7 +7,7 @@ pub struct DebugStartPreset {
     pub distance: f32,
 }
 
-pub const DEBUG_START_PRESETS: [DebugStartPreset; 20] = [
+pub const DEBUG_START_PRESETS: [DebugStartPreset; 25] = [
     DebugStartPreset {
         label: "NORMAL RUN",
         distance: 0.0,
@@ -81,8 +81,28 @@ pub const DEBUG_START_PRESETS: [DebugStartPreset; 20] = [
         distance: 9650.0,
     },
     DebugStartPreset {
-        label: "ZONE 6 // FORBIDDEN 10000M",
+        label: "ZONE 6 // QUARANTINE 10000M",
         distance: 10000.0,
+    },
+    DebugStartPreset {
+        label: "ZONE 6 // RESTRICTED 10450M",
+        distance: 10450.0,
+    },
+    DebugStartPreset {
+        label: "ZONE 6 // FRACTURE 10850M",
+        distance: 10850.0,
+    },
+    DebugStartPreset {
+        label: "ZONE 6 // GROUND ZERO 11350M",
+        distance: 11350.0,
+    },
+    DebugStartPreset {
+        label: "ZONE 6 // FINAL CONTAINMENT 11800M",
+        distance: 11800.0,
+    },
+    DebugStartPreset {
+        label: "ZONE 6 // THRESHOLD 11960M",
+        distance: 11960.0,
     },
     DebugStartPreset {
         label: "ZONE 7 // ECHO CORE 12000M",
@@ -110,7 +130,7 @@ pub fn preset_for_zone_id(zone_id: usize) -> usize {
         4 => 12,
         5 => 13,
         6 => 18,
-        7 => 19,
+        7 => 24,
         _ => 0,
     }
 }
@@ -139,8 +159,8 @@ pub fn preset_for_zone_str(s: &str) -> Option<usize> {
         "3" | "zone3" | "zone-3" | "industrial" => Some(7),
         "4" | "zone4" | "zone-4" | "flooded" | "floodedmetro" => Some(12),
         "5" | "zone5" | "zone-5" | "sky" | "skyrail" | "sky-rail" => Some(13),
-        "6" | "zone6" | "zone-6" | "forbidden" => Some(18),
-        "7" | "zone7" | "zone-7" | "echo" | "echocore" => Some(19),
+        "6" | "zone6" | "zone-6" | "forbidden" | "forbiddenline" | "forbidden-line" => Some(18),
+        "7" | "zone7" | "zone-7" | "echo" | "echocore" => Some(24),
         _ => {
             if let Ok(num) = clean.parse::<usize>() {
                 if (1..=7).contains(&num) {
@@ -160,8 +180,8 @@ pub fn preset_for_positional_zone(arg: &str) -> Option<usize> {
         "3" | "zone3" | "zone-3" => Some(7),
         "4" | "zone4" | "zone-4" => Some(12),
         "5" | "zone5" | "zone-5" | "skyrail" => Some(13),
-        "6" | "zone6" | "zone-6" => Some(18),
-        "7" | "zone7" | "zone-7" => Some(19),
+        "6" | "zone6" | "zone-6" | "forbidden" => Some(18),
+        "7" | "zone7" | "zone-7" => Some(24),
         _ => None,
     }
 }
@@ -298,6 +318,10 @@ impl DebugStartConfig {
                 selected_preset = preset_for_zone_id(2);
                 autostart = true;
                 explicit_selection = true;
+            } else if lower == "--forbidden" || lower == "--forbidden-line" {
+                selected_preset = preset_for_zone_id(6);
+                autostart = true;
+                explicit_selection = true;
             } else if lower == "--metro" {
                 selected_preset = preset_for_zone_id(1);
                 autostart = true;
@@ -392,7 +416,8 @@ mod tests {
             distances,
             vec![
                 0.0, 0.0, 1000.0, 1800.0, 2000.0, 3000.0, 3800.0, 4000.0, 4500.0, 5100.0, 5500.0,
-                5850.0, 6000.0, 8000.0, 8300.0, 8700.0, 9200.0, 9650.0, 10000.0, 12000.0
+                5850.0, 6000.0, 8000.0, 8300.0, 8700.0, 9200.0, 9650.0, 10000.0, 10450.0, 10850.0,
+                11350.0, 11800.0, 11960.0, 12000.0
             ]
         );
     }
@@ -413,12 +438,11 @@ mod tests {
 
     #[test]
     fn zone_six_and_seven_presets_resolve_correctly() {
+        for preset in &DEBUG_START_PRESETS[18..24] {
+            assert_eq!(get_zone_for_distance(preset.distance).id, 6);
+        }
         assert_eq!(
-            get_zone_for_distance(DEBUG_START_PRESETS[18].distance).id,
-            6
-        );
-        assert_eq!(
-            get_zone_for_distance(DEBUG_START_PRESETS[19].distance).id,
+            get_zone_for_distance(DEBUG_START_PRESETS[24].distance).id,
             7
         );
     }
@@ -512,5 +536,35 @@ mod tests {
         );
         assert_eq!(cfg.selected_preset, 0);
         assert!(!cfg.autostart);
+    }
+
+    #[test]
+    fn cli_args_zone_six_and_seven_selection() {
+        let cfg6 = DebugStartConfig::from_args_and_env(
+            vec!["runline".into(), "--zone".into(), "6".into()],
+            |_| None,
+        );
+        assert_eq!(cfg6.selected_preset, 18);
+        assert_eq!(cfg6.distance(), 10000.0);
+        assert_eq!(cfg6.zone_id(), 6);
+        assert!(cfg6.autostart);
+
+        let cfg6_flag = DebugStartConfig::from_args_and_env(
+            vec!["runline".into(), "--forbidden".into()],
+            |_| None,
+        );
+        assert_eq!(cfg6_flag.selected_preset, 18);
+        assert_eq!(cfg6_flag.distance(), 10000.0);
+        assert_eq!(cfg6_flag.zone_id(), 6);
+        assert!(cfg6_flag.autostart);
+
+        let cfg7 = DebugStartConfig::from_args_and_env(
+            vec!["runline".into(), "--zone".into(), "7".into()],
+            |_| None,
+        );
+        assert_eq!(cfg7.selected_preset, 24);
+        assert_eq!(cfg7.distance(), 12000.0);
+        assert_eq!(cfg7.zone_id(), 7);
+        assert!(cfg7.autostart);
     }
 }

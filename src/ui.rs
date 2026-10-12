@@ -354,7 +354,8 @@ fn setup_main_menu(
                         ("ZONE 3 // INDUSTRIAL SECTOR", 7, 12),
                         ("ZONE 4 // FLOODED METRO", 12, 13),
                         ("ZONE 5 // SKY RAIL", 13, 18),
-                        ("ZONE 6 & 7 // CORE ANOMALY", 18, 20),
+                        ("ZONE 6 // THE FORBIDDEN LINE", 18, 24),
+                        ("ZONE 7 // ECHO CORE", 24, 25),
                     ];
 
                     for &(group_label, start, end) in &debug_groups {
