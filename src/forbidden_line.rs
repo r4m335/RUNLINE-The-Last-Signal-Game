@@ -117,6 +117,9 @@ pub struct ForbiddenLineAssets {
 
     // Containment Architecture & Bunker Shell
     pub mesh_bunker_wall: Handle<Mesh>,
+    pub mesh_bunker_wall_short: Handle<Mesh>,
+    pub mesh_observation_lintel: Handle<Mesh>,
+    pub mesh_alcove_railing: Handle<Mesh>,
     pub mesh_wall_rib: Handle<Mesh>,
     pub mesh_vault_rib: Handle<Mesh>,
     pub mesh_bulkhead_girder: Handle<Mesh>,
@@ -127,6 +130,26 @@ pub struct ForbiddenLineAssets {
     pub mesh_warning_lens: Handle<Mesh>,
     pub mesh_hydraulic_ram: Handle<Mesh>,
     pub mesh_interlock_panel: Handle<Mesh>,
+
+    // Distant Subterranean Facility & Cavern Depth
+    pub mesh_bg_cavern_arch: Handle<Mesh>,
+    pub mesh_bg_retaining_wall: Handle<Mesh>,
+    pub mesh_bg_rock_anchor: Handle<Mesh>,
+    pub mesh_bg_containment_silo: Handle<Mesh>,
+    pub mesh_bg_silo_cap: Handle<Mesh>,
+    pub mesh_bg_silo_cradle: Handle<Mesh>,
+    pub mesh_bg_catwalk_deck: Handle<Mesh>,
+    pub mesh_bg_catwalk_rail: Handle<Mesh>,
+    pub mesh_bg_catwalk_strut: Handle<Mesh>,
+    pub mesh_bg_transit_tube: Handle<Mesh>,
+    pub mesh_bg_reactor_trestle: Handle<Mesh>,
+    pub mesh_bg_substation_transformer: Handle<Mesh>,
+    pub mesh_bg_insulator_bushing: Handle<Mesh>,
+    pub mesh_bg_vent_trunk: Handle<Mesh>,
+    pub mesh_bg_vent_chimney: Handle<Mesh>,
+    pub mesh_bg_fracture_void_monolith: Handle<Mesh>,
+    pub mesh_bg_ground_zero_abyss: Handle<Mesh>,
+    pub mesh_bg_abyss_fissure_glow: Handle<Mesh>,
 
     // Trackside Machinery & Storytelling
     pub mesh_exhaust_fan_housing: Handle<Mesh>,
@@ -176,6 +199,9 @@ pub struct ForbiddenLineAssets {
     pub mat_laser_scanner_curtain: Handle<StandardMaterial>,
     pub mat_exposed_rebar: Handle<StandardMaterial>,
     pub mat_echo_singularity_crystal: Handle<StandardMaterial>,
+    pub mat_bg_cavern_rock: Handle<StandardMaterial>,
+    pub mat_bg_silo_steel: Handle<StandardMaterial>,
+    pub mat_bg_catwalk_grate: Handle<StandardMaterial>,
 }
 
 pub fn init_forbidden_line_assets(
@@ -200,6 +226,9 @@ pub fn init_forbidden_line_assets(
 
         // Containment Bunker Shell & Infrastructure
         mesh_bunker_wall: meshes.add(Cuboid::new(0.8, 7.6, length)),
+        mesh_bunker_wall_short: meshes.add(Cuboid::new(0.8, 7.6, 14.0)),
+        mesh_observation_lintel: meshes.add(Cuboid::new(0.8, 1.8, 12.0)),
+        mesh_alcove_railing: meshes.add(Cuboid::new(0.2, 1.1, 12.0)),
         mesh_wall_rib: meshes.add(Cuboid::new(1.3, 7.6, 1.1)),
         mesh_vault_rib: meshes.add(Cuboid::new(13.4, 0.65, 1.0)),
         mesh_bulkhead_girder: meshes.add(Cuboid::new(13.0, 0.85, 0.85)),
@@ -210,6 +239,26 @@ pub fn init_forbidden_line_assets(
         mesh_warning_lens: meshes.add(Sphere::new(0.16)),
         mesh_hydraulic_ram: meshes.add(Cylinder::new(0.18, 3.4)),
         mesh_interlock_panel: meshes.add(Cuboid::new(0.15, 3.2, 2.8)),
+
+        // Distant Subterranean Facility & Cavern Depth
+        mesh_bg_cavern_arch: meshes.add(Cuboid::new(34.0, 1.4, 1.8)),
+        mesh_bg_retaining_wall: meshes.add(Cuboid::new(1.2, 18.0, length)),
+        mesh_bg_rock_anchor: meshes.add(Cuboid::new(2.0, 18.0, 2.2)),
+        mesh_bg_containment_silo: meshes.add(Cylinder::new(2.4, 12.0)),
+        mesh_bg_silo_cap: meshes.add(Sphere::new(2.4)),
+        mesh_bg_silo_cradle: meshes.add(Cuboid::new(5.4, 1.8, 5.4)),
+        mesh_bg_catwalk_deck: meshes.add(Cuboid::new(1.6, 0.16, length)),
+        mesh_bg_catwalk_rail: meshes.add(Cuboid::new(0.08, 1.1, length)),
+        mesh_bg_catwalk_strut: meshes.add(Cuboid::new(0.3, 2.4, 0.3)),
+        mesh_bg_transit_tube: meshes.add(Cylinder::new(2.6, length)),
+        mesh_bg_reactor_trestle: meshes.add(Cuboid::new(1.6, 4.0, 1.6)),
+        mesh_bg_substation_transformer: meshes.add(Cuboid::new(3.2, 4.2, 4.8)),
+        mesh_bg_insulator_bushing: meshes.add(Cylinder::new(0.16, 1.8)),
+        mesh_bg_vent_trunk: meshes.add(Cylinder::new(0.45, length)),
+        mesh_bg_vent_chimney: meshes.add(Cylinder::new(0.9, 6.0)),
+        mesh_bg_fracture_void_monolith: meshes.add(Cuboid::new(2.2, 10.0, 2.2)),
+        mesh_bg_ground_zero_abyss: meshes.add(Cuboid::new(14.0, 0.4, length)),
+        mesh_bg_abyss_fissure_glow: meshes.add(Cuboid::new(1.8, 0.08, 16.0)),
 
         // Trackside Machinery & Storytelling
         mesh_exhaust_fan_housing: meshes.add(Cuboid::new(2.4, 2.4, 0.6)),
@@ -347,6 +396,27 @@ pub fn init_forbidden_line_assets(
             reflectance: 0.90,
             ..default()
         }),
+        mat_bg_cavern_rock: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.07, 0.07, 0.09),
+            metallic: 0.08,
+            perceptual_roughness: 0.94,
+            reflectance: 0.15,
+            ..default()
+        }),
+        mat_bg_silo_steel: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.12, 0.14, 0.16),
+            metallic: 0.82,
+            perceptual_roughness: 0.38,
+            reflectance: 0.65,
+            ..default()
+        }),
+        mat_bg_catwalk_grate: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.10, 0.10, 0.12),
+            metallic: 0.70,
+            perceptual_roughness: 0.55,
+            reflectance: 0.50,
+            ..default()
+        }),
     };
 
     commands.insert_resource(assets);
@@ -464,7 +534,10 @@ pub fn spawn_forbidden_line_segment(
             // 3. Fortified Underground Bunker Shell (Walls, Ribs & Bulkhead Vaults)
             spawn_bunker_shell(seg, fl, variant, length);
 
-            // 4. Chapter-Specific Visual Dressing & Environmental Storytelling
+            // 4. Distant Subterranean Facility Background & Overhead Excavation Vault
+            spawn_distant_facility_background(seg, fl, chapter, variant, distance);
+
+            // 5. Chapter-Specific Visual Dressing & Environmental Storytelling
             match chapter {
                 ForbiddenLineChapter::QuarantineApproach => {
                     spawn_quarantine_approach_dressing(seg, fl, variant);
@@ -483,7 +556,7 @@ pub fn spawn_forbidden_line_segment(
                 }
             }
 
-            // 5. Deterministic Hero Landmark (if active in this segment window)
+            // 6. Deterministic Hero Landmark (if active in this segment window)
             if landmark != ForbiddenLineLandmark::None {
                 spawn_forbidden_line_landmark(seg, fl, landmark);
             }
@@ -648,19 +721,101 @@ fn spawn_three_containment_lanes(
 // -------------------------------------------------------------
 
 fn spawn_bunker_shell(seg: &mut ChildBuilder, fl: &ForbiddenLineAssets, variant: u8, _length: f32) {
-    // Massive fortified sidewalls (left x = -5.8m, right x = +5.8m, height 7.6m)
-    seg.spawn(PbrBundle {
-        mesh: fl.mesh_bunker_wall.clone(),
-        material: fl.mat_reinforced_concrete_dark.clone(),
-        transform: Transform::from_xyz(-5.8, 3.8, 0.0),
-        ..default()
-    });
-    seg.spawn(PbrBundle {
-        mesh: fl.mesh_bunker_wall.clone(),
-        material: fl.mat_reinforced_concrete_dark.clone(),
-        transform: Transform::from_xyz(5.8, 3.8, 0.0),
-        ..default()
-    });
+    // Fortified Sidewalls:
+    // Variant 0: Left side has a 12m observation embrasure, right side solid bunker wall.
+    // Variant 1: Continuous fortified sidewalls on both flanks (heavy security corridor).
+    // Variant 2: Left side solid bunker wall, right side has a 12m observation embrasure.
+    match variant {
+        0 => {
+            // Left side observation embrasure (z in [-6.0, 6.0] open to lateral facility bay)
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_bunker_wall_short.clone(),
+                material: fl.mat_reinforced_concrete_dark.clone(),
+                transform: Transform::from_xyz(-5.8, 3.8, -13.0),
+                ..default()
+            });
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_bunker_wall_short.clone(),
+                material: fl.mat_reinforced_concrete_dark.clone(),
+                transform: Transform::from_xyz(-5.8, 3.8, 13.0),
+                ..default()
+            });
+            // Reinforced lintel over opening
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_observation_lintel.clone(),
+                material: fl.mat_reinforced_concrete_dark.clone(),
+                transform: Transform::from_xyz(-5.8, 6.7, 0.0),
+                ..default()
+            });
+            // Low safety balustrade along opening
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_alcove_railing.clone(),
+                material: fl.mat_containment_black_steel.clone(),
+                transform: Transform::from_xyz(-5.8, 0.55, 0.0),
+                ..default()
+            });
+
+            // Right side solid wall
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_bunker_wall.clone(),
+                material: fl.mat_reinforced_concrete_dark.clone(),
+                transform: Transform::from_xyz(5.8, 3.8, 0.0),
+                ..default()
+            });
+        }
+        2 => {
+            // Left side solid wall
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_bunker_wall.clone(),
+                material: fl.mat_reinforced_concrete_dark.clone(),
+                transform: Transform::from_xyz(-5.8, 3.8, 0.0),
+                ..default()
+            });
+
+            // Right side observation embrasure (z in [-6.0, 6.0] open to secondary transit tube)
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_bunker_wall_short.clone(),
+                material: fl.mat_reinforced_concrete_dark.clone(),
+                transform: Transform::from_xyz(5.8, 3.8, -13.0),
+                ..default()
+            });
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_bunker_wall_short.clone(),
+                material: fl.mat_reinforced_concrete_dark.clone(),
+                transform: Transform::from_xyz(5.8, 3.8, 13.0),
+                ..default()
+            });
+            // Reinforced lintel over opening
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_observation_lintel.clone(),
+                material: fl.mat_reinforced_concrete_dark.clone(),
+                transform: Transform::from_xyz(5.8, 6.7, 0.0),
+                ..default()
+            });
+            // Low safety balustrade along opening
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_alcove_railing.clone(),
+                material: fl.mat_containment_black_steel.clone(),
+                transform: Transform::from_xyz(5.8, 0.55, 0.0),
+                ..default()
+            });
+        }
+        _ => {
+            // Variant 1: Continuous fortified sidewalls on both flanks
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_bunker_wall.clone(),
+                material: fl.mat_reinforced_concrete_dark.clone(),
+                transform: Transform::from_xyz(-5.8, 3.8, 0.0),
+                ..default()
+            });
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_bunker_wall.clone(),
+                material: fl.mat_reinforced_concrete_dark.clone(),
+                transform: Transform::from_xyz(5.8, 3.8, 0.0),
+                ..default()
+            });
+        }
+    }
 
     // Vertical structural bunker buttresses & ceiling crossbeams at z = -14.0, 0.0, +14.0
     for z in [-14.0, 0.0, 14.0] {
@@ -750,7 +905,453 @@ fn spawn_bunker_shell(seg: &mut ChildBuilder, fl: &ForbiddenLineAssets, variant:
 }
 
 // -------------------------------------------------------------
-// 4. CHAPTER DRESSINGS & ENVIRONMENTAL STORYTELLING
+// 4. DISTANT SUBTERRANEAN FACILITY BACKGROUND & CAVERN DEPTH
+// -------------------------------------------------------------
+
+fn spawn_distant_facility_background(
+    seg: &mut ChildBuilder,
+    fl: &ForbiddenLineAssets,
+    chapter: ForbiddenLineChapter,
+    variant: u8,
+    _distance: f32,
+) {
+    // -------------------------------------------------------------
+    // A. COLOSSAL OVERHEAD CAVERN VAULT & EXCAVATION ARCHES (y >= 10.0m)
+    // -------------------------------------------------------------
+    // Heavy excavation arches spanning 34m across the subterranean cavern
+    for z in [-12.0, 12.0] {
+        seg.spawn(PbrBundle {
+            mesh: fl.mesh_bg_cavern_arch.clone(),
+            material: fl.mat_containment_black_steel.clone(),
+            transform: Transform::from_xyz(0.0, 11.8, z),
+            ..default()
+        });
+    }
+
+    // Overhead high-volume ventilation trunks running along cavern shoulders
+    seg.spawn(PbrBundle {
+        mesh: fl.mesh_bg_vent_trunk.clone(),
+        material: fl.mat_hydraulic_steel.clone(),
+        transform: Transform::from_xyz(-4.6, 10.2, 0.0)
+            .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
+        ..default()
+    });
+    seg.spawn(PbrBundle {
+        mesh: fl.mesh_bg_vent_trunk.clone(),
+        material: fl.mat_hydraulic_steel.clone(),
+        transform: Transform::from_xyz(4.6, 10.2, 0.0)
+            .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
+        ..default()
+    });
+
+    // Vertical ventilation chimney shafts ascending into deep bedrock ceiling
+    if variant != 1 {
+        seg.spawn(PbrBundle {
+            mesh: fl.mesh_bg_vent_chimney.clone(),
+            material: fl.mat_containment_black_steel.clone(),
+            transform: Transform::from_xyz(-7.5, 13.0, 0.0),
+            ..default()
+        });
+        seg.spawn(PbrBundle {
+            mesh: fl.mesh_bg_vent_chimney.clone(),
+            material: fl.mat_containment_black_steel.clone(),
+            transform: Transform::from_xyz(7.5, 13.0, 0.0),
+            ..default()
+        });
+    }
+
+    // -------------------------------------------------------------
+    // B. UPPER OBSERVATION CATWALK GALLERIES (y = 8.8m, |x| = 7.2m)
+    // -------------------------------------------------------------
+    // High-level catwalk decks overlooking the containment transit line
+    for x_side in [-7.2, 7.2] {
+        seg.spawn(PbrBundle {
+            mesh: fl.mesh_bg_catwalk_deck.clone(),
+            material: fl.mat_bg_catwalk_grate.clone(),
+            transform: Transform::from_xyz(x_side, 8.8, 0.0),
+            ..default()
+        });
+
+        // Inner & outer safety handrails
+        seg.spawn(PbrBundle {
+            mesh: fl.mesh_bg_catwalk_rail.clone(),
+            material: fl.mat_containment_black_steel.clone(),
+            transform: Transform::from_xyz(x_side - 0.76, 9.4, 0.0),
+            ..default()
+        });
+        seg.spawn(PbrBundle {
+            mesh: fl.mesh_bg_catwalk_rail.clone(),
+            material: fl.mat_containment_black_steel.clone(),
+            transform: Transform::from_xyz(x_side + 0.76, 9.4, 0.0),
+            ..default()
+        });
+
+        // 45-degree angled support struts connecting catwalk underside to walls
+        for z in [-14.0, 0.0, 14.0] {
+            let strut_rot = if x_side < 0.0 { -0.785 } else { 0.785 };
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_bg_catwalk_strut.clone(),
+                material: fl.mat_hydraulic_steel.clone(),
+                transform: Transform::from_xyz(
+                    x_side + (if x_side < 0.0 { 0.6 } else { -0.6 }),
+                    7.8,
+                    z,
+                )
+                .with_rotation(Quat::from_rotation_z(strut_rot)),
+                ..default()
+            });
+
+            // Amber service maintenance lights on catwalk stations
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_warning_lens.clone(),
+                material: fl.mat_amber_hazard.clone(),
+                transform: Transform::from_xyz(x_side, 9.6, z),
+                ..default()
+            });
+        }
+    }
+
+    // -------------------------------------------------------------
+    // C. DISTANT CAVERN PERIMETER RETAINING WALLS (|x| = 20.0m)
+    // -------------------------------------------------------------
+    // Left retaining wall (always solid reinforced bedrock facing)
+    seg.spawn(PbrBundle {
+        mesh: fl.mesh_bg_retaining_wall.clone(),
+        material: fl.mat_bg_cavern_rock.clone(),
+        transform: Transform::from_xyz(-20.0, 9.0, 0.0),
+        ..default()
+    });
+
+    // Massive rock stabilization pilasters at intervals on left perimeter
+    for z in [-14.0, 0.0, 14.0] {
+        seg.spawn(PbrBundle {
+            mesh: fl.mesh_bg_rock_anchor.clone(),
+            material: fl.mat_reinforced_concrete_dark.clone(),
+            transform: Transform::from_xyz(-19.2, 9.0, z),
+            ..default()
+        });
+    }
+
+    // Right retaining wall: in Chapter 4 (Ground Zero), it is breached by an abyss!
+    if chapter == ForbiddenLineChapter::GroundZero {
+        // Deep subterranean rift / abyss floor plunging 4.5m below track level
+        seg.spawn(PbrBundle {
+            mesh: fl.mesh_bg_ground_zero_abyss.clone(),
+            material: fl.mat_reinforced_concrete_dark.clone(),
+            transform: Transform::from_xyz(18.0, -4.5, 0.0),
+            ..default()
+        });
+        // Molten glowing cyan/crimson subterranean rift fissure in the abyss
+        seg.spawn(PbrBundle {
+            mesh: fl.mesh_bg_abyss_fissure_glow.clone(),
+            material: fl.mat_cyan_echo_anomaly.clone(),
+            transform: Transform::from_xyz(17.5, -4.25, 0.0)
+                .with_rotation(Quat::from_rotation_y(0.18)),
+            ..default()
+        });
+        // Fractured rock anchors jutting into the breach
+        seg.spawn(PbrBundle {
+            mesh: fl.mesh_bg_rock_anchor.clone(),
+            material: fl.mat_rubble_concrete.clone(),
+            transform: Transform::from_xyz(22.0, 4.0, -10.0)
+                .with_rotation(Quat::from_rotation_z(-0.35)),
+            ..default()
+        });
+    } else {
+        // Standard distant perimeter retaining wall on right flank
+        seg.spawn(PbrBundle {
+            mesh: fl.mesh_bg_retaining_wall.clone(),
+            material: fl.mat_bg_cavern_rock.clone(),
+            transform: Transform::from_xyz(20.0, 9.0, 0.0),
+            ..default()
+        });
+        for z in [-14.0, 0.0, 14.0] {
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_bg_rock_anchor.clone(),
+                material: fl.mat_reinforced_concrete_dark.clone(),
+                transform: Transform::from_xyz(19.2, 9.0, z),
+                ..default()
+            });
+        }
+    }
+
+    // -------------------------------------------------------------
+    // D. LATERAL FACILITY BAYS & INDUSTRIAL INFRASTRUCTURE
+    // -------------------------------------------------------------
+    match variant {
+        0 => {
+            // Left flank: Massive Cryogenic Storage Silo Yard
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_bg_containment_silo.clone(),
+                material: fl.mat_bg_silo_steel.clone(),
+                transform: Transform::from_xyz(-14.2, 6.0, 0.0),
+                ..default()
+            });
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_bg_silo_cap.clone(),
+                material: fl.mat_bg_silo_steel.clone(),
+                transform: Transform::from_xyz(-14.2, 12.0, 0.0),
+                ..default()
+            });
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_bg_silo_cradle.clone(),
+                material: fl.mat_reinforced_concrete_dark.clone(),
+                transform: Transform::from_xyz(-14.2, 0.9, 0.0),
+                ..default()
+            });
+            // Coolant manifold pipe & pressure indicator
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_coolant_pipe.clone(),
+                material: fl.mat_coolant_cryo_pipe.clone(),
+                transform: Transform::from_xyz(-11.4, 4.2, 0.0)
+                    .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
+                ..default()
+            });
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_warning_lens.clone(),
+                material: fl.mat_crimson_warning_glow.clone(),
+                transform: Transform::from_xyz(-11.8, 6.5, 0.0),
+                ..default()
+            });
+
+            // Right flank: High-Voltage Electrical Substation Yard
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_bg_substation_transformer.clone(),
+                material: fl.mat_containment_black_steel.clone(),
+                transform: Transform::from_xyz(12.5, 2.1, 0.0),
+                ..default()
+            });
+            // Ceramic insulator bushings atop transformer
+            for z_bush in [-1.4, 0.0, 1.4] {
+                seg.spawn(PbrBundle {
+                    mesh: fl.mesh_bg_insulator_bushing.clone(),
+                    material: fl.mat_hydraulic_steel.clone(),
+                    transform: Transform::from_xyz(12.5, 5.1, z_bush),
+                    ..default()
+                });
+                seg.spawn(PbrBundle {
+                    mesh: fl.mesh_warning_lens.clone(),
+                    material: fl.mat_crimson_warning_glow.clone(),
+                    transform: Transform::from_xyz(12.5, 6.1, z_bush),
+                    ..default()
+                });
+            }
+        }
+        1 => {
+            // Right flank: Secondary Parallel Transit Tube
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_bg_transit_tube.clone(),
+                material: fl.mat_containment_black_steel.clone(),
+                transform: Transform::from_xyz(15.5, 3.8, 0.0)
+                    .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
+                ..default()
+            });
+            // Heavy concrete trestle pylons supporting parallel tube
+            for z in [-12.0, 12.0] {
+                seg.spawn(PbrBundle {
+                    mesh: fl.mesh_bg_reactor_trestle.clone(),
+                    material: fl.mat_reinforced_concrete_dark.clone(),
+                    transform: Transform::from_xyz(15.5, 1.2, z),
+                    ..default()
+                });
+            }
+            // Amber hazard running lights along parallel transit tube
+            for z in [-10.0, 0.0, 10.0] {
+                seg.spawn(PbrBundle {
+                    mesh: fl.mesh_warning_lens.clone(),
+                    material: fl.mat_amber_hazard.clone(),
+                    transform: Transform::from_xyz(12.8, 4.0, z),
+                    ..default()
+                });
+            }
+
+            // Left flank: Industrial capacitor banks and power distribution racks
+            for z in [-8.0, 8.0] {
+                seg.spawn(PbrBundle {
+                    mesh: fl.mesh_capacitor_tower.clone(),
+                    material: fl.mat_containment_black_steel.clone(),
+                    transform: Transform::from_xyz(-13.0, 2.0, z),
+                    ..default()
+                });
+            }
+        }
+        _ => {
+            // Variant 2: Industrial Logistics & Twin Pressurized Vessels
+            for z_silo in [-9.0, 9.0] {
+                seg.spawn(PbrBundle {
+                    mesh: fl.mesh_bg_containment_silo.clone(),
+                    material: fl.mat_bg_silo_steel.clone(),
+                    transform: Transform::from_xyz(-14.5, 6.0, z_silo),
+                    ..default()
+                });
+                seg.spawn(PbrBundle {
+                    mesh: fl.mesh_bg_silo_cap.clone(),
+                    material: fl.mat_bg_silo_steel.clone(),
+                    transform: Transform::from_xyz(-14.5, 12.0, z_silo),
+                    ..default()
+                });
+            }
+            // Interconnecting overhead transfer manifold between twin silos
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_coolant_pipe.clone(),
+                material: fl.mat_coolant_cryo_pipe.clone(),
+                transform: Transform::from_xyz(-14.5, 8.5, 0.0),
+                ..default()
+            });
+
+            // Right flank: Elevated crane gantry beam & logistics platform
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_bulkhead_girder.clone(),
+                material: fl.mat_armoured_panel.clone(),
+                transform: Transform::from_xyz(14.0, 7.2, 0.0),
+                ..default()
+            });
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_bg_reactor_trestle.clone(),
+                material: fl.mat_reinforced_concrete_dark.clone(),
+                transform: Transform::from_xyz(14.0, 3.6, -12.0),
+                ..default()
+            });
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_bg_reactor_trestle.clone(),
+                material: fl.mat_reinforced_concrete_dark.clone(),
+                transform: Transform::from_xyz(14.0, 3.6, 12.0),
+                ..default()
+            });
+        }
+    }
+
+    // -------------------------------------------------------------
+    // E. CHAPTER-SPECIFIC DISTANT SPECTACLE
+    // -------------------------------------------------------------
+    match chapter {
+        ForbiddenLineChapter::QuarantineApproach => {
+            // Elevated sentry observation watchtower on far left perimeter
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_bg_reactor_trestle.clone(),
+                material: fl.mat_reinforced_concrete_dark.clone(),
+                transform: Transform::from_xyz(-16.0, 4.0, 0.0),
+                ..default()
+            });
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_checkpoint_pillbox.clone(),
+                material: fl.mat_containment_black_steel.clone(),
+                transform: Transform::from_xyz(-16.0, 7.8, 0.0),
+                ..default()
+            });
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_warning_lens.clone(),
+                material: fl.mat_amber_hazard.clone(),
+                transform: Transform::from_xyz(-14.6, 8.2, 0.0),
+                ..default()
+            });
+        }
+        ForbiddenLineChapter::RestrictedTransit => {
+            // High-level automated overhead hoist beam suspended in cavern vault
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_bulkhead_girder.clone(),
+                material: fl.mat_containment_black_steel.clone(),
+                transform: Transform::from_xyz(0.0, 10.8, 0.0),
+                ..default()
+            });
+            // Crane hoist trolley pod with warning indicator
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_security_pod.clone(),
+                material: fl.mat_armoured_panel.clone(),
+                transform: Transform::from_xyz(-2.5, 10.2, 0.0),
+                ..default()
+            });
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_warning_lens.clone(),
+                material: fl.mat_crimson_warning_glow.clone(),
+                transform: Transform::from_xyz(-2.5, 9.9, 0.0),
+                ..default()
+            });
+        }
+        ForbiddenLineChapter::RealityFracture => {
+            // Distant anomalous geometric monoliths hovering askew in the high cavern void
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_bg_fracture_void_monolith.clone(),
+                material: fl.mat_containment_black_steel.clone(),
+                transform: Transform::from_xyz(-16.5, 11.5, -4.0).with_rotation(Quat::from_euler(
+                    EulerRot::YXZ,
+                    0.45,
+                    0.25,
+                    0.18,
+                )),
+                ..default()
+            });
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_spatial_fracture_shard.clone(),
+                material: fl.mat_cyan_echo_anomaly.clone(),
+                transform: Transform::from_xyz(-16.5, 12.0, -4.0),
+                ..default()
+            });
+
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_bg_fracture_void_monolith.clone(),
+                material: fl.mat_containment_black_steel.clone(),
+                transform: Transform::from_xyz(16.5, 10.0, 4.0).with_rotation(Quat::from_euler(
+                    EulerRot::YXZ,
+                    -0.35,
+                    -0.20,
+                    -0.25,
+                )),
+                ..default()
+            });
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_spatial_fracture_shard.clone(),
+                material: fl.mat_cyan_echo_anomaly.clone(),
+                transform: Transform::from_xyz(16.5, 10.5, 4.0),
+                ..default()
+            });
+        }
+        ForbiddenLineChapter::GroundZero => {
+            // Ruptured secondary silo tilting precariously into the breached abyss
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_bg_containment_silo.clone(),
+                material: fl.mat_bg_silo_steel.clone(),
+                transform: Transform::from_xyz(15.0, 2.5, -6.0)
+                    .with_rotation(Quat::from_rotation_z(0.38)),
+                ..default()
+            });
+            // Catastrophic fracture rubble along abyss edge
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_ground_zero_rubble_slab.clone(),
+                material: fl.mat_rubble_concrete.clone(),
+                transform: Transform::from_xyz(14.0, 0.4, 6.0)
+                    .with_rotation(Quat::from_rotation_y(0.6)),
+                ..default()
+            });
+        }
+        ForbiddenLineChapter::FinalContainment => {
+            // Monumental perimeter hydraulic compression buttresses flanking the final approach
+            for x_pylon in [-16.0, 16.0] {
+                seg.spawn(PbrBundle {
+                    mesh: fl.mesh_bg_catwalk_strut.clone(),
+                    material: fl.mat_hydraulic_steel.clone(),
+                    transform: Transform::from_xyz(x_pylon, 6.0, 0.0)
+                        .with_scale(Vec3::new(2.8, 6.0, 2.8)),
+                    ..default()
+                });
+                // Double emergency lockdown strobe arrays on perimeter buttresses
+                seg.spawn(PbrBundle {
+                    mesh: fl.mesh_warning_lens.clone(),
+                    material: fl.mat_crimson_warning_glow.clone(),
+                    transform: Transform::from_xyz(
+                        x_pylon + (if x_pylon < 0.0 { 1.2 } else { -1.2 }),
+                        9.0,
+                        0.0,
+                    ),
+                    ..default()
+                });
+            }
+        }
+    }
+}
+
+// -------------------------------------------------------------
+// 5. CHAPTER DRESSINGS & ENVIRONMENTAL STORYTELLING
 // -------------------------------------------------------------
 
 /// Chapter 1: Quarantine Approach (10,000–10,300m)
@@ -1699,5 +2300,62 @@ mod tests {
                 pulse_factor
             );
         }
+    }
+
+    #[test]
+    fn test_forbidden_line_background_geometry_clearance() {
+        // Player running bounds
+        let left_lane_x = Lane::from_index(-1).x_pos(); // -2.4m
+        let right_lane_x = Lane::from_index(1).x_pos(); // +2.4m
+        let outer_curb_x = 4.6;
+        let max_jump_height = 2.5;
+
+        // Verify sidewall containment clearance
+        let bunker_wall_x = 5.8;
+        assert!(
+            bunker_wall_x > outer_curb_x,
+            "Bunker sidewall ({}m) must be outside outer track curb ({}m)",
+            bunker_wall_x,
+            outer_curb_x
+        );
+        assert!(
+            (bunker_wall_x - right_lane_x).abs() >= 3.0,
+            "Bunker wall must maintain at least 3.0m clearance from lane centers"
+        );
+
+        // Verify upper background catwalk clearance
+        let catwalk_y = 8.8;
+        assert!(
+            catwalk_y > max_jump_height + 4.0,
+            "Catwalk gallery ({}m) must be far above player jump envelope ({}m)",
+            catwalk_y,
+            max_jump_height
+        );
+
+        // Verify overhead excavation cavern arch clearance
+        let cavern_arch_y = 11.8;
+        assert!(
+            cavern_arch_y > catwalk_y,
+            "Cavern vault arch ({}m) must tower above upper catwalk ({}m)",
+            cavern_arch_y,
+            catwalk_y
+        );
+
+        // Verify lateral facility bays clearance
+        let min_lateral_facility_x = 12.0;
+        assert!(
+            min_lateral_facility_x > bunker_wall_x + 5.0,
+            "Lateral facility structures ({}m) must sit deep beyond the bunker wall ({}m)",
+            min_lateral_facility_x,
+            bunker_wall_x
+        );
+
+        // Verify distant retaining wall perimeter clearance
+        let retaining_wall_x = 20.0;
+        assert!(
+            retaining_wall_x >= min_lateral_facility_x + 6.0,
+            "Perimeter retaining wall ({}m) must frame the outermost excavation boundary",
+            retaining_wall_x
+        );
     }
 }
