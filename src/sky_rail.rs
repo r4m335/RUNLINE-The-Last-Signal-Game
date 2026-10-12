@@ -81,6 +81,14 @@ pub struct SkyRailDistantTrain {
     pub max_local_z: f32,
 }
 
+#[derive(Component, Debug, Clone)]
+pub struct SkyRailDistantDrone {
+    pub base_pos: Vec3,
+    pub hover_speed: f32,
+    pub hover_radius: f32,
+    pub phase: f32,
+}
+
 #[derive(Resource, Debug)]
 pub struct SkyRailStormState {
     pub flash_timer: f32,
@@ -216,6 +224,14 @@ pub struct SkyRailAssets {
     pub mesh_cloud_strata_low: Handle<Mesh>,
     pub mesh_cloud_ceiling_storm: Handle<Mesh>,
 
+    // Micro-Infrastructure & Atmospheric Detailing Meshes
+    pub mesh_micro_junction_box: Handle<Mesh>,
+    pub mesh_micro_antenna_dish: Handle<Mesh>,
+    pub mesh_micro_drone_body: Handle<Mesh>,
+    pub mesh_micro_hanging_pod: Handle<Mesh>,
+    pub mesh_micro_weathered_patch: Handle<Mesh>,
+    pub mesh_cloud_wisps_small: Handle<Mesh>,
+
     // Track & Infrastructure Materials
     pub mat_sky_steel: Handle<StandardMaterial>,
     pub mat_sky_tread: Handle<StandardMaterial>,
@@ -250,6 +266,10 @@ pub struct SkyRailAssets {
     pub mat_sky_train_window: Handle<StandardMaterial>,
     pub mat_sky_window_warm: Handle<StandardMaterial>,
     pub mat_sky_lightning: Handle<StandardMaterial>,
+
+    // Micro-Infrastructure & Environmental Wear Materials
+    pub mat_sky_weathered_iron: Handle<StandardMaterial>,
+    pub mat_sky_cloud_wisp: Handle<StandardMaterial>,
 }
 
 pub fn init_sky_rail_assets(
@@ -371,6 +391,14 @@ pub fn init_sky_rail_assets(
         mesh_cloud_deck_vast: meshes.add(Cuboid::new(380.0, 12.0, 40.0)),
         mesh_cloud_strata_low: meshes.add(Cuboid::new(440.0, 14.0, 40.0)),
         mesh_cloud_ceiling_storm: meshes.add(Cuboid::new(360.0, 10.0, 40.0)),
+
+        // Micro-Infrastructure & Atmospheric Detailing Meshes
+        mesh_micro_junction_box: meshes.add(Cuboid::new(0.70, 0.85, 0.45)),
+        mesh_micro_antenna_dish: meshes.add(Cylinder::new(0.75, 0.15)),
+        mesh_micro_drone_body: meshes.add(Cuboid::new(1.10, 0.35, 1.30)),
+        mesh_micro_hanging_pod: meshes.add(Cuboid::new(2.20, 1.80, 2.20)),
+        mesh_micro_weathered_patch: meshes.add(Cuboid::new(1.40, 1.80, 0.08)),
+        mesh_cloud_wisps_small: meshes.add(Cuboid::new(70.0, 7.5, 30.0)),
 
         // Materials Palette
         mat_sky_steel: materials.add(StandardMaterial {
@@ -538,6 +566,22 @@ pub fn init_sky_rail_assets(
             base_color: Color::srgb(0.90, 0.96, 1.0),
             emissive: LinearRgba::new(0.0, 0.0, 0.0, 1.0),
             unlit: true,
+            ..default()
+        }),
+
+        // Micro-Infrastructure & Environmental Wear Materials
+        mat_sky_weathered_iron: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.18, 0.12, 0.09),
+            perceptual_roughness: 0.88,
+            metallic: 0.45,
+            emissive: LinearRgba::new(0.015, 0.008, 0.005, 1.0),
+            ..default()
+        }),
+        mat_sky_cloud_wisp: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.12, 0.16, 0.22),
+            perceptual_roughness: 0.96,
+            metallic: 0.0,
+            emissive: LinearRgba::new(0.018, 0.025, 0.038, 1.0),
             ..default()
         }),
     };
@@ -974,6 +1018,37 @@ fn spawn_cloud_abyss(seg: &mut ChildBuilder, sky: &SkyRailAssets) {
             phase: 3.4,
         },
     ));
+
+    // 5. Sparse Low-Poly Wispy Cloud Strata Crossing Behind Midground Structures
+    seg.spawn((
+        PbrBundle {
+            mesh: sky.mesh_cloud_wisps_small.clone(),
+            material: sky.mat_sky_cloud_wisp.clone(),
+            transform: Transform::from_xyz(-62.0, 6.0, 4.0),
+            ..default()
+        },
+        SkyRailDriftCloud {
+            base_x: -62.0,
+            amplitude: 6.0,
+            speed: 0.18,
+            phase: 0.8,
+        },
+    ));
+    seg.spawn((
+        PbrBundle {
+            mesh: sky.mesh_cloud_wisps_small.clone(),
+            material: sky.mat_sky_cloud_wisp.clone(),
+            transform: Transform::from_xyz(58.0, -8.0, -12.0)
+                .with_scale(Vec3::new(1.15, 0.85, 1.1)),
+            ..default()
+        },
+        SkyRailDriftCloud {
+            base_x: 58.0,
+            amplitude: 5.5,
+            speed: 0.21,
+            phase: 2.7,
+        },
+    ));
 }
 
 // -------------------------------------------------------------
@@ -1315,6 +1390,32 @@ fn spawn_midground_scenery(
                 ..default()
             });
 
+            // Suspended maintenance cradle / inspection pod underneath roadbed at y = 10.5m
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_micro_hanging_pod.clone(),
+                material: sky.mat_sky_midground_steel.clone(),
+                transform: Transform::from_xyz(-72.0, 10.5, 0.0),
+                ..default()
+            });
+            // Twin vertical suspension cables supporting hanging pod from roadbed
+            for dz in [-0.8, 0.8] {
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_suspension_cable_diag.clone(),
+                    material: sky.mat_sky_midground_steel.clone(),
+                    transform: Transform::from_xyz(-72.0, 15.2, dz)
+                        .with_scale(Vec3::new(1.0, 0.30, 1.0)),
+                    ..default()
+                });
+            }
+            // Tiny amber maintenance indicator underneath hanging pod
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_hazard_reflector.clone(),
+                material: sky.mat_sky_amber_glow.clone(),
+                transform: Transform::from_xyz(-72.0, 9.4, 0.0)
+                    .with_scale(Vec3::new(0.65, 0.65, 0.65)),
+                ..default()
+            });
+
             // Every 2 segments: Colossal suspension tower mast with diagonal stay-cable fans
             if seg_idx.rem_euclid(2) == 0 {
                 // Suspension tower mast rising 44m above bridge roadbed
@@ -1353,8 +1454,8 @@ fn spawn_midground_scenery(
                         ..default()
                     });
                 }
-            } else {
-                // Alternate segments: High-speed mag-train gliding on the suspension skyway
+            } else if distance >= 8160.0 && distance <= 8240.0 {
+                // Rare authored transit sighting: High-speed mag-train gliding on the suspension skyway
                 seg.spawn((
                     PbrBundle {
                         mesh: sky.mesh_distant_train_car.clone(),
@@ -1426,12 +1527,43 @@ fn spawn_midground_scenery(
                     .with_rotation(Quat::from_rotation_z(-0.45)),
                 ..default()
             });
+            // Wall-mounted electrical junction box on cantilever deck face with tiny cyan indicator
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_micro_junction_box.clone(),
+                material: sky.mat_sky_midground_steel.clone(),
+                transform: Transform::from_xyz(tower_x - 4.2, 23.2, 2.5),
+                ..default()
+            });
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_hazard_reflector.clone(),
+                material: sky.mat_sky_cyan_glow.clone(),
+                transform: Transform::from_xyz(tower_x - 4.6, 23.4, 2.5)
+                    .with_scale(Vec3::new(0.45, 0.45, 0.45)),
+                ..default()
+            });
+            // Diagonal support cable bracing tier 1 cantilever deck corner back to tower
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_suspension_cable_diag.clone(),
+                material: sky.mat_sky_midground_steel.clone(),
+                transform: Transform::from_xyz(tower_x - 6.0, 26.5, 5.0)
+                    .with_rotation(Quat::from_rotation_z(-0.35))
+                    .with_scale(Vec3::new(1.0, 0.45, 1.0)),
+                ..default()
+            });
             // Cantilever deck tier 2 at y = 46m wrapping tower upper level
             seg.spawn(PbrBundle {
                 mesh: sky.mesh_tower_cantilever_deck.clone(),
                 material: sky.mat_sky_midground_steel.clone(),
                 transform: Transform::from_xyz(tower_x, 46.0, 0.0)
                     .with_scale(Vec3::new(0.85, 1.0, 0.85)),
+                ..default()
+            });
+            // Small parabolic transceiver dish on tower face
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_micro_antenna_dish.clone(),
+                material: sky.mat_sky_midground_steel.clone(),
+                transform: Transform::from_xyz(tower_x - 4.2, 47.5, -2.0)
+                    .with_rotation(Quat::from_rotation_z(-0.35)),
                 ..default()
             });
             // Clustered warm amber window grid on inward face (-X)
@@ -1494,6 +1626,50 @@ fn spawn_midground_scenery(
                         .with_scale(Vec3::new(0.9, 1.0, 0.9)),
                     ..default()
                 });
+                // Electrical cabinet & transformer junction box on cantilever plaza deck
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_trackside_locker.clone(),
+                    material: sky.mat_sky_midground_steel.clone(),
+                    transform: Transform::from_xyz(tower_x + 4.8, 25.2, 3.2),
+                    ..default()
+                });
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_micro_junction_box.clone(),
+                    material: sky.mat_sky_midground_steel.clone(),
+                    transform: Transform::from_xyz(tower_x + 4.6, 25.2, -3.2),
+                    ..default()
+                });
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_hazard_reflector.clone(),
+                    material: sky.mat_sky_amber_glow.clone(),
+                    transform: Transform::from_xyz(tower_x + 5.0, 25.5, -3.2)
+                        .with_scale(Vec3::new(0.45, 0.45, 0.45)),
+                    ..default()
+                });
+                // Distant maintenance drone hovering near corporate tower
+                seg.spawn((
+                    PbrBundle {
+                        mesh: sky.mesh_micro_drone_body.clone(),
+                        material: sky.mat_sky_midground_steel.clone(),
+                        transform: Transform::from_xyz(tower_x - 12.0, 36.0, 8.0),
+                        ..default()
+                    },
+                    SkyRailDistantDrone {
+                        base_pos: Vec3::new(tower_x - 12.0, 36.0, 8.0),
+                        hover_speed: 0.45,
+                        hover_radius: 1.8,
+                        phase: 1.2,
+                    },
+                ))
+                .with_children(|drone| {
+                    drone.spawn(PbrBundle {
+                        mesh: sky.mesh_hazard_reflector.clone(),
+                        material: sky.mat_sky_amber_glow.clone(),
+                        transform: Transform::from_xyz(0.0, -0.15, 0.0)
+                            .with_scale(Vec3::new(0.6, 0.6, 0.6)),
+                        ..default()
+                    });
+                });
                 // Stepped crown pinnacle
                 seg.spawn(PbrBundle {
                     mesh: sky.mesh_tower_stepped_crown.clone(),
@@ -1536,6 +1712,14 @@ fn spawn_midground_scenery(
                     transform: Transform::from_xyz(bridge_x, -12.0, 0.0),
                     ..default()
                 });
+                // Suspended utility module beneath bridge deck
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_micro_hanging_pod.clone(),
+                    material: sky.mat_sky_midground_steel.clone(),
+                    transform: Transform::from_xyz(bridge_x, 26.5, 0.0)
+                        .with_scale(Vec3::new(0.7, 0.7, 0.7)),
+                    ..default()
+                });
                 // Diagonal stay cable
                 seg.spawn(PbrBundle {
                     mesh: sky.mesh_suspension_cable_diag.clone(),
@@ -1554,21 +1738,21 @@ fn spawn_midground_scenery(
                 });
             }
 
-            // 3. Parallel midground rail fragment passing at X in [64m, 82m] with mag-train
-            if seg_idx.rem_euclid(4) == 2 {
-                let rail_x = 64.0 + h3 * 18.0;
-                seg.spawn(PbrBundle {
-                    mesh: sky.mesh_distant_rail_span.clone(),
-                    material: sky.mat_sky_midground_steel.clone(),
-                    transform: Transform::from_xyz(rail_x, 18.0, 0.0),
-                    ..default()
-                });
-                seg.spawn(PbrBundle {
-                    mesh: sky.mesh_distant_rail_strip.clone(),
-                    material: sky.mat_sky_mag_strip.clone(),
-                    transform: Transform::from_xyz(rail_x, 18.35, 0.0),
-                    ..default()
-                });
+            // 3. Parallel midground rail fragment passing at X in [64m, 82m] with rare mag-train (8360-8440m)
+            let rail_x = 64.0 + h3 * 18.0;
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_distant_rail_span.clone(),
+                material: sky.mat_sky_midground_steel.clone(),
+                transform: Transform::from_xyz(rail_x, 18.0, 0.0),
+                ..default()
+            });
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_distant_rail_strip.clone(),
+                material: sky.mat_sky_mag_strip.clone(),
+                transform: Transform::from_xyz(rail_x, 18.35, 0.0),
+                ..default()
+            });
+            if distance >= 8360.0 && distance <= 8440.0 {
                 // High-speed transit train with glowing windows
                 seg.spawn((
                     PbrBundle {
@@ -1633,6 +1817,21 @@ fn spawn_midground_scenery(
                         .with_rotation(Quat::from_rotation_z(-0.35)),
                     ..default()
                 });
+                // Weathered iron patch plate on mast base
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_micro_weathered_patch.clone(),
+                    material: sky.mat_sky_weathered_iron.clone(),
+                    transform: Transform::from_xyz(mast_x + 1.0, 22.0, 0.0)
+                        .with_rotation(Quat::from_rotation_y(std::f32::consts::FRAC_PI_2)),
+                    ..default()
+                });
+                // Junction conduit connection box
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_micro_junction_box.clone(),
+                    material: sky.mat_sky_weathered_iron.clone(),
+                    transform: Transform::from_xyz(mast_x + 1.0, 36.0, 1.2),
+                    ..default()
+                });
             }
 
             // 2. Midground atmospheric storm monitoring sensor tower at X in [72m, 92m]
@@ -1668,6 +1867,38 @@ fn spawn_midground_scenery(
                         .with_scale(Vec3::new(2.2, 2.2, 2.2)),
                     ..default()
                 });
+                // Weathered patch plate on monitoring hub
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_micro_weathered_patch.clone(),
+                    material: sky.mat_sky_weathered_iron.clone(),
+                    transform: Transform::from_xyz(sensor_x - 2.8, 28.0, 1.2)
+                        .with_rotation(Quat::from_rotation_y(std::f32::consts::FRAC_PI_2)),
+                    ..default()
+                });
+                // Inspection drone holding position near weather tower
+                seg.spawn((
+                    PbrBundle {
+                        mesh: sky.mesh_micro_drone_body.clone(),
+                        material: sky.mat_sky_storm_composite.clone(),
+                        transform: Transform::from_xyz(sensor_x + 6.0, 38.0, -6.0),
+                        ..default()
+                    },
+                    SkyRailDistantDrone {
+                        base_pos: Vec3::new(sensor_x + 6.0, 38.0, -6.0),
+                        hover_speed: 0.35,
+                        hover_radius: 1.5,
+                        phase: 3.1,
+                    },
+                ))
+                .with_children(|drone| {
+                    drone.spawn(PbrBundle {
+                        mesh: sky.mesh_hazard_reflector.clone(),
+                        material: sky.mat_sky_emergency_red.clone(),
+                        transform: Transform::from_xyz(0.0, -0.15, 0.0)
+                            .with_scale(Vec3::new(0.55, 0.55, 0.55)),
+                        ..default()
+                    });
+                });
             }
         }
         SkyRailChapter::BrokenSkyway => {
@@ -1691,6 +1922,30 @@ fn spawn_midground_scenery(
                         .with_rotation(Quat::from_rotation_z(0.22)),
                     ..default()
                 });
+                // Weathered iron patch plates and hazard repair plates on severed fracture edge
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_micro_weathered_patch.clone(),
+                    material: sky.mat_sky_hazard_stripe.clone(),
+                    transform: Transform::from_xyz(severed_x - 1.8, 18.5, 4.0)
+                        .with_rotation(Quat::from_rotation_z(0.35)),
+                    ..default()
+                });
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_micro_weathered_patch.clone(),
+                    material: sky.mat_sky_weathered_iron.clone(),
+                    transform: Transform::from_xyz(severed_x + 1.2, 16.0, -3.0)
+                        .with_rotation(Quat::from_rotation_x(-0.25)),
+                    ..default()
+                });
+                // Snapped dangling cable end plunging into void
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_suspension_cable_diag.clone(),
+                    material: sky.mat_sky_weathered_iron.clone(),
+                    transform: Transform::from_xyz(severed_x - 1.5, 4.0, -2.0)
+                        .with_rotation(Quat::from_rotation_z(0.55))
+                        .with_scale(Vec3::new(1.0, 0.65, 1.0)),
+                    ..default()
+                });
                 // Dangling severed suspension stay cables plunging down into cloud ocean
                 seg.spawn(PbrBundle {
                     mesh: sky.mesh_suspension_cable_diag.clone(),
@@ -1706,6 +1961,37 @@ fn spawn_midground_scenery(
                     transform: Transform::from_xyz(severed_x - 1.2, 7.0, 0.0)
                         .with_rotation(Quat::from_rotation_z(0.38)),
                     ..default()
+                });
+                // Emergency response drone hovering near disaster site
+                seg.spawn((
+                    PbrBundle {
+                        mesh: sky.mesh_micro_drone_body.clone(),
+                        material: sky.mat_sky_steel.clone(),
+                        transform: Transform::from_xyz(severed_x + 8.0, 25.0, 12.0),
+                        ..default()
+                    },
+                    SkyRailDistantDrone {
+                        base_pos: Vec3::new(severed_x + 8.0, 25.0, 12.0),
+                        hover_speed: 0.55,
+                        hover_radius: 2.0,
+                        phase: 2.4,
+                    },
+                ))
+                .with_children(|drone| {
+                    drone.spawn(PbrBundle {
+                        mesh: sky.mesh_hazard_reflector.clone(),
+                        material: sky.mat_sky_emergency_red.clone(),
+                        transform: Transform::from_xyz(-0.35, -0.15, 0.0)
+                            .with_scale(Vec3::new(0.6, 0.6, 0.6)),
+                        ..default()
+                    });
+                    drone.spawn(PbrBundle {
+                        mesh: sky.mesh_hazard_reflector.clone(),
+                        material: sky.mat_sky_amber_glow.clone(),
+                        transform: Transform::from_xyz(0.35, -0.15, 0.0)
+                            .with_scale(Vec3::new(0.6, 0.6, 0.6)),
+                        ..default()
+                    });
                 });
                 // Flashing red emergency hazard strobe
                 seg.spawn(PbrBundle {
@@ -1734,6 +2020,14 @@ fn spawn_midground_scenery(
                     transform: Transform::from_xyz(cat_x, 24.0, 0.0)
                         .with_scale(Vec3::new(0.7, 0.8, 0.7))
                         .with_rotation(Quat::from_rotation_z(-0.20)),
+                    ..default()
+                });
+                // Damaged utility box hanging on fractured girder
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_micro_junction_box.clone(),
+                    material: sky.mat_sky_weathered_iron.clone(),
+                    transform: Transform::from_xyz(cat_x + 1.2, 26.5, 0.0)
+                        .with_rotation(Quat::from_rotation_z(-0.30)),
                     ..default()
                 });
                 seg.spawn(PbrBundle {
@@ -1766,6 +2060,21 @@ fn spawn_midground_scenery(
                             .with_scale(Vec3::new(0.85, 0.9, 0.85)),
                         ..default()
                     });
+                    // Symmetrical antenna transceiver dish on inward bastion face
+                    seg.spawn(PbrBundle {
+                        mesh: sky.mesh_micro_antenna_dish.clone(),
+                        material: sky.mat_sky_echo_monolith.clone(),
+                        transform: Transform::from_xyz(bastion_x - side * 2.2, 42.0, 0.0)
+                            .with_rotation(Quat::from_rotation_z(side * 0.35)),
+                        ..default()
+                    });
+                    // Pristine symmetrical junction module
+                    seg.spawn(PbrBundle {
+                        mesh: sky.mesh_micro_junction_box.clone(),
+                        material: sky.mat_sky_echo_monolith.clone(),
+                        transform: Transform::from_xyz(bastion_x - side * 2.0, 26.0, 1.8),
+                        ..default()
+                    });
                     // Symmetrical cyan telemetry window array
                     seg.spawn(PbrBundle {
                         mesh: sky.mesh_window_grid_warm.clone(),
@@ -1791,6 +2100,31 @@ fn spawn_midground_scenery(
                         ..default()
                     });
                 }
+
+                // Sparse automated ECHO survey drone hovering outside track
+                seg.spawn((
+                    PbrBundle {
+                        mesh: sky.mesh_micro_drone_body.clone(),
+                        material: sky.mat_sky_echo_monolith.clone(),
+                        transform: Transform::from_xyz(-78.0, 36.0, 4.0),
+                        ..default()
+                    },
+                    SkyRailDistantDrone {
+                        base_pos: Vec3::new(-78.0, 36.0, 4.0),
+                        hover_speed: 0.28,
+                        hover_radius: 1.4,
+                        phase: 0.5,
+                    },
+                ))
+                .with_children(|drone| {
+                    drone.spawn(PbrBundle {
+                        mesh: sky.mesh_hazard_reflector.clone(),
+                        material: sky.mat_sky_cyan_glow.clone(),
+                        transform: Transform::from_xyz(0.0, -0.15, 0.0)
+                            .with_scale(Vec3::new(0.65, 0.65, 0.65)),
+                        ..default()
+                    });
+                });
             }
 
             // 2. High transverse conduit truss bridging high between X = ±65m
@@ -1913,8 +2247,8 @@ fn spawn_distant_infrastructure(
                 });
             }
 
-            // 2. Distant high-speed mag-train silhouette gliding on the distant rail
-            if seg_idx.rem_euclid(4) == 1 {
+            // 2. Distant high-speed mag-train silhouette gliding on the distant rail (rare authored sighting at 8580-8640m)
+            if distance >= 8580.0 && distance <= 8640.0 {
                 seg.spawn((
                     PbrBundle {
                         mesh: sky.mesh_distant_train_car.clone(),
@@ -2144,8 +2478,8 @@ fn spawn_distant_infrastructure(
                 }
             }
 
-            // 3. Distant automated ECHO courier transit drone
-            if seg_idx.rem_euclid(4) == 2 {
+            // 3. Distant automated ECHO courier transit vehicle (rare authored sighting at 9780-9840m)
+            if distance >= 9780.0 && distance <= 9840.0 {
                 seg.spawn((
                     PbrBundle {
                         mesh: sky.mesh_distant_train_car.clone(),
@@ -2355,6 +2689,21 @@ fn spawn_storm_corridor_dressing(
         transform: Transform::from_xyz(brace_side * 5.2, 3.8, 8.0),
         ..default()
     });
+
+    // 5. Environmental wear: weathered patch plates on outer storm deflection baffle
+    seg.spawn(PbrBundle {
+        mesh: sky.mesh_micro_weathered_patch.clone(),
+        material: sky.mat_sky_weathered_iron.clone(),
+        transform: Transform::from_xyz(brace_side * 4.95, 1.4, -4.0),
+        ..default()
+    });
+    seg.spawn(PbrBundle {
+        mesh: sky.mesh_hazard_reflector.clone(),
+        material: sky.mat_sky_amber_glow.clone(),
+        transform: Transform::from_xyz(brace_side * 4.95, 2.2, -4.0)
+            .with_scale(Vec3::new(0.45, 0.45, 0.45)),
+        ..default()
+    });
 }
 
 fn spawn_broken_skyway_dressing(
@@ -2406,6 +2755,14 @@ fn spawn_broken_skyway_dressing(
             ..default()
         });
 
+        // Emergency repair plates on damaged outer barrier
+        seg.spawn(PbrBundle {
+            mesh: sky.mesh_micro_weathered_patch.clone(),
+            material: sky.mat_sky_hazard_stripe.clone(),
+            transform: Transform::from_xyz(4.85, 1.2, 0.0),
+            ..default()
+        });
+
         // Derailed mag-car hulk resting on the severed parallel pier (completely outside playable lanes)
         if variant == 1 {
             seg.spawn(PbrBundle {
@@ -2444,6 +2801,12 @@ fn spawn_broken_skyway_dressing(
                 mesh: sky.mesh_scaffold_frame.clone(),
                 material: sky.mat_sky_hazard_stripe.clone(),
                 transform: Transform::from_xyz(side * 5.4, 1.4, 0.0),
+                ..default()
+            });
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_micro_weathered_patch.clone(),
+                material: sky.mat_sky_weathered_iron.clone(),
+                transform: Transform::from_xyz(side * 5.4, 0.6, 2.0),
                 ..default()
             });
             seg.spawn(PbrBundle {
@@ -2791,6 +3154,10 @@ pub fn update_sky_rail_storm(
     director: Option<Res<RunDirector>>,
     mut drift_q: Query<(&SkyRailDriftCloud, &mut Transform)>,
     mut train_q: Query<(&SkyRailDistantTrain, &mut Transform), Without<SkyRailDriftCloud>>,
+    mut drone_q: Query<
+        (&SkyRailDistantDrone, &mut Transform),
+        (Without<SkyRailDriftCloud>, Without<SkyRailDistantTrain>),
+    >,
 ) {
     let dt = time.delta_seconds();
     let in_zone_5 = run_stats
@@ -2913,6 +3280,14 @@ pub fn update_sky_rail_storm(
                 trans.translation.z += span;
             }
         }
+    }
+
+    // 4. Subtle deterministic distant drone hovering motion
+    for (drone, mut trans) in drone_q.iter_mut() {
+        let t = elapsed * drone.hover_speed + drone.phase;
+        trans.translation.x = drone.base_pos.x + t.cos() * drone.hover_radius;
+        trans.translation.y = drone.base_pos.y + (t * 1.3).sin() * (drone.hover_radius * 0.45);
+        trans.translation.z = drone.base_pos.z + (t * 0.7).sin() * (drone.hover_radius * 0.6);
     }
 }
 
@@ -3205,5 +3580,85 @@ mod tests {
             vertical_headroom >= 4.5,
             "Overhead gantry must provide >= 4.5m headroom"
         );
+    }
+
+    #[test]
+    fn test_sky_rail_distant_drone_kinematics_and_clearance() {
+        // Drones in chapters 2, 3, 4, 5:
+        // Ch2: base X = tower_x - 12.0m (approx -84m to -106m)
+        // Ch3: base X = sensor_x + 6.0m (approx 78m to 98m)
+        // Ch4: base X = severed_x + 8.0m (approx 74m to 92m)
+        // Ch5: base X = -78.0m
+        let drone_configs = [
+            SkyRailDistantDrone {
+                base_pos: Vec3::new(-88.0, 36.0, 8.0),
+                hover_speed: 0.45,
+                hover_radius: 1.8,
+                phase: 1.2,
+            },
+            SkyRailDistantDrone {
+                base_pos: Vec3::new(86.0, 38.0, -6.0),
+                hover_speed: 0.35,
+                hover_radius: 1.5,
+                phase: 3.1,
+            },
+            SkyRailDistantDrone {
+                base_pos: Vec3::new(76.0, 25.0, 12.0),
+                hover_speed: 0.55,
+                hover_radius: 2.0,
+                phase: 2.4,
+            },
+            SkyRailDistantDrone {
+                base_pos: Vec3::new(-78.0, 36.0, 4.0),
+                hover_speed: 0.28,
+                hover_radius: 1.4,
+                phase: 0.5,
+            },
+        ];
+
+        for drone in drone_configs {
+            for step in 0..100 {
+                let elapsed = step as f32 * 0.1;
+                let t = elapsed * drone.hover_speed + drone.phase;
+                let x = drone.base_pos.x + t.cos() * drone.hover_radius;
+                let y = drone.base_pos.y + (t * 1.3).sin() * (drone.hover_radius * 0.45);
+                let z = drone.base_pos.z + (t * 0.7).sin() * (drone.hover_radius * 0.6);
+
+                // Drones must remain far away outside the gameplay corridor (|X| >= 70m)
+                assert!(
+                    x.abs() >= 70.0,
+                    "Drone X position ({}) must remain >= 70.0m",
+                    x
+                );
+                // Drones must remain elevated in the background air
+                assert!(y >= 20.0, "Drone Y ({}) must remain >= 20.0m", y);
+                // Hover offset should not exceed hover_radius
+                let dist_from_base = (Vec3::new(x, y, z) - drone.base_pos).length();
+                assert!(
+                    dist_from_base <= drone.hover_radius * 1.5,
+                    "Drone hovering must be bounded"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_sky_rail_hanging_pod_clearance() {
+        // Verify hanging infrastructure remains strictly well outside the playable corridor (|X| > 50m)
+        let ch1_hanging_pod_x = -72.0_f32;
+        assert!(
+            ch1_hanging_pod_x.abs() > 50.0,
+            "Ch1 hanging pod must stay well outside track corridor"
+        );
+
+        for d in (8300..8700).step_by(40) {
+            let seg_idx = (d as f32 / 40.0).floor() as i32;
+            let h2 = ((seg_idx.wrapping_mul(41) + 15).rem_euclid(100)) as f32 / 100.0;
+            let bridge_x = 68.0 + h2 * 20.0;
+            assert!(
+                bridge_x >= 55.0,
+                "Ch2 hanging pod bridge must stay >= 55.0m"
+            );
+        }
     }
 }
