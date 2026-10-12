@@ -15,6 +15,7 @@ pub enum EnvironmentRoute {
     IndustrialSector,
     FloodedMetro,
     SkyRail,
+    ForbiddenLine,
     Generic,
 }
 
@@ -28,6 +29,7 @@ pub fn environment_route_for_distance(distance: f32) -> EnvironmentRoute {
         3 => EnvironmentRoute::IndustrialSector,
         4 => EnvironmentRoute::FloodedMetro,
         5 => EnvironmentRoute::SkyRail,
+        6 => EnvironmentRoute::ForbiddenLine,
         _ => EnvironmentRoute::Generic,
     }
 }
@@ -327,6 +329,7 @@ fn init_environment_assets(
     );
     crate::flooded_metro::init_flooded_metro_assets(&mut commands, &mut meshes, &mut materials);
     crate::sky_rail::init_sky_rail_assets(&mut commands, &mut meshes, &mut materials);
+    crate::forbidden_line::init_forbidden_line_assets(&mut commands, &mut meshes, &mut materials);
 }
 
 fn animate_environment_fans(
@@ -348,6 +351,7 @@ pub fn spawn_modular_environment_slice(
     industrial: Option<&crate::industrial_sector::IndustrialSectorAssets>,
     flooded: Option<&crate::flooded_metro::FloodedMetroAssets>,
     sky_rail: Option<&crate::sky_rail::SkyRailAssets>,
+    forbidden: Option<&crate::forbidden_line::ForbiddenLineAssets>,
     z_center: f32,
     length: f32,
     _distance: f32,
@@ -413,6 +417,18 @@ pub fn spawn_modular_environment_slice(
                     commands,
                     env,
                     sky_ref,
+                    z_center,
+                    length,
+                    segment_dist,
+                );
+            }
+        }
+        EnvironmentRoute::ForbiddenLine => {
+            if let Some(forbidden_ref) = forbidden {
+                return crate::forbidden_line::spawn_forbidden_line_segment(
+                    commands,
+                    env,
+                    forbidden_ref,
                     z_center,
                     length,
                     segment_dist,
@@ -777,6 +793,11 @@ mod tests {
                     environment_route_for_distance(at),
                     EnvironmentRoute::SkyRail
                 );
+            } else if zone.id == 6 {
+                assert_eq!(
+                    environment_route_for_distance(at),
+                    EnvironmentRoute::ForbiddenLine
+                );
             } else {
                 assert_eq!(
                     environment_route_for_distance(at),
@@ -821,7 +842,45 @@ mod tests {
         );
         assert_eq!(
             environment_route_for_distance(ZONES[5].start_distance),
+            EnvironmentRoute::ForbiddenLine
+        );
+        assert_eq!(
+            environment_route_for_distance(ZONES[6].start_distance),
             EnvironmentRoute::Generic
+        );
+
+        // Precise boundary testing around 10,000m (Zone 5 -> Zone 6 transition)
+        assert_eq!(
+            environment_route_for_distance(9999.9),
+            EnvironmentRoute::SkyRail,
+            "Immediately before 10,000m must route to SkyRail"
+        );
+        assert_eq!(
+            environment_route_for_distance(10000.0),
+            EnvironmentRoute::ForbiddenLine,
+            "10,000m exactly must route to ForbiddenLine"
+        );
+        assert_eq!(
+            environment_route_for_distance(10000.1),
+            EnvironmentRoute::ForbiddenLine,
+            "Immediately after 10,000m must route to ForbiddenLine"
+        );
+
+        // Precise boundary testing around 12,000m (Zone 6 -> Zone 7 transition)
+        assert_eq!(
+            environment_route_for_distance(11999.9),
+            EnvironmentRoute::ForbiddenLine,
+            "Immediately before 12,000m must route to ForbiddenLine"
+        );
+        assert_eq!(
+            environment_route_for_distance(12000.0),
+            EnvironmentRoute::Generic,
+            "12,000m exactly must route to Generic fallback for Zone 7"
+        );
+        assert_eq!(
+            environment_route_for_distance(12000.1),
+            EnvironmentRoute::Generic,
+            "Immediately after 12,000m must route to Generic fallback for Zone 7"
         );
     }
 }

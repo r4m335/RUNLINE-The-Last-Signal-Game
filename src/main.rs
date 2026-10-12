@@ -9,6 +9,7 @@ mod environment_lighting;
 mod environment_props;
 mod environment_signage;
 mod flooded_metro;
+mod forbidden_line;
 mod industrial_sector;
 mod neon_district;
 mod neon_district_landmarks;
@@ -77,12 +78,15 @@ fn main() {
             CollectiblePlugin,
             EnemyPlugin,
             UiPlugin,
+        ))
+        .add_plugins((
             PoolingPlugin,
             BenchmarkPlugin,
             EnvironmentPlugin,
             EnvironmentLightingPlugin,
             NeonDistrictPlugin,
             sky_rail::SkyRailPlugin,
+            forbidden_line::ForbiddenLinePlugin,
             debug_start::DebugStartPlugin,
         ))
         .add_systems(Startup, setup_scene)

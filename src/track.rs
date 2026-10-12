@@ -29,6 +29,7 @@ struct TrackEnvironmentAssets<'w> {
     industrial: Option<Res<'w, crate::industrial_sector::IndustrialSectorAssets>>,
     flooded: Option<Res<'w, crate::flooded_metro::FloodedMetroAssets>>,
     sky_rail: Option<Res<'w, crate::sky_rail::SkyRailAssets>>,
+    forbidden: Option<Res<'w, crate::forbidden_line::ForbiddenLineAssets>>,
 }
 
 impl Default for TrackManager {
@@ -131,6 +132,7 @@ fn handle_run_reset_track(
                 environment_assets.industrial.as_deref(),
                 environment_assets.flooded.as_deref(),
                 environment_assets.sky_rail.as_deref(),
+                environment_assets.forbidden.as_deref(),
                 z_center,
                 SEGMENT_LENGTH,
                 (-z_center).max(0.0),
@@ -190,6 +192,7 @@ fn maintain_rolling_track(
             environment_assets.industrial.as_deref(),
             environment_assets.flooded.as_deref(),
             environment_assets.sky_rail.as_deref(),
+            environment_assets.forbidden.as_deref(),
             z_center,
             SEGMENT_LENGTH,
             (-z_center).max(0.0),
@@ -1707,6 +1710,7 @@ fn spawn_segment(
     industrial_assets: Option<&crate::industrial_sector::IndustrialSectorAssets>,
     flooded_assets: Option<&crate::flooded_metro::FloodedMetroAssets>,
     sky_rail_assets: Option<&crate::sky_rail::SkyRailAssets>,
+    forbidden_assets: Option<&crate::forbidden_line::ForbiddenLineAssets>,
     z_center: f32,
     length: f32,
     distance: f32,
@@ -1720,6 +1724,7 @@ fn spawn_segment(
         industrial_assets,
         flooded_assets,
         sky_rail_assets,
+        forbidden_assets,
         z_center,
         length,
         distance,
