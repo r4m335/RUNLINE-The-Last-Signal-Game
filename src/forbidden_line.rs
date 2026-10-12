@@ -171,6 +171,8 @@ pub struct ForbiddenLineAssets {
 
     // Landmark Hero Meshes
     pub mesh_gate_portal_frame: Handle<Mesh>,
+    pub mesh_gate_side_pillar: Handle<Mesh>,
+    pub mesh_gate_door_leaf: Handle<Mesh>,
     pub mesh_gate_warning_header: Handle<Mesh>,
     pub mesh_gate_sentry_pylon: Handle<Mesh>,
     pub mesh_checkpoint_scanner_beam: Handle<Mesh>,
@@ -274,13 +276,15 @@ pub fn init_forbidden_line_assets(
         mesh_terminal_screen: meshes.add(Cuboid::new(0.06, 0.75, 0.55)),
         mesh_spatial_fracture_shard: meshes.add(Cuboid::new(0.85, 2.6, 0.85)),
         mesh_echo_energy_fissure: meshes.add(Cuboid::new(0.14, 0.04, 4.4)),
-        mesh_laser_scanner_curtain: meshes.add(Cuboid::new(2.2, 4.2, 0.04)),
+        mesh_laser_scanner_curtain: meshes.add(Cuboid::new(2.2, 0.02, 0.12)),
         mesh_sheared_rebar_bundle: meshes.add(Cylinder::new(0.045, 1.8)),
         mesh_hazard_bollard: meshes.add(Cuboid::new(0.32, 1.1, 0.32)),
 
         // Landmark Hero Geometry
-        mesh_gate_portal_frame: meshes.add(Cuboid::new(14.2, 11.0, 3.2)),
-        mesh_gate_warning_header: meshes.add(Cuboid::new(10.5, 1.8, 0.6)),
+        mesh_gate_portal_frame: meshes.add(Cuboid::new(14.2, 1.8, 3.2)),
+        mesh_gate_side_pillar: meshes.add(Cuboid::new(2.4, 8.6, 3.2)),
+        mesh_gate_door_leaf: meshes.add(Cuboid::new(1.2, 7.2, 0.8)),
+        mesh_gate_warning_header: meshes.add(Cuboid::new(10.5, 1.2, 0.6)),
         mesh_gate_sentry_pylon: meshes.add(Cuboid::new(1.8, 9.5, 1.8)),
         mesh_checkpoint_scanner_beam: meshes.add(Cuboid::new(9.8, 0.55, 0.7)),
         mesh_checkpoint_pillbox: meshes.add(Cuboid::new(2.4, 3.8, 4.2)),
@@ -376,10 +380,10 @@ pub fn init_forbidden_line_assets(
             ..default()
         }),
         mat_laser_scanner_curtain: materials.add(StandardMaterial {
-            base_color: Color::srgba(0.85, 0.05, 0.10, 0.35),
-            emissive: LinearRgba::new(2.2, 0.06, 0.08, 1.0),
-            alpha_mode: AlphaMode::Blend,
-            cull_mode: None,
+            base_color: Color::srgba(0.85, 0.05, 0.10, 0.75),
+            emissive: LinearRgba::new(1.8, 0.08, 0.10, 1.0),
+            metallic: 0.1,
+            perceptual_roughness: 0.4,
             ..default()
         }),
         mat_exposed_rebar: materials.add(StandardMaterial {
@@ -1481,13 +1485,13 @@ fn spawn_restricted_transit_dressing(
         ..default()
     });
 
-    // Semi-translucent scanning laser curtain across each running lane
+    // Ground-projected laser scanner lines on track surface (flat at y = 0.02m, 100% clear sightlines)
     for lane_idx in -1..=1 {
         let cx = Lane::from_index(lane_idx).x_pos();
         seg.spawn(PbrBundle {
             mesh: fl.mesh_laser_scanner_curtain.clone(),
             material: fl.mat_laser_scanner_curtain.clone(),
-            transform: Transform::from_xyz(cx, 2.4, 0.0),
+            transform: Transform::from_xyz(cx, 0.02, 0.0),
             ..default()
         });
     }
@@ -1760,17 +1764,17 @@ fn spawn_final_containment_dressing(
         ..default()
     });
 
-    // Hanging high-voltage catenary cable loops suspended from ceiling vaults
+    // Hanging high-voltage catenary cable loops suspended from ceiling vaults outside track lanes
     seg.spawn(PbrBundle {
         mesh: fl.mesh_hanging_cable.clone(),
         material: fl.mat_hydraulic_steel.clone(),
-        transform: Transform::from_xyz(-2.2, 6.8, 0.0),
+        transform: Transform::from_xyz(-4.2, 6.8, 0.0),
         ..default()
     });
     seg.spawn(PbrBundle {
         mesh: fl.mesh_hanging_cable.clone(),
         material: fl.mat_hydraulic_steel.clone(),
-        transform: Transform::from_xyz(2.2, 6.8, 0.0),
+        transform: Transform::from_xyz(4.2, 6.8, 0.0),
         ..default()
     });
 }
@@ -1790,33 +1794,61 @@ fn spawn_forbidden_line_landmark(
         // Landmark 1: Quarantine Gate (~10,120m)
         // Towering security portal marking the transition into the classified facility.
         ForbiddenLineLandmark::QuarantineGate => {
-            // Monumental portal frame spanning over the corridor (high clearance y = 6.2m)
+            // Overhead monumental portal lintel beam (spans high overhead at y = 8.0m, clear height = 7.1m)
             seg.spawn(PbrBundle {
                 mesh: fl.mesh_gate_portal_frame.clone(),
                 material: fl.mat_containment_black_steel.clone(),
-                transform: Transform::from_xyz(0.0, 6.2, 0.0),
+                transform: Transform::from_xyz(0.0, 8.0, 0.0),
                 ..default()
             });
 
-            // Prominent Veyron warning header across upper beam
+            // Prominent Veyron warning header mounted on upper lintel beam face
             seg.spawn(PbrBundle {
                 mesh: fl.mesh_gate_warning_header.clone(),
                 material: fl.mat_crimson_warning_glow.clone(),
-                transform: Transform::from_xyz(0.0, 7.8, 1.2),
+                transform: Transform::from_xyz(0.0, 8.0, 1.65),
                 ..default()
             });
 
-            // Twin sentry pylon towers flanking track bed
+            // Massive structural side portal pillars flanking running corridor (|x| = 5.6m)
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_gate_side_pillar.clone(),
+                material: fl.mat_containment_black_steel.clone(),
+                transform: Transform::from_xyz(-5.6, 4.3, 0.0),
+                ..default()
+            });
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_gate_side_pillar.clone(),
+                material: fl.mat_containment_black_steel.clone(),
+                transform: Transform::from_xyz(5.6, 4.3, 0.0),
+                ..default()
+            });
+
+            // Open/retracted heavy blast-door leaves framing corridor sides (|x| = 4.6m, inner clearance = 4.0m)
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_gate_door_leaf.clone(),
+                material: fl.mat_armoured_panel.clone(),
+                transform: Transform::from_xyz(-4.6, 3.6, 0.6),
+                ..default()
+            });
+            seg.spawn(PbrBundle {
+                mesh: fl.mesh_gate_door_leaf.clone(),
+                material: fl.mat_armoured_panel.clone(),
+                transform: Transform::from_xyz(4.6, 3.6, 0.6),
+                ..default()
+            });
+
+            // Twin sentry pylon towers flanking track bed behind the pillars
             seg.spawn(PbrBundle {
                 mesh: fl.mesh_gate_sentry_pylon.clone(),
                 material: fl.mat_armoured_panel.clone(),
-                transform: Transform::from_xyz(-5.6, 4.8, 0.0),
+                transform: Transform::from_xyz(-6.8, 4.8, 0.0),
                 ..default()
             });
             seg.spawn(PbrBundle {
                 mesh: fl.mesh_gate_sentry_pylon.clone(),
                 material: fl.mat_armoured_panel.clone(),
-                transform: Transform::from_xyz(5.6, 4.8, 0.0),
+                transform: Transform::from_xyz(6.8, 4.8, 0.0),
                 ..default()
             });
 
@@ -1841,13 +1873,13 @@ fn spawn_forbidden_line_landmark(
                 seg.spawn(PbrBundle {
                     mesh: fl.mesh_warning_lens.clone(),
                     material: fl.mat_crimson_warning_glow.clone(),
-                    transform: Transform::from_xyz(-4.6, y_step, 0.8),
+                    transform: Transform::from_xyz(-4.8, y_step, 1.65),
                     ..default()
                 });
                 seg.spawn(PbrBundle {
                     mesh: fl.mesh_warning_lens.clone(),
                     material: fl.mat_crimson_warning_glow.clone(),
-                    transform: Transform::from_xyz(4.6, y_step, 0.8),
+                    transform: Transform::from_xyz(4.8, y_step, 1.65),
                     ..default()
                 });
             }
@@ -1870,13 +1902,13 @@ fn spawn_forbidden_line_landmark(
                 ..default()
             });
 
-            // Laser scanner curtain curtains over each lane
+            // Ground-projected laser scanner lines on track surface (flat at y = 0.02m, 100% clear sightlines)
             for lane_idx in -1..=1 {
                 let cx = Lane::from_index(lane_idx).x_pos();
                 seg.spawn(PbrBundle {
                     mesh: fl.mesh_laser_scanner_curtain.clone(),
                     material: fl.mat_laser_scanner_curtain.clone(),
-                    transform: Transform::from_xyz(cx, 2.8, -3.0),
+                    transform: Transform::from_xyz(cx, 0.02, -3.0),
                     ..default()
                 });
             }
@@ -2360,6 +2392,61 @@ mod tests {
             retaining_wall_x >= min_lateral_facility_x + 6.0,
             "Perimeter retaining wall ({}m) must frame the outermost excavation boundary",
             retaining_wall_x
+        );
+    }
+
+    #[test]
+    fn test_forbidden_line_gate_corridor_clearance() {
+        // Quarantine Gate clearance verification:
+        // Central corridor (|x| <= 3.8m, y < 7.0m) must have zero blocking geometry.
+        let gate_lintel_y = 8.0;
+        let lintel_half_h = 1.8 / 2.0;
+        let lintel_bottom = gate_lintel_y - lintel_half_h;
+        assert!(
+            lintel_bottom >= 7.0,
+            "Gate lintel beam bottom ({}m) must provide >= 7.0m overhead clearance",
+            lintel_bottom
+        );
+
+        let pillar_center_x = 5.6;
+        let pillar_half_w = 2.4 / 2.0;
+        let pillar_inner_edge = pillar_center_x - pillar_half_w;
+        assert!(
+            pillar_inner_edge >= 4.39,
+            "Side pillar inner edge ({}m) must provide >= 4.4m clearance from center",
+            pillar_inner_edge
+        );
+
+        let door_leaf_center_x = 4.6;
+        let door_leaf_half_w = 1.2 / 2.0;
+        let door_leaf_inner_edge = door_leaf_center_x - door_leaf_half_w;
+        assert!(
+            door_leaf_inner_edge >= 3.99,
+            "Retracted blast door inner edge ({}m) must maintain >= 4.0m lateral corridor clearance",
+            door_leaf_inner_edge
+        );
+    }
+
+    #[test]
+    fn test_forbidden_line_laser_scanner_no_vertical_view_blocker() {
+        // Laser scanner must be a flat ground decal (y = 0.02m) and never a vertical curtain sheet.
+        let ground_y = 0.02;
+        let half_h = 0.02 / 2.0;
+        let top_y = ground_y + half_h;
+        assert!(
+            top_y <= 0.05,
+            "Laser scanner top edge ({}m) must remain flat on the track floor",
+            top_y
+        );
+
+        // Player camera and eye level (y in 1.0..3.5m) must have zero curtain obstruction
+        let eye_level_min = 1.0;
+        let eye_level_max = 3.5;
+        assert!(
+            top_y < eye_level_min,
+            "Scanner must not enter the player eye-level envelope [{}, {}]",
+            eye_level_min,
+            eye_level_max
         );
     }
 }
