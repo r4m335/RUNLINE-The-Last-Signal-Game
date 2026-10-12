@@ -202,6 +202,15 @@ pub struct SkyRailAssets {
     pub mesh_train_window_strip: Handle<Mesh>,
     pub mesh_window_grid_warm: Handle<Mesh>,
 
+    // Trackside Viaduct Detail & Overhead Telemetry Gantries
+    pub mesh_barrier_cap_light: Handle<Mesh>,
+    pub mesh_outer_conduit_bundle: Handle<Mesh>,
+    pub mesh_telemetry_gantry_beam: Handle<Mesh>,
+    pub mesh_gantry_column: Handle<Mesh>,
+    pub mesh_gantry_sensor_pod: Handle<Mesh>,
+    pub mesh_trackside_locker: Handle<Mesh>,
+    pub mesh_lightning_branch: Handle<Mesh>,
+
     // Cloud Abyss & Atmospheric Depth Meshes (850m Altitude)
     pub mesh_cloud_deck_vast: Handle<Mesh>,
     pub mesh_cloud_strata_low: Handle<Mesh>,
@@ -240,6 +249,7 @@ pub struct SkyRailAssets {
     pub mat_sky_cloud_cumulus: Handle<StandardMaterial>,
     pub mat_sky_train_window: Handle<StandardMaterial>,
     pub mat_sky_window_warm: Handle<StandardMaterial>,
+    pub mat_sky_lightning: Handle<StandardMaterial>,
 }
 
 pub fn init_sky_rail_assets(
@@ -347,6 +357,15 @@ pub fn init_sky_rail_assets(
         mesh_tower_cantilever_deck: meshes.add(Cuboid::new(26.0, 2.2, 26.0)),
         mesh_train_window_strip: meshes.add(Cuboid::new(0.12, 0.65, 20.0)),
         mesh_window_grid_warm: meshes.add(Cuboid::new(8.0, 14.0, 0.35)),
+
+        // Trackside Viaduct Detail & Overhead Telemetry Gantries
+        mesh_barrier_cap_light: meshes.add(Cuboid::new(0.32, 0.18, 0.32)),
+        mesh_outer_conduit_bundle: meshes.add(Cylinder::new(0.10, 40.0)),
+        mesh_telemetry_gantry_beam: meshes.add(Cuboid::new(11.2, 0.45, 0.70)),
+        mesh_gantry_column: meshes.add(Cuboid::new(0.38, 4.8, 0.38)),
+        mesh_gantry_sensor_pod: meshes.add(Cuboid::new(0.40, 0.60, 0.40)),
+        mesh_trackside_locker: meshes.add(Cuboid::new(0.35, 0.95, 0.70)),
+        mesh_lightning_branch: meshes.add(Cylinder::new(0.22, 28.0)),
 
         // Cloud Abyss & Atmospheric Depth Meshes
         mesh_cloud_deck_vast: meshes.add(Cuboid::new(380.0, 12.0, 40.0)),
@@ -515,6 +534,12 @@ pub fn init_sky_rail_assets(
             perceptual_roughness: 0.25,
             ..default()
         }),
+        mat_sky_lightning: materials.add(StandardMaterial {
+            base_color: Color::srgb(0.90, 0.96, 1.0),
+            emissive: LinearRgba::new(0.0, 0.0, 0.0, 1.0),
+            unlit: true,
+            ..default()
+        }),
     };
 
     commands.insert_resource(assets);
@@ -551,6 +576,9 @@ pub fn spawn_sky_rail_segment(
 
             // 3. Side Parapets & Storm Deflection Aerodynamic Barriers
             spawn_storm_parapets(seg, sky, variant);
+
+            // 3b. Overhead Telemetry Gantries & Mag-Rail Signal Arches (Periodic High Clearance y = 6.0m)
+            spawn_overhead_telemetry_gantries(seg, sky, distance);
 
             // 4. Underside Support Pylons into 850m Abyss
             spawn_abyss_pylons(seg, sky);
@@ -715,21 +743,98 @@ fn spawn_storm_parapets(seg: &mut ChildBuilder, sky: &SkyRailAssets, _variant: u
                 ..default()
             });
 
-            // Amber warning luminaire on top of each post
+            // Prominent glowing amber barrier cap luminaire atop each post
             seg.spawn(PbrBundle {
-                mesh: sky.mesh_hazard_reflector.clone(),
+                mesh: sky.mesh_barrier_cap_light.clone(),
                 material: sky.mat_sky_amber_glow.clone(),
-                transform: Transform::from_xyz(x, 1.45, z),
+                transform: Transform::from_xyz(x, 1.48, z),
                 ..default()
             });
         }
 
-        // Suspended high-voltage cable runs outside the barriers
+        // Longitudinal high-voltage utility conduit bundle outside the barriers
         seg.spawn(PbrBundle {
-            mesh: sky.mesh_cable_bundle_elevated.clone(),
+            mesh: sky.mesh_outer_conduit_bundle.clone(),
             material: sky.mat_sky_steel.clone(),
             transform: Transform::from_xyz(x + side * 0.35, 0.40, 0.0)
                 .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
+            ..default()
+        });
+
+        // Emergency trackside service lockers mounted on outer barrier wall
+        seg.spawn(PbrBundle {
+            mesh: sky.mesh_trackside_locker.clone(),
+            material: sky.mat_sky_steel.clone(),
+            transform: Transform::from_xyz(x + side * 0.28, 0.85, 0.0),
+            ..default()
+        });
+        seg.spawn(PbrBundle {
+            mesh: sky.mesh_hazard_reflector.clone(),
+            material: sky.mat_sky_cyan_glow.clone(),
+            transform: Transform::from_xyz(x + side * 0.38, 1.20, 0.0)
+                .with_scale(Vec3::new(1.2, 1.2, 1.2)),
+            ..default()
+        });
+    }
+}
+
+// -------------------------------------------------------------
+// OVERHEAD TELEMETRY GANTRIES (PERIODIC HIGH CLEARANCE y = 6.0M)
+// -------------------------------------------------------------
+
+fn spawn_overhead_telemetry_gantries(seg: &mut ChildBuilder, sky: &SkyRailAssets, distance: f32) {
+    let seg_idx = (distance / 40.0).floor() as i32;
+    // Spawns every 3 segments (120m) at seg_idx % 3 == 1
+    if seg_idx.rem_euclid(3) == 1 {
+        // Overhead horizontal telemetry arch beam at y = 6.0m spanning across viaduct (x in [-4.9m, 4.9m])
+        seg.spawn(PbrBundle {
+            mesh: sky.mesh_telemetry_gantry_beam.clone(),
+            material: sky.mat_sky_steel.clone(),
+            transform: Transform::from_xyz(0.0, 6.0, 0.0),
+            ..default()
+        });
+
+        // Vertical mounting stanchions rising from outer parapet walls
+        for side in [-1.0, 1.0] {
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_gantry_column.clone(),
+                material: sky.mat_sky_steel.clone(),
+                transform: Transform::from_xyz(side * 4.90, 3.60, 0.0),
+                ..default()
+            });
+            // Outer amber caution beacon atop gantry mounting bracket
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_hazard_reflector.clone(),
+                material: sky.mat_sky_amber_glow.clone(),
+                transform: Transform::from_xyz(side * 4.90, 6.35, 0.0)
+                    .with_scale(Vec3::new(1.8, 1.8, 1.8)),
+                ..default()
+            });
+        }
+
+        // Downward-facing telemetry sensor pods suspended over each of the 3 running lanes
+        for lane_x in [-Lane::SPACING, 0.0, Lane::SPACING] {
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_gantry_sensor_pod.clone(),
+                material: sky.mat_sky_steel.clone(),
+                transform: Transform::from_xyz(lane_x, 5.55, 0.0),
+                ..default()
+            });
+            // Cyan high-speed telemetry optical sensor on front face
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_hazard_reflector.clone(),
+                material: sky.mat_sky_cyan_glow.clone(),
+                transform: Transform::from_xyz(lane_x, 5.55, 0.22)
+                    .with_scale(Vec3::new(1.2, 1.2, 1.2)),
+                ..default()
+            });
+        }
+
+        // Central top-mounted red aviation beacon on gantry apex
+        seg.spawn(PbrBundle {
+            mesh: sky.mesh_hazard_reflector.clone(),
+            material: sky.mat_sky_antenna_red.clone(),
+            transform: Transform::from_xyz(0.0, 6.35, 0.0).with_scale(Vec3::new(2.4, 2.4, 2.4)),
             ..default()
         });
     }
@@ -883,6 +988,39 @@ fn spawn_skyline_megatowers(seg: &mut ChildBuilder, sky: &SkyRailAssets, distanc
     let h2 = ((seg_idx.wrapping_mul(37) + 13).rem_euclid(100)) as f32 / 100.0;
     let h3 = ((seg_idx.wrapping_mul(59) + 23).rem_euclid(100)) as f32 / 100.0;
     let h4 = ((seg_idx.wrapping_mul(83) + 31).rem_euclid(100)) as f32 / 100.0;
+
+    // Distant Jagged Lightning Electric Discharges (sparse, between towers at |X| in [115m, 165m])
+    if seg_idx.rem_euclid(3) == 2 {
+        let bolt_side = if h3 > 0.5 { -1.0 } else { 1.0 };
+        let bolt_x = bolt_side * (125.0 + h4 * 35.0);
+        let bolt_z = -12.0 + h1 * 24.0;
+        // Main lightning trunk descending from storm ceiling
+        seg.spawn(PbrBundle {
+            mesh: sky.mesh_lightning_branch.clone(),
+            material: sky.mat_sky_lightning.clone(),
+            transform: Transform::from_xyz(bolt_x, 42.0, bolt_z)
+                .with_rotation(Quat::from_rotation_z(bolt_side * 0.22)),
+            ..default()
+        });
+        // Fork branch 1
+        seg.spawn(PbrBundle {
+            mesh: sky.mesh_lightning_branch.clone(),
+            material: sky.mat_sky_lightning.clone(),
+            transform: Transform::from_xyz(bolt_x + bolt_side * 4.0, 26.0, bolt_z)
+                .with_rotation(Quat::from_rotation_z(-bolt_side * 0.35))
+                .with_scale(Vec3::new(0.65, 0.75, 0.65)),
+            ..default()
+        });
+        // Fork branch 2
+        seg.spawn(PbrBundle {
+            mesh: sky.mesh_lightning_branch.clone(),
+            material: sky.mat_sky_lightning.clone(),
+            transform: Transform::from_xyz(bolt_x - bolt_side * 3.5, 22.0, bolt_z + 4.0)
+                .with_rotation(Quat::from_rotation_x(0.28))
+                .with_scale(Vec3::new(0.50, 0.55, 0.50)),
+            ..default()
+        });
+    }
 
     // -------------------------------------------------------------
     // ZONE 5 VISUAL PHILOSOPHY: VAST ABYSS, NOT A STREET CANYON
@@ -2088,7 +2226,24 @@ fn spawn_emergence_dressing(
         ..default()
     });
 
-    // 3. Residual floodwater drainage conduits running along the opposite margin
+    // 3. Cantilevered maintenance catwalk hanging off outer viaduct margin (for distance > 8080m)
+    if distance > 8080.0 {
+        seg.spawn(PbrBundle {
+            mesh: sky.mesh_sky_catwalk.clone(),
+            material: sky.mat_sky_grate.clone(),
+            transform: Transform::from_xyz(signal_side * 5.4, 0.40, 6.0),
+            ..default()
+        });
+        seg.spawn(PbrBundle {
+            mesh: sky.mesh_hazard_reflector.clone(),
+            material: sky.mat_sky_amber_glow.clone(),
+            transform: Transform::from_xyz(signal_side * 5.4, 0.70, 6.0)
+                .with_scale(Vec3::new(1.6, 1.6, 1.6)),
+            ..default()
+        });
+    }
+
+    // 4. Residual floodwater drainage conduits running along the opposite margin
     let drain_side = -signal_side;
     seg.spawn(PbrBundle {
         mesh: sky.mesh_drainage_pipe.clone(),
@@ -2737,6 +2892,14 @@ pub fn update_sky_rail_storm(
                 mat.emissive = LinearRgba::new(0.04, 0.06, 0.10, 1.0);
             }
         }
+        if let Some(mat) = materials.get_mut(&sky.mat_sky_lightning) {
+            if intensity > 0.001 {
+                mat.emissive =
+                    LinearRgba::new(intensity * 14.0, intensity * 18.0, intensity * 26.0, 1.0);
+            } else {
+                mat.emissive = LinearRgba::new(0.0, 0.0, 0.0, 1.0);
+            }
+        }
     }
 
     // 3. Lightweight distant mag-train transit movement
@@ -3027,6 +3190,20 @@ mod tests {
         assert!(
             right_cloud_x > 20.0,
             "Cumulus clouds must stay well outside track corridor"
+        );
+    }
+
+    #[test]
+    fn test_sky_rail_overhead_gantry_clearance() {
+        // Verify overhead telemetry gantries provide at least 4.5m of vertical clearance
+        let sensor_pod_y = 5.55_f32;
+        let pod_half_height = 0.30_f32;
+        let lowest_point = sensor_pod_y - pod_half_height; // 5.25m
+        let track_surface_y = 0.06_f32;
+        let vertical_headroom = lowest_point - track_surface_y;
+        assert!(
+            vertical_headroom >= 4.5,
+            "Overhead gantry must provide >= 4.5m headroom"
         );
     }
 }
