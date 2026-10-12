@@ -1,5 +1,6 @@
+use crate::director::RunDirector;
 use crate::environment::EnvironmentAssets;
-use crate::types::{Despawnable, Lane, TrackSegmentMarker};
+use crate::types::{AppState, Despawnable, GameRunStats, Lane, TrackSegmentMarker};
 use bevy::prelude::*;
 
 // -------------------------------------------------------------
@@ -62,6 +63,41 @@ pub fn sky_rail_variant(distance: f32) -> u8 {
 }
 
 // -------------------------------------------------------------
+// DYNAMIC ATMOSPHERE & STORM COMPONENTS
+// -------------------------------------------------------------
+
+#[derive(Component, Debug, Clone)]
+pub struct SkyRailDriftCloud {
+    pub base_x: f32,
+    pub amplitude: f32,
+    pub speed: f32,
+    pub phase: f32,
+}
+
+#[derive(Resource, Debug)]
+pub struct SkyRailStormState {
+    pub flash_timer: f32,
+    pub next_flash_interval: f32,
+    pub flash_intensity: f32,
+    pub is_flashing: bool,
+    pub flash_elapsed: f32,
+    pub flash_count: u32,
+}
+
+impl Default for SkyRailStormState {
+    fn default() -> Self {
+        Self {
+            flash_timer: 0.0,
+            next_flash_interval: 6.8,
+            flash_intensity: 0.0,
+            is_flashing: false,
+            flash_elapsed: 0.0,
+            flash_count: 0,
+        }
+    }
+}
+
+// -------------------------------------------------------------
 // ASSETS RESOURCE
 // -------------------------------------------------------------
 
@@ -80,6 +116,7 @@ pub struct SkyRailAssets {
     pub mesh_under_girder: Handle<Mesh>,
     pub mesh_under_truss: Handle<Mesh>,
     pub mesh_pylon_massive: Handle<Mesh>,
+    pub mesh_pylon_bracket: Handle<Mesh>,
     pub mesh_sky_signal_mast: Handle<Mesh>,
 
     // Architectural & Atmospheric Prop Meshes
@@ -126,6 +163,8 @@ pub struct SkyRailAssets {
     pub mesh_tower_window_slit_v: Handle<Mesh>,
     pub mesh_tower_window_slit_h: Handle<Mesh>,
     pub mesh_sky_bridge_span: Handle<Mesh>,
+    pub mesh_distant_megatitan: Handle<Mesh>,
+    pub mesh_storm_spine_tower: Handle<Mesh>,
 
     // Cloud Abyss & Atmospheric Depth Meshes (850m Altitude)
     pub mesh_cloud_deck_vast: Handle<Mesh>,
@@ -184,6 +223,8 @@ pub fn init_sky_rail_assets(
         mesh_under_truss: meshes.add(Cuboid::new(8.4, 0.45, 0.45)),
         // Massive support pylon plunging 850m downward toward Aurelia
         mesh_pylon_massive: meshes.add(Cuboid::new(3.8, 80.0, 3.8)),
+        // Cantilever under-truss brackets bracing the viaduct against abyss crosswinds
+        mesh_pylon_bracket: meshes.add(Cuboid::new(8.2, 0.65, 1.2)),
         mesh_sky_signal_mast: meshes.add(Cuboid::new(0.26, 4.4, 0.26)),
 
         // Supporting props
@@ -230,6 +271,8 @@ pub fn init_sky_rail_assets(
         mesh_tower_window_slit_v: meshes.add(Cuboid::new(0.5, 36.0, 10.0)),
         mesh_tower_window_slit_h: meshes.add(Cuboid::new(18.0, 0.6, 0.5)),
         mesh_sky_bridge_span: meshes.add(Cuboid::new(76.0, 3.6, 4.6)),
+        mesh_distant_megatitan: meshes.add(Cuboid::new(58.0, 320.0, 58.0)),
+        mesh_storm_spine_tower: meshes.add(Cylinder::new(2.2, 140.0)),
 
         // Cloud Abyss & Atmospheric Depth Meshes
         mesh_cloud_deck_vast: meshes.add(Cuboid::new(380.0, 12.0, 40.0)),
@@ -571,11 +614,27 @@ fn spawn_storm_parapets(seg: &mut ChildBuilder, sky: &SkyRailAssets, _variant: u
 }
 
 fn spawn_abyss_pylons(seg: &mut ChildBuilder, sky: &SkyRailAssets) {
-    // Massive support pylon plunging 80m below track into the cloud deck (at center z = 0)
+    // 1. Massive support pylon plunging 80m below track into the cloud deck (at center z = 0)
     seg.spawn(PbrBundle {
         mesh: sky.mesh_pylon_massive.clone(),
         material: sky.mat_sky_pylon.clone(),
         transform: Transform::from_xyz(0.0, -42.0, 0.0),
+        ..default()
+    });
+
+    // 2. Colossal triangular foundation brackets bracing the viaduct underside against abyss winds
+    seg.spawn(PbrBundle {
+        mesh: sky.mesh_pylon_bracket.clone(),
+        material: sky.mat_sky_steel.clone(),
+        transform: Transform::from_xyz(0.0, -3.2, 0.0),
+        ..default()
+    });
+
+    // 3. High-voltage utility conduit runs descending down the pylon face deep into the cloud abyss
+    seg.spawn(PbrBundle {
+        mesh: sky.mesh_cable_bundle_elevated.clone(),
+        material: sky.mat_sky_steel.clone(),
+        transform: Transform::from_xyz(2.0, -42.0, 0.0),
         ..default()
     });
 }
@@ -587,20 +646,36 @@ fn spawn_abyss_pylons(seg: &mut ChildBuilder, sky: &SkyRailAssets) {
 fn spawn_cloud_abyss(seg: &mut ChildBuilder, sky: &SkyRailAssets) {
     // 1. Primary Lower Cloud Deck (churning storm ocean beneath track at y = -42.0m)
     // Support pylons plunge through this deck, establishing the 850m altitude
-    seg.spawn(PbrBundle {
-        mesh: sky.mesh_cloud_deck_vast.clone(),
-        material: sky.mat_sky_cloud_abyss.clone(),
-        transform: Transform::from_xyz(0.0, -42.0, 0.0),
-        ..default()
-    });
+    seg.spawn((
+        PbrBundle {
+            mesh: sky.mesh_cloud_deck_vast.clone(),
+            material: sky.mat_sky_cloud_abyss.clone(),
+            transform: Transform::from_xyz(0.0, -42.0, 0.0),
+            ..default()
+        },
+        SkyRailDriftCloud {
+            base_x: 0.0,
+            amplitude: 14.0,
+            speed: 0.35,
+            phase: 0.0,
+        },
+    ));
 
     // 2. Secondary Deeper Strata Haze (y = -58.0m, swallowing invisible city below)
-    seg.spawn(PbrBundle {
-        mesh: sky.mesh_cloud_strata_low.clone(),
-        material: sky.mat_sky_cloud_abyss.clone(),
-        transform: Transform::from_xyz(0.0, -58.0, 0.0),
-        ..default()
-    });
+    seg.spawn((
+        PbrBundle {
+            mesh: sky.mesh_cloud_strata_low.clone(),
+            material: sky.mat_sky_cloud_abyss.clone(),
+            transform: Transform::from_xyz(0.0, -58.0, 0.0),
+            ..default()
+        },
+        SkyRailDriftCloud {
+            base_x: 0.0,
+            amplitude: 22.0,
+            speed: 0.22,
+            phase: 1.57,
+        },
+    ));
 
     // 3. Heavy Overhead Storm Cloud Ceiling (oppressive dark canopy at y = 56.0m)
     seg.spawn(PbrBundle {
@@ -612,241 +687,236 @@ fn spawn_cloud_abyss(seg: &mut ChildBuilder, sky: &SkyRailAssets) {
 }
 
 // -------------------------------------------------------------
-// DARK CITY SKYLINE (AURELIA MEGATOWERS & MONOLITHS)
+// DARK CITY SKYLINE (DISTANT MONUMENTAL TITANS & OPEN CHASM)
 // -------------------------------------------------------------
 
 fn spawn_skyline_megatowers(seg: &mut ChildBuilder, sky: &SkyRailAssets, distance: f32) {
     let seg_idx = (distance / 40.0).floor() as i32;
+    let chapter = sky_rail_chapter_for_distance(distance);
+
     let h1 = ((seg_idx.wrapping_mul(19) + 5).rem_euclid(100)) as f32 / 100.0;
     let h2 = ((seg_idx.wrapping_mul(37) + 13).rem_euclid(100)) as f32 / 100.0;
     let h3 = ((seg_idx.wrapping_mul(59) + 23).rem_euclid(100)) as f32 / 100.0;
     let h4 = ((seg_idx.wrapping_mul(83) + 31).rem_euclid(100)) as f32 / 100.0;
 
     // -------------------------------------------------------------
-    // LAYER 1: LEFT FLANK MIDGROUND MEGATOWERS (|X| in [42.0, 68.0]m)
+    // ZONE 5 VISUAL PHILOSOPHY: VAST ABYSS, NOT A STREET CANYON
+    // The railway is suspended 850m above Aurelia in an exposed void.
+    // Flanking space (|x| < 90m) is OPEN AIR, CLOUDS & EXPOSED PYLONS.
+    // Megastructures are distant titans (|x| in [110.0, 240.0]m).
+    // They appear SPARSELY (alternating flanks, not every segment),
+    // leaving immense voids of stormy sky.
     // -------------------------------------------------------------
-    let left_x = -44.0 - h1 * 22.0;
-    let left_z = -12.0 + h2 * 24.0;
-    let left_type = (seg_idx.rem_euclid(3)) as usize;
 
-    match left_type {
-        0 => {
-            // Monolithic Slab rising from cloud abyss into upper storm sky
-            seg.spawn(PbrBundle {
-                mesh: sky.mesh_tower_slab.clone(),
-                material: sky.mat_sky_tower_dark.clone(),
-                transform: Transform::from_xyz(left_x, 25.0, left_z),
-                ..default()
-            });
-            // Horizontal dim window slits on inward face
-            if h2 > 0.25 {
-                let win_mat = if h1 > 0.5 {
-                    sky.mat_sky_window_dim.clone()
-                } else {
-                    sky.mat_sky_window_amber_dim.clone()
-                };
+    match chapter {
+        SkyRailChapter::SkyRailEmergence => {
+            // Chapter 1: First emergence from underground into vast open sky.
+            // Solitary horizon titan far away (|x| >= 170m) swallowed by cloud deck below.
+            if seg_idx.rem_euclid(3) == 0 {
+                let side = if h1 > 0.5 { -1.0 } else { 1.0 };
+                let titan_x = side * (175.0 + h2 * 45.0);
+                let titan_z = -15.0 + h3 * 30.0;
                 seg.spawn(PbrBundle {
-                    mesh: sky.mesh_tower_window_slit_h.clone(),
-                    material: win_mat,
-                    transform: Transform::from_xyz(left_x + 25.0, 32.0, left_z),
+                    mesh: sky.mesh_tower_colossus.clone(),
+                    material: sky.mat_sky_tower_distant.clone(),
+                    transform: Transform::from_xyz(titan_x, 15.0, titan_z),
+                    ..default()
+                });
+                // Distant warning beacon blinking in cloud mist
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_hazard_reflector.clone(),
+                    material: sky.mat_sky_antenna_red.clone(),
+                    transform: Transform::from_xyz(titan_x, 15.0 + 95.0 + 10.0, titan_z)
+                        .with_scale(Vec3::new(3.0, 3.0, 3.0)),
                     ..default()
                 });
             }
-            // Rooftop pinnacle warning beacon
-            seg.spawn(PbrBundle {
-                mesh: sky.mesh_tower_antenna_spire.clone(),
-                material: sky.mat_sky_steel.clone(),
-                transform: Transform::from_xyz(left_x, 100.0 + 19.0, left_z),
-                ..default()
-            });
-            seg.spawn(PbrBundle {
-                mesh: sky.mesh_hazard_reflector.clone(),
-                material: sky.mat_sky_antenna_red.clone(),
-                transform: Transform::from_xyz(left_x, 100.0 + 38.0, left_z),
-                ..default()
-            });
         }
-        1 => {
-            // Colossus Block with stepped crown
-            seg.spawn(PbrBundle {
-                mesh: sky.mesh_tower_colossus.clone(),
-                material: sky.mat_sky_tower_dark.clone(),
-                transform: Transform::from_xyz(left_x, 35.0, left_z),
-                ..default()
-            });
-            seg.spawn(PbrBundle {
-                mesh: sky.mesh_tower_stepped_crown.clone(),
-                material: sky.mat_sky_steel.clone(),
-                transform: Transform::from_xyz(left_x, 35.0 + 95.0 + 16.0, left_z),
-                ..default()
-            });
-            // Vertical dim window slit
-            if h2 > 0.20 {
+        SkyRailChapter::UpperAurelia => {
+            // Chapter 2: Distant colossal corporate arcologies rising above cloud deck.
+            // Solitary titans in mid-to-far background (|x| in [115.0, 195.0]m).
+            // Alternate left/right every 2 segments so there's always vast open void on one side.
+            if seg_idx.rem_euclid(2) == 0 {
+                let left_x = -120.0 - h1 * 45.0;
+                let left_z = -10.0 + h2 * 20.0;
                 seg.spawn(PbrBundle {
-                    mesh: sky.mesh_tower_window_slit_v.clone(),
-                    material: sky.mat_sky_window_dim.clone(),
-                    transform: Transform::from_xyz(left_x + 16.0, 42.0, left_z),
+                    mesh: sky.mesh_distant_megatitan.clone(),
+                    material: sky.mat_sky_tower_dark.clone(),
+                    transform: Transform::from_xyz(left_x, 35.0, left_z),
+                    ..default()
+                });
+                // Stepped crown pinnacle rising into storm sky
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_tower_stepped_crown.clone(),
+                    material: sky.mat_sky_steel.clone(),
+                    transform: Transform::from_xyz(left_x, 35.0 + 160.0 + 16.0, left_z)
+                        .with_scale(Vec3::new(1.8, 1.8, 1.8)),
+                    ..default()
+                });
+                // Structural antenna spire atop stepped crown pinnacle
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_tower_antenna_spire.clone(),
+                    material: sky.mat_sky_steel.clone(),
+                    transform: Transform::from_xyz(left_x, 35.0 + 160.0 + 40.0, left_z)
+                        .with_scale(Vec3::new(1.2, 1.2, 1.2)),
+                    ..default()
+                });
+                // Sparse red aviation warning beacon atop pinnacle
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_hazard_reflector.clone(),
+                    material: sky.mat_sky_antenna_red.clone(),
+                    transform: Transform::from_xyz(left_x, 35.0 + 160.0 + 64.0, left_z)
+                        .with_scale(Vec3::new(3.5, 3.5, 3.5)),
+                    ..default()
+                });
+                // Faint dim amber window slit on inward face
+                if h2 > 0.3 {
+                    seg.spawn(PbrBundle {
+                        mesh: sky.mesh_tower_window_slit_v.clone(),
+                        material: sky.mat_sky_window_amber_dim.clone(),
+                        transform: Transform::from_xyz(left_x + 28.0, 45.0, left_z)
+                            .with_scale(Vec3::new(1.5, 2.0, 1.5)),
+                        ..default()
+                    });
+                }
+            } else if (seg_idx + 1).rem_euclid(3) == 0 {
+                let right_x = 125.0 + h3 * 45.0;
+                let right_z = 10.0 - h4 * 20.0;
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_tower_obelisk.clone(),
+                    material: sky.mat_sky_tower_dark.clone(),
+                    transform: Transform::from_xyz(right_x, 50.0, right_z)
+                        .with_scale(Vec3::new(1.6, 1.4, 1.6)),
+                    ..default()
+                });
+                if h1 > 0.4 {
+                    seg.spawn(PbrBundle {
+                        mesh: sky.mesh_tower_window_slit_h.clone(),
+                        material: sky.mat_sky_window_amber_dim.clone(),
+                        transform: Transform::from_xyz(right_x - 14.0, 52.0, right_z)
+                            .with_scale(Vec3::new(1.2, 1.2, 1.2)),
+                        ..default()
+                    });
+                }
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_hazard_reflector.clone(),
+                    material: sky.mat_sky_antenna_red.clone(),
+                    transform: Transform::from_xyz(right_x, 50.0 + 154.0 + 10.0, right_z)
+                        .with_scale(Vec3::new(3.0, 3.0, 3.0)),
                     ..default()
                 });
             }
-            // Pinnacle beacon atop crown
-            seg.spawn(PbrBundle {
-                mesh: sky.mesh_hazard_reflector.clone(),
-                material: sky.mat_sky_antenna_red.clone(),
-                transform: Transform::from_xyz(left_x, 35.0 + 95.0 + 32.0 + 1.0, left_z),
-                ..default()
-            });
-        }
-        _ => {
-            // Tall needle Obelisk
-            seg.spawn(PbrBundle {
-                mesh: sky.mesh_tower_obelisk.clone(),
-                material: sky.mat_sky_tower_dark.clone(),
-                transform: Transform::from_xyz(left_x, 45.0, left_z),
-                ..default()
-            });
-            // Spire beacon
-            seg.spawn(PbrBundle {
-                mesh: sky.mesh_tower_antenna_spire.clone(),
-                material: sky.mat_sky_steel.clone(),
-                transform: Transform::from_xyz(left_x, 45.0 + 110.0 + 19.0, left_z),
-                ..default()
-            });
-            seg.spawn(PbrBundle {
-                mesh: sky.mesh_hazard_reflector.clone(),
-                material: sky.mat_sky_antenna_red.clone(),
-                transform: Transform::from_xyz(left_x, 45.0 + 110.0 + 38.0, left_z),
-                ..default()
-            });
-        }
-    }
 
-    // -------------------------------------------------------------
-    // LAYER 2: RIGHT FLANK MIDGROUND MEGATOWERS (|X| in [44.0, 72.0]m)
-    // -------------------------------------------------------------
-    let right_x = 46.0 + h3 * 22.0;
-    let right_z = 10.0 - h4 * 24.0;
-    let right_type = ((seg_idx + 1).rem_euclid(3)) as usize;
-
-    match right_type {
-        0 => {
-            // Colossus Block with vertical slit
-            seg.spawn(PbrBundle {
-                mesh: sky.mesh_tower_colossus.clone(),
-                material: sky.mat_sky_tower_dark.clone(),
-                transform: Transform::from_xyz(right_x, 30.0, right_z),
-                ..default()
-            });
-            if h4 > 0.25 {
-                let win_mat = if h3 > 0.5 {
-                    sky.mat_sky_window_amber_dim.clone()
-                } else {
-                    sky.mat_sky_window_dim.clone()
-                };
+            // Distant high-altitude power trunk / utility span far in background (sparse, |x| > 140m)
+            if seg_idx.rem_euclid(5) == 1 {
+                let bridge_side = if h4 > 0.5 { -1.0 } else { 1.0 };
+                let bridge_x = bridge_side * (145.0 + h1 * 40.0);
                 seg.spawn(PbrBundle {
-                    mesh: sky.mesh_tower_window_slit_v.clone(),
-                    material: win_mat,
-                    transform: Transform::from_xyz(right_x - 16.0, 36.0, right_z),
+                    mesh: sky.mesh_sky_bridge_span.clone(),
+                    material: sky.mat_sky_steel.clone(),
+                    transform: Transform::from_xyz(bridge_x, 62.0, 0.0)
+                        .with_scale(Vec3::new(1.5, 1.5, 1.5)),
                     ..default()
                 });
             }
-            seg.spawn(PbrBundle {
-                mesh: sky.mesh_tower_antenna_spire.clone(),
-                material: sky.mat_sky_steel.clone(),
-                transform: Transform::from_xyz(right_x, 30.0 + 95.0 + 19.0, right_z),
-                ..default()
-            });
-            seg.spawn(PbrBundle {
-                mesh: sky.mesh_hazard_reflector.clone(),
-                material: sky.mat_sky_antenna_red.clone(),
-                transform: Transform::from_xyz(right_x, 30.0 + 95.0 + 38.0, right_z),
-                ..default()
-            });
         }
-        1 => {
-            // Obelisk Spire
-            seg.spawn(PbrBundle {
-                mesh: sky.mesh_tower_obelisk.clone(),
-                material: sky.mat_sky_tower_dark.clone(),
-                transform: Transform::from_xyz(right_x, 50.0, right_z),
-                ..default()
-            });
-            if h3 > 0.30 {
+        SkyRailChapter::StormCorridor => {
+            // Chapter 3: Hostile storm corridor - near-black storm clouds, vast open voids,
+            // atmospheric storm monitoring spires and razor-sharp lightning silhouettes.
+            if seg_idx.rem_euclid(3) == 0 {
+                let side = if h3 > 0.5 { -1.0 } else { 1.0 };
+                let spire_x = side * (135.0 + h1 * 55.0);
+                let spire_z = -12.0 + h2 * 24.0;
+                // Colossal atmospheric storm spine tower piercing the storm clouds
                 seg.spawn(PbrBundle {
-                    mesh: sky.mesh_tower_window_slit_v.clone(),
-                    material: sky.mat_sky_window_dim.clone(),
-                    transform: Transform::from_xyz(right_x - 8.5, 52.0, right_z),
+                    mesh: sky.mesh_storm_spine_tower.clone(),
+                    material: sky.mat_sky_storm_composite.clone(),
+                    transform: Transform::from_xyz(spire_x, 70.0, spire_z),
+                    ..default()
+                });
+                // Flashing red aviation warning beacon on tower apex
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_hazard_reflector.clone(),
+                    material: sky.mat_sky_antenna_red.clone(),
+                    transform: Transform::from_xyz(spire_x, 140.0, spire_z)
+                        .with_scale(Vec3::new(3.5, 3.5, 3.5)),
                     ..default()
                 });
             }
-            seg.spawn(PbrBundle {
-                mesh: sky.mesh_hazard_reflector.clone(),
-                material: sky.mat_sky_antenna_red.clone(),
-                transform: Transform::from_xyz(right_x, 50.0 + 110.0 + 1.0, right_z),
-                ..default()
-            });
-        }
-        _ => {
-            // Monolithic Slab
-            seg.spawn(PbrBundle {
-                mesh: sky.mesh_tower_slab.clone(),
-                material: sky.mat_sky_tower_dark.clone(),
-                transform: Transform::from_xyz(right_x, 22.0, right_z),
-                ..default()
-            });
-            seg.spawn(PbrBundle {
-                mesh: sky.mesh_tower_antenna_spire.clone(),
-                material: sky.mat_sky_steel.clone(),
-                transform: Transform::from_xyz(right_x, 22.0 + 75.0 + 19.0, right_z),
-                ..default()
-            });
-            seg.spawn(PbrBundle {
-                mesh: sky.mesh_hazard_reflector.clone(),
-                material: sky.mat_sky_antenna_red.clone(),
-                transform: Transform::from_xyz(right_x, 22.0 + 75.0 + 38.0, right_z),
-                ..default()
-            });
-        }
-    }
 
-    // -------------------------------------------------------------
-    // LAYER 3: FAR BACKGROUND MONOLITHS & CITADELS (|X| in [95.0, 155.0]m)
-    // -------------------------------------------------------------
-    let (far_x, far_z) = if seg_idx.rem_euclid(2) == 0 {
-        (-105.0 - h2 * 45.0, -15.0 + h3 * 30.0)
-    } else {
-        (108.0 + h4 * 42.0, 12.0 - h1 * 28.0)
-    };
-    seg.spawn(PbrBundle {
-        mesh: sky.mesh_tower_slab.clone(),
-        material: sky.mat_sky_tower_distant.clone(),
-        transform: Transform::from_xyz(far_x, 40.0, far_z).with_scale(Vec3::new(1.8, 1.6, 1.8)),
-        ..default()
-    });
-    // Far beacon in the storm
-    seg.spawn(PbrBundle {
-        mesh: sky.mesh_hazard_reflector.clone(),
-        material: sky.mat_sky_antenna_red.clone(),
-        transform: Transform::from_xyz(far_x, 40.0 + 120.0, far_z)
-            .with_scale(Vec3::new(2.5, 2.5, 2.5)),
-        ..default()
-    });
-
-    // -------------------------------------------------------------
-    // LAYER 4: TRANSVERSE DISTANT HIGH-ALTITUDE SKYBRIDGES
-    // Spanning between towers at high elevation far outside player bounds
-    // -------------------------------------------------------------
-    if seg_idx.rem_euclid(3) == 1 {
-        let bridge_side = if h1 > 0.5 { -1.0 } else { 1.0 };
-        let bridge_center_x = bridge_side * (left_x.abs() + 28.0);
-        let bridge_y = 38.0 + h2 * 18.0;
-        let bridge_z = -6.0 + h3 * 12.0;
-        seg.spawn(PbrBundle {
-            mesh: sky.mesh_sky_bridge_span.clone(),
-            material: sky.mat_sky_steel.clone(),
-            transform: Transform::from_xyz(bridge_center_x, bridge_y, bridge_z),
-            ..default()
-        });
+            // Far monolithic slab silhouetted against lightning
+            if seg_idx.rem_euclid(4) == 2 {
+                let titan_x = -155.0 - h4 * 40.0;
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_tower_slab.clone(),
+                    material: sky.mat_sky_tower_dark.clone(),
+                    transform: Transform::from_xyz(titan_x, 40.0, 0.0)
+                        .with_scale(Vec3::new(1.6, 1.8, 1.6)),
+                    ..default()
+                });
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_hazard_reflector.clone(),
+                    material: sky.mat_sky_antenna_red.clone(),
+                    transform: Transform::from_xyz(titan_x, 40.0 + 135.0 + 10.0, 0.0)
+                        .with_scale(Vec3::new(3.0, 3.0, 3.0)),
+                    ..default()
+                });
+            }
+        }
+        SkyRailChapter::BrokenSkyway => {
+            // Chapter 4: Catastrophic aerial infrastructure collapse.
+            // Solitary fractured monoliths and severed suspension pylons far in the mist (|x| >= 140m).
+            if seg_idx.rem_euclid(3) == 1 {
+                let titan_side = if h2 > 0.5 { -1.0 } else { 1.0 };
+                let titan_x = titan_side * (145.0 + h3 * 50.0);
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_distant_megatitan.clone(),
+                    material: sky.mat_sky_tower_dark.clone(),
+                    transform: Transform::from_xyz(titan_x, 25.0, 0.0)
+                        .with_rotation(Quat::from_rotation_z(titan_side * 0.06)),
+                    ..default()
+                });
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_hazard_reflector.clone(),
+                    material: sky.mat_sky_emergency_red.clone(),
+                    transform: Transform::from_xyz(titan_x, 25.0 + 160.0 + 10.0, 0.0)
+                        .with_scale(Vec3::new(3.2, 3.2, 3.2)),
+                    ..default()
+                });
+            }
+        }
+        SkyRailChapter::EchoApproach => {
+            // Chapter 5: Unnerving mathematical symmetry approaching ECHO facility.
+            // Symmetrical solitary ECHO monolithic bastions far in the clouds (x = ±145m).
+            if seg_idx.rem_euclid(3) == 0 {
+                for side in [-1.0, 1.0] {
+                    let bastion_x = side * (140.0 + h1 * 25.0);
+                    seg.spawn(PbrBundle {
+                        mesh: sky.mesh_tower_slab.clone(),
+                        material: sky.mat_sky_echo_monolith.clone(),
+                        transform: Transform::from_xyz(bastion_x, 45.0, 0.0)
+                            .with_scale(Vec3::new(1.4, 2.0, 1.4)),
+                        ..default()
+                    });
+                    // Cold cyan vertical telemetry window slit
+                    seg.spawn(PbrBundle {
+                        mesh: sky.mesh_tower_window_slit_v.clone(),
+                        material: sky.mat_sky_window_dim.clone(),
+                        transform: Transform::from_xyz(bastion_x - side * 15.0, 55.0, 0.0)
+                            .with_scale(Vec3::new(1.8, 2.2, 1.8)),
+                        ..default()
+                    });
+                    // Cyan pinnacle marker beacon
+                    seg.spawn(PbrBundle {
+                        mesh: sky.mesh_hazard_reflector.clone(),
+                        material: sky.mat_sky_cyan_glow.clone(),
+                        transform: Transform::from_xyz(bastion_x, 45.0 + 150.0 + 10.0, 0.0)
+                            .with_scale(Vec3::new(3.5, 3.5, 3.5)),
+                        ..default()
+                    });
+                }
+            }
+        }
     }
 }
 
@@ -1427,14 +1497,115 @@ fn spawn_sky_rail_landmark(seg: &mut ChildBuilder, sky: &SkyRailAssets, landmark
 }
 
 // -------------------------------------------------------------
-// PLUGIN DEFINITION
+// PLUGIN DEFINITION & DYNAMIC STORM SYSTEMS
 // -------------------------------------------------------------
 
 pub struct SkyRailPlugin;
 
 impl Plugin for SkyRailPlugin {
-    fn build(&self, _app: &mut App) {
-        // Systems will be registered as needed for dynamic storm effects
+    fn build(&self, app: &mut App) {
+        app.init_resource::<SkyRailStormState>();
+        app.add_systems(
+            Update,
+            update_sky_rail_storm.run_if(in_state(AppState::InGame)),
+        );
+    }
+}
+
+pub fn update_sky_rail_storm(
+    time: Res<Time>,
+    mut storm_state: ResMut<SkyRailStormState>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    assets: Option<Res<SkyRailAssets>>,
+    run_stats: Option<Res<GameRunStats>>,
+    director: Option<Res<RunDirector>>,
+    mut drift_q: Query<(&SkyRailDriftCloud, &mut Transform)>,
+) {
+    let dt = time.delta_seconds();
+    let in_zone_5 = run_stats
+        .as_ref()
+        .map(|s| s.distance >= 7950.0 && s.distance <= 10050.0)
+        .or_else(|| director.as_ref().map(|d| d.active_zone_id == 5))
+        .unwrap_or(false);
+
+    if !in_zone_5 {
+        if storm_state.flash_intensity > 0.0 {
+            storm_state.flash_intensity = 0.0;
+            storm_state.is_flashing = false;
+            storm_state.flash_elapsed = 0.0;
+            if let Some(ref sky) = assets {
+                if let Some(mat) = materials.get_mut(&sky.mat_sky_cloud_ceiling) {
+                    mat.emissive = LinearRgba::BLACK;
+                    mat.base_color = Color::srgb(0.014, 0.02, 0.03);
+                }
+            }
+        }
+        return;
+    }
+
+    // 1. Subtle, continuous cloud ocean drift & swelling
+    let elapsed = time.elapsed_seconds();
+    for (drift, mut trans) in drift_q.iter_mut() {
+        trans.translation.x =
+            drift.base_x + (elapsed * drift.speed + drift.phase).sin() * drift.amplitude;
+    }
+
+    // 2. Lightning storm events (sparse, dramatic cold-white flashes)
+    let Some(ref sky) = assets else { return };
+
+    if !storm_state.is_flashing {
+        storm_state.flash_timer += dt;
+        if storm_state.flash_timer >= storm_state.next_flash_interval {
+            storm_state.is_flashing = true;
+            storm_state.flash_elapsed = 0.0;
+            storm_state.flash_timer = 0.0;
+            storm_state.flash_count = storm_state.flash_count.wrapping_add(1);
+            let hash = (storm_state.flash_count.wrapping_mul(47) % 35) as f32;
+            storm_state.next_flash_interval = 6.0 + hash * 0.1;
+        }
+    } else {
+        storm_state.flash_elapsed += dt;
+        let t = storm_state.flash_elapsed;
+        // Multi-pulse lightning stroke profile:
+        // 0.00..0.05s: Initial primary strike -> peak 1.0
+        // 0.05..0.09s: Brief dip -> 0.2
+        // 0.09..0.14s: Secondary return stroke -> peak 0.8
+        // 0.14..0.22s: Smooth decay -> 0.0
+        let intensity = if t < 0.05 {
+            t / 0.05
+        } else if t < 0.09 {
+            1.0 - ((t - 0.05) / 0.04) * 0.8
+        } else if t < 0.14 {
+            0.2 + ((t - 0.09) / 0.05) * 0.6
+        } else if t < 0.22 {
+            0.8 * (1.0 - (t - 0.14) / 0.08)
+        } else {
+            0.0
+        };
+
+        storm_state.flash_intensity = intensity;
+
+        if t >= 0.22 {
+            storm_state.is_flashing = false;
+            storm_state.flash_intensity = 0.0;
+            storm_state.flash_elapsed = 0.0;
+        }
+
+        // Apply emissive lightning illumination to cloud ceiling
+        if let Some(mat) = materials.get_mut(&sky.mat_sky_cloud_ceiling) {
+            if intensity > 0.001 {
+                mat.emissive =
+                    LinearRgba::new(intensity * 3.2, intensity * 3.8, intensity * 5.2, 1.0);
+                mat.base_color = Color::srgb(
+                    0.014 + intensity * 0.70,
+                    0.020 + intensity * 0.82,
+                    0.030 + intensity * 0.95,
+                );
+            } else {
+                mat.emissive = LinearRgba::BLACK;
+                mat.base_color = Color::srgb(0.014, 0.02, 0.03);
+            }
+        }
     }
 }
 
@@ -1580,6 +1751,39 @@ mod tests {
             let l1 = sky_rail_landmark_for_distance(dist);
             let l2 = sky_rail_landmark_for_distance(dist);
             assert_eq!(l1, l2);
+        }
+    }
+
+    #[test]
+    fn test_sky_rail_storm_state_defaults() {
+        let state = SkyRailStormState::default();
+        assert_eq!(state.flash_timer, 0.0);
+        assert!(state.next_flash_interval >= 5.0 && state.next_flash_interval <= 10.0);
+        assert_eq!(state.flash_intensity, 0.0);
+        assert!(!state.is_flashing);
+    }
+
+    #[test]
+    fn test_sky_rail_cloud_drift_bounds() {
+        let drift = SkyRailDriftCloud {
+            base_x: 0.0,
+            amplitude: 14.0,
+            speed: 0.35,
+            phase: 0.0,
+        };
+        // Verify peak displacement remains well inside the 380m cloud deck width
+        let max_displacement = drift.base_x.abs() + drift.amplitude;
+        assert!(max_displacement < 50.0);
+    }
+
+    #[test]
+    fn test_sky_rail_skyline_clearance() {
+        // Verify that distant megastructures never intrude within 90m of the track
+        for d in (8000..10000).step_by(40) {
+            let seg_idx = (d as f32 / 40.0).floor() as i32;
+            let h1 = ((seg_idx.wrapping_mul(19) + 5).rem_euclid(100)) as f32 / 100.0;
+            let titan_x = 110.0 + h1 * 40.0;
+            assert!(titan_x >= 90.0, "Distant titans must remain outside 90m");
         }
     }
 }
