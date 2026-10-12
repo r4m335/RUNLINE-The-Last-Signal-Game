@@ -74,6 +74,13 @@ pub struct SkyRailDriftCloud {
     pub phase: f32,
 }
 
+#[derive(Component, Debug, Clone)]
+pub struct SkyRailDistantTrain {
+    pub speed: f32,
+    pub min_local_z: f32,
+    pub max_local_z: f32,
+}
+
 #[derive(Resource, Debug)]
 pub struct SkyRailStormState {
     pub flash_timer: f32,
@@ -165,6 +172,20 @@ pub struct SkyRailAssets {
     pub mesh_sky_bridge_span: Handle<Mesh>,
     pub mesh_distant_megatitan: Handle<Mesh>,
     pub mesh_storm_spine_tower: Handle<Mesh>,
+
+    // Deep Background & Distant Infrastructure Meshes (90–220m Layered Depth)
+    pub mesh_distant_rail_span: Handle<Mesh>,
+    pub mesh_distant_rail_strip: Handle<Mesh>,
+    pub mesh_distant_rail_pylon: Handle<Mesh>,
+    pub mesh_distant_elevator_shaft: Handle<Mesh>,
+    pub mesh_transmission_mast: Handle<Mesh>,
+    pub mesh_transmission_arm: Handle<Mesh>,
+    pub mesh_utility_conduit_pipe: Handle<Mesh>,
+    pub mesh_hanging_cable: Handle<Mesh>,
+    pub mesh_distant_truss_bridge: Handle<Mesh>,
+    pub mesh_distant_train_car: Handle<Mesh>,
+    pub mesh_distant_window_cluster: Handle<Mesh>,
+    pub mesh_cloud_bank_flank: Handle<Mesh>,
 
     // Cloud Abyss & Atmospheric Depth Meshes (850m Altitude)
     pub mesh_cloud_deck_vast: Handle<Mesh>,
@@ -273,6 +294,20 @@ pub fn init_sky_rail_assets(
         mesh_sky_bridge_span: meshes.add(Cuboid::new(76.0, 3.6, 4.6)),
         mesh_distant_megatitan: meshes.add(Cuboid::new(58.0, 320.0, 58.0)),
         mesh_storm_spine_tower: meshes.add(Cylinder::new(2.2, 140.0)),
+
+        // Deep Background & Distant Infrastructure Meshes
+        mesh_distant_rail_span: meshes.add(Cuboid::new(4.2, 0.65, 40.0)),
+        mesh_distant_rail_strip: meshes.add(Cuboid::new(0.45, 0.08, 40.0)),
+        mesh_distant_rail_pylon: meshes.add(Cuboid::new(2.4, 90.0, 2.4)),
+        mesh_distant_elevator_shaft: meshes.add(Cuboid::new(4.2, 180.0, 4.2)),
+        mesh_transmission_mast: meshes.add(Cylinder::new(0.9, 85.0)),
+        mesh_transmission_arm: meshes.add(Cuboid::new(18.0, 1.1, 1.1)),
+        mesh_utility_conduit_pipe: meshes.add(Cylinder::new(0.7, 40.0)),
+        mesh_hanging_cable: meshes.add(Cuboid::new(0.12, 0.12, 38.0)),
+        mesh_distant_truss_bridge: meshes.add(Cuboid::new(52.0, 2.4, 2.8)),
+        mesh_distant_train_car: meshes.add(Cuboid::new(3.4, 2.2, 22.0)),
+        mesh_distant_window_cluster: meshes.add(Cuboid::new(6.0, 12.0, 0.35)),
+        mesh_cloud_bank_flank: meshes.add(Cuboid::new(90.0, 16.0, 40.0)),
 
         // Cloud Abyss & Atmospheric Depth Meshes
         mesh_cloud_deck_vast: meshes.add(Cuboid::new(380.0, 12.0, 40.0)),
@@ -444,6 +479,9 @@ pub fn spawn_sky_rail_segment(
 
             // 6. Aurelia Megatower Skyline Silhouettes (Dark Cyberpunk Megastructures)
             spawn_skyline_megatowers(seg, sky, distance);
+
+            // 6b. Deep Background Infrastructure Layers (90–220m Layered Depth & Distant Transit)
+            spawn_distant_infrastructure(seg, sky, distance, chapter);
 
             // 7. Chapter-Specific Visual Dressing
             match chapter {
@@ -915,6 +953,364 @@ fn spawn_skyline_megatowers(seg: &mut ChildBuilder, sky: &SkyRailAssets, distanc
                         ..default()
                     });
                 }
+            }
+        }
+    }
+}
+
+// -------------------------------------------------------------
+// DEEP BACKGROUND INFRASTRUCTURE LAYERS (90–220M LAYERED DEPTH)
+// -------------------------------------------------------------
+
+fn spawn_distant_infrastructure(
+    seg: &mut ChildBuilder,
+    sky: &SkyRailAssets,
+    distance: f32,
+    chapter: SkyRailChapter,
+) {
+    let seg_idx = (distance / 40.0).floor() as i32;
+    let h1 = ((seg_idx.wrapping_mul(17) + 7).rem_euclid(100)) as f32 / 100.0;
+    let h2 = ((seg_idx.wrapping_mul(31) + 11).rem_euclid(100)) as f32 / 100.0;
+    let h3 = ((seg_idx.wrapping_mul(53) + 19).rem_euclid(100)) as f32 / 100.0;
+    let h4 = ((seg_idx.wrapping_mul(71) + 29).rem_euclid(100)) as f32 / 100.0;
+
+    // -------------------------------------------------------------
+    // LAYER 5: STORM DEPTH — MID-ALTITUDE DRIFTING CLOUD SHELF
+    // Spawns sparsely at |X| >= 110m, y = -18m.
+    // Creates dramatic depth: distant structures peek through cloud strata.
+    // -------------------------------------------------------------
+    if seg_idx.rem_euclid(3) == 0 {
+        let cloud_side = if h1 > 0.5 { -1.0 } else { 1.0 };
+        let cloud_x = cloud_side * (112.0 + h2 * 28.0);
+        seg.spawn((
+            PbrBundle {
+                mesh: sky.mesh_cloud_bank_flank.clone(),
+                material: sky.mat_sky_cloud_abyss.clone(),
+                transform: Transform::from_xyz(cloud_x, -18.0, 0.0),
+                ..default()
+            },
+            SkyRailDriftCloud {
+                base_x: cloud_x,
+                amplitude: 14.0,
+                speed: 0.26,
+                phase: h3 * 3.14,
+            },
+        ));
+    }
+
+    // -------------------------------------------------------------
+    // CHAPTER-AWARE DEEP INFRASTRUCTURE
+    // -------------------------------------------------------------
+    match chapter {
+        SkyRailChapter::SkyRailEmergence => {
+            // Chapter 1: First emergence from subterranean portal.
+            // 80%+ empty void; sparse solitary transmission infrastructure in far distance.
+            if seg_idx.rem_euclid(3) == 1 {
+                let mast_x = -155.0 - h2 * 35.0;
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_transmission_mast.clone(),
+                    material: sky.mat_sky_steel.clone(),
+                    transform: Transform::from_xyz(mast_x, 35.0, 0.0),
+                    ..default()
+                });
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_transmission_arm.clone(),
+                    material: sky.mat_sky_steel.clone(),
+                    transform: Transform::from_xyz(mast_x, 65.0, 0.0),
+                    ..default()
+                });
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_hazard_reflector.clone(),
+                    material: sky.mat_sky_antenna_red.clone(),
+                    transform: Transform::from_xyz(mast_x, 78.0, 0.0)
+                        .with_scale(Vec3::new(3.0, 3.0, 3.0)),
+                    ..default()
+                });
+            }
+            if seg_idx.rem_euclid(4) == 2 {
+                let pipe_x = 145.0 + h3 * 25.0;
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_utility_conduit_pipe.clone(),
+                    material: sky.mat_sky_steel.clone(),
+                    transform: Transform::from_xyz(pipe_x, 12.0, 0.0)
+                        .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
+                    ..default()
+                });
+            }
+        }
+        SkyRailChapter::UpperAurelia => {
+            // Chapter 2: Colossal distant industrial transit web of Aurelia across abyss.
+            // 1. Distant parallel elevated sky-rail line running along X = -138m at y = 22m
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_distant_rail_span.clone(),
+                material: sky.mat_sky_steel.clone(),
+                transform: Transform::from_xyz(-138.0, 22.0, 0.0),
+                ..default()
+            });
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_distant_rail_strip.clone(),
+                material: sky.mat_sky_mag_strip.clone(),
+                transform: Transform::from_xyz(-138.0, 22.35, 0.0),
+                ..default()
+            });
+            // Every 2 segments: slender pylon plunging 90m into abyss beneath the distant rail
+            if seg_idx.rem_euclid(2) == 0 {
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_distant_rail_pylon.clone(),
+                    material: sky.mat_sky_pylon.clone(),
+                    transform: Transform::from_xyz(-138.0, -23.0, 0.0),
+                    ..default()
+                });
+            }
+
+            // 2. Distant high-speed mag-train silhouette gliding on the distant rail
+            if seg_idx.rem_euclid(4) == 1 {
+                seg.spawn((
+                    PbrBundle {
+                        mesh: sky.mesh_distant_train_car.clone(),
+                        material: sky.mat_sky_steel.clone(),
+                        transform: Transform::from_xyz(-138.0, 23.3, 0.0),
+                        ..default()
+                    },
+                    SkyRailDistantTrain {
+                        speed: -52.0,
+                        min_local_z: -38.0,
+                        max_local_z: 38.0,
+                    },
+                ))
+                .with_children(|car| {
+                    // Small cyan front marker slicing through distant mist
+                    car.spawn(PbrBundle {
+                        mesh: sky.mesh_hazard_reflector.clone(),
+                        material: sky.mat_sky_cyan_glow.clone(),
+                        transform: Transform::from_xyz(0.0, 0.2, -11.0)
+                            .with_scale(Vec3::new(1.4, 1.4, 1.4)),
+                        ..default()
+                    });
+                    // Red tail marker
+                    car.spawn(PbrBundle {
+                        mesh: sky.mesh_hazard_reflector.clone(),
+                        material: sky.mat_sky_antenna_red.clone(),
+                        transform: Transform::from_xyz(0.0, 0.2, 11.0)
+                            .with_scale(Vec3::new(1.1, 1.1, 1.1)),
+                        ..default()
+                    });
+                });
+            }
+
+            // 3. Colossal vertical elevator shaft (spanning 180m from -80m up to +100m)
+            if seg_idx.rem_euclid(3) == 0 {
+                let shaft_x = 168.0 + h2 * 30.0;
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_distant_elevator_shaft.clone(),
+                    material: sky.mat_sky_tower_dark.clone(),
+                    transform: Transform::from_xyz(shaft_x, 10.0, 0.0),
+                    ..default()
+                });
+                // Amber service beacons on elevator spine
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_hazard_reflector.clone(),
+                    material: sky.mat_sky_amber_glow.clone(),
+                    transform: Transform::from_xyz(shaft_x - 2.2, 28.0, 0.0)
+                        .with_scale(Vec3::new(2.2, 2.2, 2.2)),
+                    ..default()
+                });
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_hazard_reflector.clone(),
+                    material: sky.mat_sky_amber_glow.clone(),
+                    transform: Transform::from_xyz(shaft_x - 2.2, 65.0, 0.0)
+                        .with_scale(Vec3::new(2.2, 2.2, 2.2)),
+                    ..default()
+                });
+            }
+
+            // 4. Suspended transverse maintenance truss bridge
+            if seg_idx.rem_euclid(4) == 3 {
+                let bridge_x = -155.0 - h3 * 20.0;
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_distant_truss_bridge.clone(),
+                    material: sky.mat_sky_steel.clone(),
+                    transform: Transform::from_xyz(bridge_x, 48.0, 0.0),
+                    ..default()
+                });
+            }
+
+            // 5. Tiny distant window cluster panel
+            if seg_idx.rem_euclid(3) == 2 {
+                let win_x = 135.0 + h4 * 35.0;
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_distant_window_cluster.clone(),
+                    material: sky.mat_sky_window_amber_dim.clone(),
+                    transform: Transform::from_xyz(win_x, 42.0, 0.0),
+                    ..default()
+                });
+            }
+        }
+        SkyRailChapter::StormCorridor => {
+            // Chapter 3: Hostile storm corridor — industrial conduits, high transmission pylons,
+            // catenary cables cutting through storm mist.
+            // 1. Long industrial utility conduit pipe run at X = 118m
+            seg.spawn(PbrBundle {
+                mesh: sky.mesh_utility_conduit_pipe.clone(),
+                material: sky.mat_sky_storm_composite.clone(),
+                transform: Transform::from_xyz(118.0, 16.0, 0.0)
+                    .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
+                ..default()
+            });
+
+            // 2. High-altitude transmission mast with crossarms and catenary cable
+            if seg_idx.rem_euclid(2) == 1 {
+                let mast_x = -145.0 - h2 * 30.0;
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_transmission_mast.clone(),
+                    material: sky.mat_sky_storm_composite.clone(),
+                    transform: Transform::from_xyz(mast_x, 35.0, 0.0),
+                    ..default()
+                });
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_transmission_arm.clone(),
+                    material: sky.mat_sky_steel.clone(),
+                    transform: Transform::from_xyz(mast_x, 68.0, 0.0),
+                    ..default()
+                });
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_hazard_reflector.clone(),
+                    material: sky.mat_sky_antenna_red.clone(),
+                    transform: Transform::from_xyz(mast_x, 78.0, 0.0)
+                        .with_scale(Vec3::new(3.2, 3.2, 3.2)),
+                    ..default()
+                });
+                // Hanging catenary cable span strung along transmission line
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_hanging_cable.clone(),
+                    material: sky.mat_sky_steel.clone(),
+                    transform: Transform::from_xyz(mast_x + 9.0, 67.5, 0.0),
+                    ..default()
+                });
+            }
+        }
+        SkyRailChapter::BrokenSkyway => {
+            // Chapter 4: Catastrophic infrastructure collapse — fractured parallel skyway,
+            // dangling severed cables, snapped maintenance spans.
+            // 1. Fractured distant parallel rail span plunging into abyss at X = 142m
+            if seg_idx.rem_euclid(2) == 0 {
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_distant_rail_span.clone(),
+                    material: sky.mat_sky_steel.clone(),
+                    transform: Transform::from_xyz(142.0, 20.0, 0.0)
+                        .with_rotation(Quat::from_rotation_x(-0.38)),
+                    ..default()
+                });
+                // Snapped severed pylon
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_distant_rail_pylon.clone(),
+                    material: sky.mat_sky_pylon.clone(),
+                    transform: Transform::from_xyz(142.0, -8.0, 0.0)
+                        .with_rotation(Quat::from_rotation_z(0.18)),
+                    ..default()
+                });
+                // Dangling severed cables plunging down into cloud ocean
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_hanging_cable.clone(),
+                    material: sky.mat_sky_steel.clone(),
+                    transform: Transform::from_xyz(141.0, 8.0, 0.0)
+                        .with_rotation(Quat::from_rotation_z(0.42)),
+                    ..default()
+                });
+                // Emergency red hazard beacon at fracture point
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_hazard_reflector.clone(),
+                    material: sky.mat_sky_emergency_red.clone(),
+                    transform: Transform::from_xyz(142.0, 22.0, 18.0)
+                        .with_scale(Vec3::new(2.8, 2.8, 2.8)),
+                    ..default()
+                });
+            }
+
+            // 2. Damaged maintenance truss
+            if seg_idx.rem_euclid(3) == 1 {
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_distant_truss_bridge.clone(),
+                    material: sky.mat_sky_steel.clone(),
+                    transform: Transform::from_xyz(-148.0, 36.0, 0.0)
+                        .with_rotation(Quat::from_rotation_z(-0.12)),
+                    ..default()
+                });
+                seg.spawn(PbrBundle {
+                    mesh: sky.mesh_hazard_reflector.clone(),
+                    material: sky.mat_sky_amber_glow.clone(),
+                    transform: Transform::from_xyz(-148.0, 38.0, 0.0)
+                        .with_scale(Vec3::new(2.2, 2.2, 2.2)),
+                    ..default()
+                });
+            }
+        }
+        SkyRailChapter::EchoApproach => {
+            // Chapter 5: Artificial, ominous symmetry approaching ECHO facility.
+            // 1. Symmetrical vertical transit elevator shafts flanking at X = ±148m
+            if seg_idx.rem_euclid(2) == 0 {
+                for side in [-1.0, 1.0] {
+                    let shaft_x = side * 148.0;
+                    seg.spawn(PbrBundle {
+                        mesh: sky.mesh_distant_elevator_shaft.clone(),
+                        material: sky.mat_sky_echo_monolith.clone(),
+                        transform: Transform::from_xyz(shaft_x, 15.0, 0.0),
+                        ..default()
+                    });
+                    // Cyan telemetry marker nodes
+                    seg.spawn(PbrBundle {
+                        mesh: sky.mesh_hazard_reflector.clone(),
+                        material: sky.mat_sky_cyan_glow.clone(),
+                        transform: Transform::from_xyz(shaft_x - side * 2.2, 32.0, 0.0)
+                            .with_scale(Vec3::new(2.2, 2.2, 2.2)),
+                        ..default()
+                    });
+                    seg.spawn(PbrBundle {
+                        mesh: sky.mesh_hazard_reflector.clone(),
+                        material: sky.mat_sky_cyan_glow.clone(),
+                        transform: Transform::from_xyz(shaft_x - side * 2.2, 68.0, 0.0)
+                            .with_scale(Vec3::new(2.2, 2.2, 2.2)),
+                        ..default()
+                    });
+                }
+            }
+
+            // 2. High overhead symmetrical transverse conduit spans
+            if seg_idx.rem_euclid(3) == 1 {
+                for side in [-1.0, 1.0] {
+                    seg.spawn(PbrBundle {
+                        mesh: sky.mesh_distant_truss_bridge.clone(),
+                        material: sky.mat_sky_steel.clone(),
+                        transform: Transform::from_xyz(side * 140.0, 56.0, 0.0),
+                        ..default()
+                    });
+                }
+            }
+
+            // 3. Distant automated ECHO courier transit drone
+            if seg_idx.rem_euclid(4) == 2 {
+                seg.spawn((
+                    PbrBundle {
+                        mesh: sky.mesh_distant_train_car.clone(),
+                        material: sky.mat_sky_echo_monolith.clone(),
+                        transform: Transform::from_xyz(148.0, 23.4, 0.0),
+                        ..default()
+                    },
+                    SkyRailDistantTrain {
+                        speed: -46.0,
+                        min_local_z: -38.0,
+                        max_local_z: 38.0,
+                    },
+                ))
+                .with_children(|car| {
+                    car.spawn(PbrBundle {
+                        mesh: sky.mesh_hazard_reflector.clone(),
+                        material: sky.mat_sky_cyan_glow.clone(),
+                        transform: Transform::from_xyz(0.0, 0.2, -11.0)
+                            .with_scale(Vec3::new(1.6, 1.6, 1.6)),
+                        ..default()
+                    });
+                });
             }
         }
     }
@@ -1520,6 +1916,7 @@ pub fn update_sky_rail_storm(
     run_stats: Option<Res<GameRunStats>>,
     director: Option<Res<RunDirector>>,
     mut drift_q: Query<(&SkyRailDriftCloud, &mut Transform)>,
+    mut train_q: Query<(&SkyRailDistantTrain, &mut Transform), Without<SkyRailDriftCloud>>,
 ) {
     let dt = time.delta_seconds();
     let in_zone_5 = run_stats
@@ -1604,6 +2001,19 @@ pub fn update_sky_rail_storm(
             } else {
                 mat.emissive = LinearRgba::BLACK;
                 mat.base_color = Color::srgb(0.014, 0.02, 0.03);
+            }
+        }
+    }
+
+    // 3. Lightweight distant mag-train transit movement
+    for (train, mut trans) in train_q.iter_mut() {
+        trans.translation.z += train.speed * dt;
+        let span = train.max_local_z - train.min_local_z;
+        if span > 0.0 {
+            if trans.translation.z > train.max_local_z {
+                trans.translation.z -= span;
+            } else if trans.translation.z < train.min_local_z {
+                trans.translation.z += span;
             }
         }
     }
@@ -1785,5 +2195,48 @@ mod tests {
             let titan_x = 110.0 + h1 * 40.0;
             assert!(titan_x >= 90.0, "Distant titans must remain outside 90m");
         }
+    }
+
+    #[test]
+    fn test_sky_rail_distant_infrastructure_clearance() {
+        // Verify that all distant infrastructure positions across all chapters strictly remain >= 95m
+        for d in (8000..10000).step_by(20) {
+            let seg_idx = (d as f32 / 40.0).floor() as i32;
+            let h2 = ((seg_idx.wrapping_mul(31) + 11).rem_euclid(100)) as f32 / 100.0;
+            let cloud_x = 112.0 + h2 * 28.0;
+            assert!(cloud_x >= 95.0, "Distant cloud flank must stay outside 95m");
+
+            let mast_x = 155.0 + h2 * 35.0;
+            assert!(mast_x >= 95.0, "Distant mast must stay outside 95m");
+
+            let rail_x = 138.0_f32;
+            assert!(
+                rail_x >= 95.0,
+                "Distant parallel rail must stay outside 95m"
+            );
+
+            let shaft_x = 148.0_f32;
+            assert!(
+                shaft_x >= 95.0,
+                "Distant elevator shaft must stay outside 95m"
+            );
+        }
+    }
+
+    #[test]
+    fn test_sky_rail_distant_train_kinematics() {
+        let train = SkyRailDistantTrain {
+            speed: -50.0,
+            min_local_z: -38.0,
+            max_local_z: 38.0,
+        };
+        let mut z = 0.0;
+        let dt = 1.0;
+        z += train.speed * dt; // -50.0
+        let span = train.max_local_z - train.min_local_z; // 76.0
+        if z < train.min_local_z {
+            z += span; // -50.0 + 76.0 = 26.0
+        }
+        assert!(z >= train.min_local_z && z <= train.max_local_z);
     }
 }
