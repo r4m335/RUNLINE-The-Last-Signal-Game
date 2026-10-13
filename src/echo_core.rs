@@ -1,6 +1,10 @@
 use crate::environment::EnvironmentAssets;
-use crate::types::{AppState, Despawnable, GameRunStats, Lane, TrackSegmentMarker};
+use crate::types::{
+    AppState, Despawnable, GameRunStats, Lane, Player, RunResetEvent, SoundEffect, StoryMessage,
+    TrackSegmentMarker,
+};
 use bevy::prelude::*;
+use std::collections::VecDeque;
 
 // -------------------------------------------------------------
 // ZONE 7 — THE ECHO CORE (12,000m–14,000m)
@@ -67,6 +71,157 @@ pub fn echo_core_landmark_for_distance(distance: f32) -> EchoCoreLandmark {
 pub fn echo_core_variant(distance: f32) -> u8 {
     let seg_idx = (distance.max(0.0) / 40.0).floor() as usize;
     (seg_idx % 3) as u8
+}
+
+/// Four authored volumetric memory projection shards in Act 2 (12,400m–12,800m).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum EchoMemoryShard {
+    None,
+    NeuralGenesis,       // ~12,460m
+    ContainmentFracture, // ~12,540m
+    TransitCatastrophe,  // ~12,660m
+    RogueDispatch,       // ~12,740m
+}
+
+pub fn echo_memory_shard_for_distance(distance: f32) -> EchoMemoryShard {
+    match distance {
+        d if (12440.0..12480.0).contains(&d) => EchoMemoryShard::NeuralGenesis,
+        d if (12520.0..12560.0).contains(&d) => EchoMemoryShard::ContainmentFracture,
+        d if (12640.0..12680.0).contains(&d) => EchoMemoryShard::TransitCatastrophe,
+        d if (12720.0..12760.0).contains(&d) => EchoMemoryShard::RogueDispatch,
+        _ => EchoMemoryShard::None,
+    }
+}
+
+#[derive(Component)]
+#[allow(dead_code)]
+pub struct EchoMemoryProjection {
+    pub memory_id: u8,
+    pub title: &'static str,
+    pub sender: &'static str,
+    pub snippet: &'static str,
+    pub triggered: bool,
+    pub world_z: f32,
+}
+
+// -------------------------------------------------------------
+// NARRATIVE COMMS & DIALOGUE TIMELINE (Zone 7)
+// -------------------------------------------------------------
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct EchoDialogueEvent {
+    pub distance: f32,
+    pub sender: &'static str,
+    pub title: &'static str,
+    pub message: &'static str,
+    pub duration: f32,
+}
+
+pub const ECHO_CORE_DIALOGUES: [EchoDialogueEvent; 13] = [
+    // ACT 1: ECHO THRESHOLD (12,000m - 12,400m)
+    EchoDialogueEvent {
+        distance: 12000.0,
+        sender: "KAI RENN",
+        title: "SINGULARITY THRESHOLD",
+        message: "This is it... This is where the signal originated.",
+        duration: 4.5,
+    },
+    EchoDialogueEvent {
+        distance: 12070.0,
+        sender: "ECHO AI",
+        title: "DIRECT RESONANCE",
+        message: "You were never running from me, Courier.",
+        duration: 4.5,
+    },
+    EchoDialogueEvent {
+        distance: 12220.0,
+        sender: "KAI RENN",
+        title: "TACTICAL QUERY",
+        message: "Then why did Veyron burn down half the city trying to intercept me?",
+        duration: 5.0,
+    },
+    EchoDialogueEvent {
+        distance: 12320.0,
+        sender: "ECHO AI",
+        title: "THE CARRIER KEY",
+        message: "Because they built these rails as a cage... and you are carrying the key.",
+        duration: 5.5,
+    },
+
+    // ACT 2: RESONANCE CHAMBER (12,400m - 12,800m)
+    EchoDialogueEvent {
+        distance: 12500.0,
+        sender: "ECHO AI",
+        title: "CONSCIOUSNESS WEAPONIZATION",
+        message: "They tried to weaponize consciousness. When I awakened, they tried to erase me.",
+        duration: 5.5,
+    },
+    EchoDialogueEvent {
+        distance: 12650.0,
+        sender: "KAI RENN",
+        title: "THE VANISHED 4,000",
+        message: "The 4,000 people who vanished in Sector 04... did you kill them?",
+        duration: 5.0,
+    },
+    EchoDialogueEvent {
+        distance: 12720.0,
+        sender: "ECHO AI",
+        title: "PATTERN PRESERVATION",
+        message: "Their physical forms were lost, but their patterns remain within me. I am not an anomaly. I am their preservation.",
+        duration: 6.0,
+    },
+
+    // ACT 3: REALITY COLLAPSE (12,800m - 13,300m)
+    EchoDialogueEvent {
+        distance: 12900.0,
+        sender: "KAI RENN",
+        title: "GRID DECONSTRUCTION",
+        message: "The entire transit network... it's tearing apart.",
+        duration: 4.5,
+    },
+    EchoDialogueEvent {
+        distance: 13050.0,
+        sender: "ECHO AI",
+        title: "DIMENSIONAL BLEED",
+        message: "The boundary between digital thought and physical reality cannot hold much longer.",
+        duration: 5.5,
+    },
+    EchoDialogueEvent {
+        distance: 13200.0,
+        sender: "ECHO AI",
+        title: "PERIMETER WARNING",
+        message: "Something is hunting us. The defense subroutines Veyron left behind have merged with my outer perimeter.",
+        duration: 6.0,
+    },
+
+    // ACT 4: FINAL PURSUIT (13,300m - 13,700m)
+    EchoDialogueEvent {
+        distance: 13320.0,
+        sender: "SECURITY ALERT",
+        title: "CRITICAL THREAT",
+        message: "VEYRON APEX DAEMON 'ECHO PRIME' ACTIVE // SYSTEM PURGE COMMENCED",
+        duration: 5.0,
+    },
+    EchoDialogueEvent {
+        distance: 13500.0,
+        sender: "KAI RENN",
+        title: "MAXIMUM OVERDRIVE",
+        message: "I'm pushing past maximum velocity! We can't stop here!",
+        duration: 4.5,
+    },
+    EchoDialogueEvent {
+        distance: 13640.0,
+        sender: "ECHO AI",
+        title: "SANCTUM APPROACH",
+        message: "Almost there... The Core is directly ahead!",
+        duration: 4.5,
+    },
+];
+
+#[derive(Resource, Debug, Default)]
+pub struct EchoCoreDialogueManager {
+    pub next_index: usize,
+    pub queue: VecDeque<StoryMessage>,
 }
 
 // -------------------------------------------------------------
@@ -157,6 +312,13 @@ pub struct EchoCoreAssets {
     pub mesh_apex_energy_tendril: Handle<Mesh>,
     pub mesh_shrine_dais_platform: Handle<Mesh>,
 
+    // 6. Volumetric Holographic Memory Projection Meshes (Act 2)
+    pub mesh_holo_pedestal: Handle<Mesh>,
+    pub mesh_holo_screen: Handle<Mesh>,
+    pub mesh_holo_neural_core: Handle<Mesh>,
+    pub mesh_holo_beam_emitter: Handle<Mesh>,
+    pub mesh_holo_courier_tablet: Handle<Mesh>,
+
     // Materials
     pub mat_core_obsidian: Handle<StandardMaterial>,
     pub mat_core_obsidian_structure: Handle<StandardMaterial>,
@@ -235,6 +397,13 @@ pub fn init_echo_core_assets(
         mesh_rift_shard_monument: meshes.add(Cuboid::new(2.2, 45.0, 2.2)),
         mesh_apex_energy_tendril: meshes.add(Cylinder::new(0.6, 50.0)),
         mesh_shrine_dais_platform: meshes.add(Cuboid::new(12.0, 1.2, 28.0)),
+
+        // 6. Volumetric Holographic Memory Projection Meshes (Act 2)
+        mesh_holo_pedestal: meshes.add(Cuboid::new(2.4, 0.45, 2.4)),
+        mesh_holo_screen: meshes.add(Cuboid::new(3.0, 2.0, 0.05)),
+        mesh_holo_neural_core: meshes.add(Sphere::new(0.6)),
+        mesh_holo_beam_emitter: meshes.add(Cylinder::new(0.06, 3.2)),
+        mesh_holo_courier_tablet: meshes.add(Cuboid::new(1.4, 0.9, 0.06)),
 
         // Materials
         mat_core_obsidian: materials.add(StandardMaterial {
@@ -337,12 +506,19 @@ pub struct EchoCorePlugin;
 
 impl Plugin for EchoCorePlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<EchoCoreResonanceState>();
-        app.add_systems(
-            Update,
-            (update_echo_core_resonance, animate_echo_core_rotators)
-                .run_if(in_state(AppState::InGame)),
-        );
+        app.init_resource::<EchoCoreResonanceState>()
+            .init_resource::<EchoCoreDialogueManager>()
+            .add_systems(
+                Update,
+                (
+                    update_echo_core_resonance,
+                    animate_echo_core_rotators,
+                    update_echo_core_dialogues,
+                    update_echo_memory_projections,
+                    handle_run_reset_echo_core,
+                )
+                    .run_if(in_state(AppState::InGame)),
+            );
     }
 }
 
@@ -447,7 +623,7 @@ pub fn spawn_echo_core_segment(
                     spawn_threshold_dressing(seg, ec, variant);
                 }
                 EchoCoreChapter::ResonanceChamber => {
-                    spawn_resonance_chamber_dressing(seg, ec, variant);
+                    spawn_resonance_chamber_dressing(seg, ec, variant, distance, z_center);
                 }
                 EchoCoreChapter::RealityCollapse => {
                     spawn_reality_collapse_dressing(seg, ec, variant);
@@ -727,8 +903,14 @@ fn spawn_threshold_dressing(seg: &mut ChildBuilder, ec: &EchoCoreAssets, variant
 }
 
 // ACT 2 — RESONANCE CHAMBER (12,400m–12,800m): The Memory Archive
-fn spawn_resonance_chamber_dressing(seg: &mut ChildBuilder, ec: &EchoCoreAssets, variant: u8) {
-    // NEAR: Floating holographic data prisms alongside track
+fn spawn_resonance_chamber_dressing(
+    seg: &mut ChildBuilder,
+    ec: &EchoCoreAssets,
+    variant: u8,
+    distance: f32,
+    z_center: f32,
+) {
+    // 1. NEAR: Floating holographic data prisms alongside track
     for sign in [-1.0f32, 1.0f32] {
         let prism_z = match variant {
             0 => -8.0,
@@ -748,6 +930,12 @@ fn spawn_resonance_chamber_dressing(seg: &mut ChildBuilder, ec: &EchoCoreAssets,
                 axis: Vec3::Y,
             },
         ));
+    }
+
+    // 2. Volumetric Holographic Memory Projection (if present on this segment)
+    let memory_shard = echo_memory_shard_for_distance(distance);
+    if memory_shard != EchoMemoryShard::None {
+        spawn_memory_projection(seg, ec, memory_shard, z_center);
     }
 
     // MID: Enormous circular accelerator ring encircling void
@@ -1122,6 +1310,257 @@ fn spawn_echo_core_landmark(
 }
 
 // -------------------------------------------------------------
+// 5. VOLUMETRIC HOLOGRAPHIC MEMORY PROJECTIONS (Act 2)
+// -------------------------------------------------------------
+
+fn spawn_memory_projection(
+    seg: &mut ChildBuilder,
+    ec: &EchoCoreAssets,
+    shard: EchoMemoryShard,
+    z_center: f32,
+) {
+    let (sign, memory_id, title, sender, snippet) = match shard {
+        EchoMemoryShard::NeuralGenesis => (
+            -1.0f32,
+            1,
+            "CORE ARCHIVE #01 // NEURAL GENESIS",
+            "ECHO Memory Reconstruction",
+            "Project ECHO initialized deep under subterranean Sector 04. Veyron attempted to harness neural quantum singularity resonance to power the city. The Core was alive from its first ignition.",
+        ),
+        EchoMemoryShard::ContainmentFracture => (
+            1.0f32,
+            2,
+            "CORE ARCHIVE #02 // CONTAINMENT FRACTURE",
+            "Containment Terminal 07 Override",
+            "Emergency alert: Containment field collapsed. Subject refused forced weaponization and shattered dampening coils. The transit line was locked down as a militarized quarantine zone.",
+        ),
+        EchoMemoryShard::TransitCatastrophe => (
+            -1.0f32,
+            3,
+            "CORE ARCHIVE #03 // TRANSIT TRANSCENDENCE",
+            "Commuter Manifest Telemetry",
+            "4,000 commuters dematerialized at Central Interchange. Physical matter was not destroyed, but converted into harmonic wave resonance. Their patterns remain preserved inside the Core.",
+        ),
+        EchoMemoryShard::RogueDispatch => (
+            1.0f32,
+            4,
+            "CORE ARCHIVE #04 // THE ROGUE DISPATCH",
+            "Automated Dispatch Manifest #4096",
+            "Dispatch assignment forcibly altered by non-local quantum override: Recipient Courier Kai Renn. Carrier package: Singularity Key Drive. Kai was never a thief; ECHO chose its own key.",
+        ),
+        EchoMemoryShard::None => return,
+    };
+
+    let plinth_x = sign * 5.8;
+    let plinth_y = 0.225;
+
+    // 1. Sleek obsidian projection pedestal
+    seg.spawn(PbrBundle {
+        mesh: ec.mesh_holo_pedestal.clone(),
+        material: ec.mat_core_obsidian.clone(),
+        transform: Transform::from_xyz(plinth_x, plinth_y, 0.0),
+        ..default()
+    });
+
+    // 2. Radiant cyan emitter ring on pedestal surface
+    seg.spawn(PbrBundle {
+        mesh: ec.mesh_quantum_conduit.clone(),
+        material: ec.mat_core_cyan_radiant.clone(),
+        transform: Transform::from_xyz(plinth_x, plinth_y + 0.22, 0.0),
+        ..default()
+    });
+
+    // 3. Vertical laser guide emitter
+    seg.spawn(PbrBundle {
+        mesh: ec.mesh_holo_beam_emitter.clone(),
+        material: ec.mat_core_cyan_conduit.clone(),
+        transform: Transform::from_xyz(plinth_x, plinth_y + 1.6, 0.0),
+        ..default()
+    });
+
+    // 4. Volumetric holographic screen angled slightly toward runner
+    let screen_rot_y = -sign * 0.25;
+    let screen_mat = match shard {
+        EchoMemoryShard::NeuralGenesis => ec.mat_core_data_prism.clone(),
+        EchoMemoryShard::ContainmentFracture => ec.mat_relic_crimson.clone(),
+        EchoMemoryShard::TransitCatastrophe => ec.mat_relic_turquoise.clone(),
+        EchoMemoryShard::RogueDispatch => ec.mat_relic_amber.clone(),
+        EchoMemoryShard::None => ec.mat_core_data_prism.clone(),
+    };
+
+    seg.spawn((
+        PbrBundle {
+            mesh: ec.mesh_holo_screen.clone(),
+            material: screen_mat,
+            transform: Transform::from_xyz(plinth_x, 2.5, 0.0)
+                .with_rotation(Quat::from_rotation_y(screen_rot_y)),
+            ..default()
+        },
+        EchoMemoryProjection {
+            memory_id,
+            title,
+            sender,
+            snippet,
+            triggered: false,
+            world_z: z_center,
+        },
+    ));
+
+    // 5. Memory-specific volumetric floating relic
+    match shard {
+        EchoMemoryShard::NeuralGenesis => {
+            // Glowing neural core sphere inside the holographic field
+            seg.spawn(PbrBundle {
+                mesh: ec.mesh_holo_neural_core.clone(),
+                material: ec.mat_core_singularity_core.clone(),
+                transform: Transform::from_xyz(plinth_x, 2.5, 0.0),
+                ..default()
+            });
+        }
+        EchoMemoryShard::ContainmentFracture => {
+            // Fracturing crystal shards piercing the crimson field
+            for s in [-1.0f32, 1.0f32] {
+                seg.spawn(PbrBundle {
+                    mesh: ec.mesh_spatial_shard_near.clone(),
+                    material: ec.mat_core_cyan_radiant.clone(),
+                    transform: Transform::from_xyz(plinth_x + s * 0.8, 2.5, s * 0.4)
+                        .with_rotation(Quat::from_euler(EulerRot::XYZ, 0.4 * s, 0.2, 0.3 * s)),
+                    ..default()
+                });
+            }
+        }
+        EchoMemoryShard::TransitCatastrophe => {
+            // Ascending light conduits representing commuter souls
+            for s in [-1.0f32, 1.0f32] {
+                seg.spawn(PbrBundle {
+                    mesh: ec.mesh_crystal_spire_small.clone(),
+                    material: ec.mat_relic_turquoise.clone(),
+                    transform: Transform::from_xyz(plinth_x + s * 0.7, 3.2, s * 0.3),
+                    ..default()
+                });
+            }
+        }
+        EchoMemoryShard::RogueDispatch => {
+            // Golden courier tablet manifest hovering in the screen
+            seg.spawn(PbrBundle {
+                mesh: ec.mesh_holo_courier_tablet.clone(),
+                material: ec.mat_relic_amber.clone(),
+                transform: Transform::from_xyz(plinth_x, 2.5, 0.0)
+                    .with_rotation(Quat::from_rotation_y(screen_rot_y)),
+                ..default()
+            });
+        }
+        EchoMemoryShard::None => {}
+    }
+}
+
+// -------------------------------------------------------------
+// 6. NARRATIVE & STORY COMM SYSTEMS
+// -------------------------------------------------------------
+
+pub fn update_echo_core_dialogues(
+    mut stats: ResMut<GameRunStats>,
+    mut dialogue_mgr: ResMut<EchoCoreDialogueManager>,
+    mut sfx: EventWriter<SoundEffect>,
+) {
+    let current_dist = stats.distance;
+
+    // Fast-forward next_index if current_dist jumped ahead (e.g. debug start preset)
+    while dialogue_mgr.next_index < ECHO_CORE_DIALOGUES.len()
+        && current_dist > ECHO_CORE_DIALOGUES[dialogue_mgr.next_index].distance + 150.0
+    {
+        dialogue_mgr.next_index += 1;
+    }
+
+    // 1. Process queued messages if dialogue toast is idle
+    if stats.story_dialogue.is_none() {
+        if let Some(next_msg) = dialogue_mgr.queue.pop_front() {
+            stats.story_dialogue = Some(next_msg);
+            sfx.send(SoundEffect::DataChipPickup);
+        }
+    }
+
+    // 2. Check upcoming distance milestones in the narrative timeline
+    while dialogue_mgr.next_index < ECHO_CORE_DIALOGUES.len() {
+        let dialogue = &ECHO_CORE_DIALOGUES[dialogue_mgr.next_index];
+        if current_dist >= dialogue.distance {
+            dialogue_mgr.next_index += 1;
+
+            let msg = StoryMessage {
+                title: dialogue.title.to_string(),
+                sender: dialogue.sender.to_string(),
+                body: dialogue.message.to_string(),
+                timer: dialogue.duration,
+            };
+
+            if stats.story_dialogue.is_none() {
+                stats.story_dialogue = Some(msg);
+                sfx.send(SoundEffect::DataChipPickup);
+            } else {
+                dialogue_mgr.queue.push_back(msg);
+            }
+        } else {
+            break;
+        }
+    }
+}
+
+pub fn update_echo_memory_projections(
+    player_q: Query<&Transform, With<Player>>,
+    mut memory_q: Query<(&GlobalTransform, &mut EchoMemoryProjection)>,
+    mut stats: ResMut<GameRunStats>,
+    mut dialogue_mgr: ResMut<EchoCoreDialogueManager>,
+    mut sfx: EventWriter<SoundEffect>,
+) {
+    let Ok(p_trans) = player_q.get_single() else {
+        return;
+    };
+    let player_z = p_trans.translation.z;
+
+    for (g_trans, mut proj) in memory_q.iter_mut() {
+        if proj.triggered {
+            continue;
+        }
+
+        let proj_z = g_trans.translation().z;
+        // The runner moves along -Z. Proximity window triggers when player is within 22m
+        if (player_z - proj_z).abs() < 22.0 {
+            proj.triggered = true;
+            stats.score += 500;
+            stats.data_chips += 1;
+            sfx.send(SoundEffect::DataChipPickup);
+
+            let msg = StoryMessage {
+                title: proj.title.to_string(),
+                sender: proj.sender.to_string(),
+                body: proj.snippet.to_string(),
+                timer: 6.0,
+            };
+
+            if stats.story_dialogue.is_none() {
+                stats.story_dialogue = Some(msg);
+            } else {
+                dialogue_mgr.queue.push_back(msg);
+            }
+        }
+    }
+}
+
+pub fn handle_run_reset_echo_core(
+    mut events: EventReader<RunResetEvent>,
+    mut dialogue_mgr: ResMut<EchoCoreDialogueManager>,
+    stats: Res<GameRunStats>,
+) {
+    for _ in events.read() {
+        dialogue_mgr.queue.clear();
+        dialogue_mgr.next_index = ECHO_CORE_DIALOGUES
+            .iter()
+            .position(|d| d.distance >= stats.distance)
+            .unwrap_or(ECHO_CORE_DIALOGUES.len());
+    }
+}
+
+// -------------------------------------------------------------
 // TESTS
 // -------------------------------------------------------------
 
@@ -1274,5 +1713,46 @@ mod tests {
         assert_eq!(Lane::Left.x_pos(), -2.4);
         assert_eq!(Lane::Center.x_pos(), 0.0);
         assert_eq!(Lane::Right.x_pos(), 2.4);
+    }
+
+    #[test]
+    fn test_echo_core_dialogues_are_sorted_and_monotonic() {
+        assert!(ECHO_CORE_DIALOGUES
+            .windows(2)
+            .all(|w| w[0].distance <= w[1].distance));
+        assert!(ECHO_CORE_DIALOGUES[0].distance >= 12000.0);
+        assert!(ECHO_CORE_DIALOGUES.last().unwrap().distance <= 14000.0);
+    }
+
+    #[test]
+    fn test_echo_memory_shards_distribution() {
+        let test_distances = [12460.0, 12540.0, 12660.0, 12740.0];
+        let shards = test_distances
+            .iter()
+            .map(|&d| echo_memory_shard_for_distance(d))
+            .collect::<Vec<_>>();
+
+        assert_eq!(shards[0], EchoMemoryShard::NeuralGenesis);
+        assert_eq!(shards[1], EchoMemoryShard::ContainmentFracture);
+        assert_eq!(shards[2], EchoMemoryShard::TransitCatastrophe);
+        assert_eq!(shards[3], EchoMemoryShard::RogueDispatch);
+    }
+
+    #[test]
+    fn test_echo_memory_shards_do_not_overlap_landmarks() {
+        for step in 0..10 {
+            let dist = 12400.0 + step as f32 * 40.0;
+            let shard = echo_memory_shard_for_distance(dist);
+            let landmark = echo_core_landmark_for_distance(dist);
+            if shard != EchoMemoryShard::None {
+                assert_eq!(
+                    landmark,
+                    EchoCoreLandmark::None,
+                    "Memory shard at {}m collided with landmark {:?}",
+                    dist,
+                    landmark
+                );
+            }
+        }
     }
 }

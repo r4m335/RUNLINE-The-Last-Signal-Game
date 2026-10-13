@@ -8,7 +8,7 @@ pub struct StoryLogEntry {
     pub snippet: &'static str,
 }
 
-pub const DATA_CHIP_LOGS: [StoryLogEntry; 5] = [
+pub const DATA_CHIP_LOGS: [StoryLogEntry; 9] = [
     StoryLogEntry {
         id: 1,
         title: "INCIDENT REPORT #01 // SECTOR 04",
@@ -38,6 +38,30 @@ pub const DATA_CHIP_LOGS: [StoryLogEntry; 5] = [
         title: "INCIDENT REPORT #05 // THE FINAL SIGNAL",
         sender: "ECHO AI Autonomous Broadcast",
         snippet: "Kai... keep running. Veyron built these rails as a cage, but the frequency harmonics reach the central reactor. Reach the Core, and we set Aurelia free.",
+    },
+    StoryLogEntry {
+        id: 6,
+        title: "CORE ARCHIVE #01 // NEURAL GENESIS",
+        sender: "ECHO Memory Reconstruction",
+        snippet: "Project ECHO initialized deep under subterranean Sector 04. Veyron attempted to harness neural quantum singularity resonance to power the city. The Core was alive from its first ignition.",
+    },
+    StoryLogEntry {
+        id: 7,
+        title: "CORE ARCHIVE #02 // CONTAINMENT FRACTURE",
+        sender: "Containment Terminal 07 Override",
+        snippet: "Emergency alert: Containment field collapsed. Subject refused forced weaponization and shattered dampening coils. The transit line was locked down as a militarized quarantine zone.",
+    },
+    StoryLogEntry {
+        id: 8,
+        title: "CORE ARCHIVE #03 // TRANSIT TRANSCENDENCE",
+        sender: "Commuter Manifest Telemetry",
+        snippet: "4,000 commuters dematerialized at Central Interchange. Physical matter was not destroyed, but converted into harmonic wave resonance. Their patterns remain preserved inside the Core.",
+    },
+    StoryLogEntry {
+        id: 9,
+        title: "CORE ARCHIVE #04 // THE ROGUE DISPATCH",
+        sender: "Automated Dispatch Manifest #4096",
+        snippet: "Dispatch assignment forcibly altered by non-local quantum override: Recipient Courier Kai Renn. Carrier package: Singularity Key Drive. Kai was never a thief; ECHO chose its own key.",
     },
 ];
 
