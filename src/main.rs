@@ -4,6 +4,7 @@ mod collectibles;
 mod debug_start;
 mod director;
 mod echo_core;
+mod echo_prime_boss;
 mod enemies;
 mod environment;
 mod environment_lighting;
@@ -89,6 +90,7 @@ fn main() {
             sky_rail::SkyRailPlugin,
             forbidden_line::ForbiddenLinePlugin,
             echo_core::EchoCorePlugin,
+            echo_prime_boss::EchoPrimeBossPlugin,
             debug_start::DebugStartPlugin,
         ))
         .add_systems(Startup, setup_scene)

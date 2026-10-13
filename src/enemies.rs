@@ -132,6 +132,7 @@ pub struct EnemySquadManager {
     pub hunter_cooldown: f32,
     pub active_boss: bool,
     pub boss_spawned_milestone_4: bool,
+    #[allow(dead_code)]
     pub boss_spawned_milestone_7: bool,
 }
 
@@ -815,22 +816,9 @@ fn update_enemy_spawning_and_pacing(
             &mut boss_start_events,
             &mut boss_state,
         );
-    } else if stats.distance >= 13300.0
-        && !squad_mgr.boss_spawned_milestone_7
-        && !squad_mgr.active_boss
-    {
-        squad_mgr.boss_spawned_milestone_7 = true;
-        squad_mgr.active_boss = true;
-        let spawn_z = p_trans.translation.z - 32.0;
-        spawn_echo_hunter_boss(
-            &mut commands,
-            &assets,
-            "ECHO Singularity Hunter",
-            spawn_z,
-            &mut boss_start_events,
-            &mut boss_state,
-        );
     }
+    // Note: Zone 7 Campaign Climax boss encounter (13,300m - 13,700m) is handled
+    // exclusively by EchoPrimeBossPlugin in echo_prime_boss.rs
 }
 
 // ----------------------------------------------------------------------------
