@@ -2983,16 +2983,16 @@ mod tests {
             "Immediately before 12,000m must route to ForbiddenLine"
         );
 
-        // Zone 7 verification: 12000m+ must NOT use ForbiddenLine; uses Generic fallback
+        // Zone 7 verification: 12000m+ must NOT use ForbiddenLine; uses EchoCore
         assert_eq!(
             environment_route_for_distance(12000.0),
-            EnvironmentRoute::Generic,
-            "12,000m threshold must transition out of ForbiddenLine to Generic"
+            EnvironmentRoute::EchoCore,
+            "12,000m threshold must transition out of ForbiddenLine to EchoCore"
         );
         assert_eq!(
             environment_route_for_distance(12000.1),
-            EnvironmentRoute::Generic,
-            "Immediately after 12,000m must route to Generic fallback"
+            EnvironmentRoute::EchoCore,
+            "Immediately after 12,000m must route to EchoCore"
         );
         assert_ne!(
             environment_route_for_distance(12000.0),

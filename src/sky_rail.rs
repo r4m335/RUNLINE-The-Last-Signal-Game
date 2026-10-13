@@ -1,6 +1,8 @@
 use crate::director::RunDirector;
 use crate::environment::EnvironmentAssets;
-use crate::types::{AppState, Despawnable, GameRunStats, Lane, MainCamera, TrackSegmentMarker};
+use crate::types::{
+    AppState, Despawnable, GameRunStats, Lane, MainCamera, RunResetEvent, TrackSegmentMarker,
+};
 use bevy::core_pipeline::Skybox;
 use bevy::prelude::*;
 use bevy::render::render_resource::{TextureViewDescriptor, TextureViewDimension};
@@ -1317,13 +1319,25 @@ impl FromWorld for SkyRailSkyboxState {
 
 pub struct SkyRailPlugin;
 
+/// Returns true if and only if the distance is within Zone 5 (Sky Rail: 8000m to 10000m).
+/// All other zones (Zone 1 Old Metro, Zone 2 Neon District, Zone 3 Industrial Sector,
+/// Zone 4 Flooded Metro, Zone 6 Forbidden Line, Zone 7 Echo Core) must never have a skybox.
+pub fn is_in_zone_5(distance: f32) -> bool {
+    distance >= 8000.0 && distance < 10000.0
+}
+
 impl Plugin for SkyRailPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<SkyRailStormState>();
         app.init_resource::<SkyRailSkyboxState>();
         app.add_systems(
             Update,
-            (update_sky_rail_skybox, update_sky_rail_storm).run_if(in_state(AppState::InGame)),
+            (
+                update_sky_rail_skybox,
+                update_sky_rail_storm,
+                handle_run_reset_skybox,
+            )
+                .run_if(in_state(AppState::InGame)),
         );
         app.add_systems(OnExit(AppState::InGame), cleanup_sky_rail_skybox);
     }
@@ -1358,12 +1372,16 @@ pub fn update_sky_rail_skybox(
         }
     }
 
-    // 2. Zone 5 boundary check (8000m - 10000m)
+    // 2. Zone 5 boundary check: strictly Zone 5 (8000m - 10000m)
     let in_zone_5 = run_stats
         .as_ref()
-        .map(|s| s.distance >= 7950.0 && s.distance <= 10050.0)
-        .or_else(|| director.as_ref().map(|d| d.active_zone_id == 5))
-        .unwrap_or(false);
+        .map(|s| is_in_zone_5(s.distance))
+        .unwrap_or_else(|| {
+            director
+                .as_ref()
+                .map(|d| d.active_zone_id == 5)
+                .unwrap_or(false)
+        });
 
     // 3. Attach / remove / update Skybox component on MainCamera
     for cam_entity in cam_q.iter() {
@@ -1379,7 +1397,7 @@ pub fn update_sky_rail_skybox(
                 });
             }
         } else if skybox_q.get(cam_entity).is_ok() {
-            // Leaving Zone 5 or run reset: remove Skybox to prevent interference with other zones
+            // Outside Zone 5: remove Skybox to prevent interference with all other zones
             commands.entity(cam_entity).remove::<Skybox>();
         }
     }
@@ -1394,6 +1412,25 @@ pub fn cleanup_sky_rail_skybox(
     }
 }
 
+pub fn handle_run_reset_skybox(
+    mut commands: Commands,
+    mut events: EventReader<RunResetEvent>,
+    run_stats: Option<Res<GameRunStats>>,
+    cam_q: Query<Entity, (With<MainCamera>, With<Skybox>)>,
+) {
+    for _ in events.read() {
+        let in_zone_5 = run_stats
+            .as_ref()
+            .map(|s| is_in_zone_5(s.distance))
+            .unwrap_or(false);
+        if !in_zone_5 {
+            for cam_entity in cam_q.iter() {
+                commands.entity(cam_entity).remove::<Skybox>();
+            }
+        }
+    }
+}
+
 pub fn update_sky_rail_storm(
     time: Res<Time>,
     mut storm_state: ResMut<SkyRailStormState>,
@@ -1403,9 +1440,13 @@ pub fn update_sky_rail_storm(
     let dt = time.delta_seconds();
     let in_zone_5 = run_stats
         .as_ref()
-        .map(|s| s.distance >= 7950.0 && s.distance <= 10050.0)
-        .or_else(|| director.as_ref().map(|d| d.active_zone_id == 5))
-        .unwrap_or(false);
+        .map(|s| is_in_zone_5(s.distance))
+        .unwrap_or_else(|| {
+            director
+                .as_ref()
+                .map(|d| d.active_zone_id == 5)
+                .unwrap_or(false)
+        });
 
     if !in_zone_5 {
         if storm_state.flash_intensity > 0.0 || storm_state.is_flashing {
@@ -1627,33 +1668,46 @@ mod tests {
 
     #[test]
     fn test_sky_rail_skybox_zone_boundaries() {
-        // Verify that in_zone_5 condition correctly gates the skybox strictly to Zone 5 (8000m-10000m)
-        let check_zone_5 = |dist: f32, active_zone_id: usize| -> bool {
-            (dist >= 7950.0 && dist <= 10050.0) || active_zone_id == 5
-        };
-
+        // Verify that is_in_zone_5 condition correctly gates the skybox strictly to Zone 5 (8000m-10000m)
         // Zone 1: Old Metro (0..2000m) -> Skybox MUST NOT be active
-        assert!(!check_zone_5(0.0, 1));
-        assert!(!check_zone_5(1500.0, 1));
+        assert!(!is_in_zone_5(0.0));
+        assert!(!is_in_zone_5(1000.0));
+        assert!(!is_in_zone_5(1500.0));
+        assert!(!is_in_zone_5(1999.9));
 
         // Zone 2: Neon District (2000..4000m) -> Skybox MUST NOT be active
-        assert!(!check_zone_5(2500.0, 2));
+        assert!(!is_in_zone_5(2000.0));
+        assert!(!is_in_zone_5(2500.0));
+        assert!(!is_in_zone_5(3999.9));
 
         // Zone 3: Industrial Sector (4000..6000m) -> Skybox MUST NOT be active
-        assert!(!check_zone_5(5000.0, 3));
+        assert!(!is_in_zone_5(4000.0));
+        assert!(!is_in_zone_5(5000.0));
+        assert!(!is_in_zone_5(5999.9));
 
-        // Zone 4: Flooded Metro (6000..8000m) -> Skybox MUST NOT be active until approach boundary
-        assert!(!check_zone_5(6500.0, 4));
-        assert!(!check_zone_5(7800.0, 4));
+        // Zone 4: Flooded Metro (6000..8000m) -> Skybox MUST NOT be active anywhere in Zone 4
+        assert!(!is_in_zone_5(6000.0));
+        assert!(!is_in_zone_5(6500.0));
+        assert!(!is_in_zone_5(7800.0));
+        assert!(!is_in_zone_5(7950.0));
+        assert!(!is_in_zone_5(7999.9));
 
         // Zone 5: Sky Rail (8000..10000m) -> Skybox MUST be active
-        assert!(check_zone_5(8000.0, 5));
-        assert!(check_zone_5(9000.0, 5));
-        assert!(check_zone_5(10000.0, 5));
+        assert!(is_in_zone_5(8000.0));
+        assert!(is_in_zone_5(8500.0));
+        assert!(is_in_zone_5(9000.0));
+        assert!(is_in_zone_5(9999.9));
 
-        // Zone 6: Forbidden Line (10000..12000m) -> Skybox MUST NOT be active
-        assert!(!check_zone_5(10100.0, 6));
-        assert!(!check_zone_5(11500.0, 6));
+        // Zone 6: Forbidden Line (10000..12000m) -> Skybox MUST NOT be active anywhere in Zone 6
+        assert!(!is_in_zone_5(10000.0));
+        assert!(!is_in_zone_5(10050.0));
+        assert!(!is_in_zone_5(10100.0));
+        assert!(!is_in_zone_5(11500.0));
+        assert!(!is_in_zone_5(11999.9));
+
+        // Zone 7: ECHO Core (12000..14000m) -> Skybox MUST NOT be active
+        assert!(!is_in_zone_5(12000.0));
+        assert!(!is_in_zone_5(13000.0));
     }
 
     #[test]

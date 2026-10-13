@@ -3,6 +3,7 @@ mod benchmark;
 mod collectibles;
 mod debug_start;
 mod director;
+mod echo_core;
 mod enemies;
 mod environment;
 mod environment_lighting;
@@ -87,6 +88,7 @@ fn main() {
             NeonDistrictPlugin,
             sky_rail::SkyRailPlugin,
             forbidden_line::ForbiddenLinePlugin,
+            echo_core::EchoCorePlugin,
             debug_start::DebugStartPlugin,
         ))
         .add_systems(Startup, setup_scene)

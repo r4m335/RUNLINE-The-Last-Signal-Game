@@ -30,6 +30,7 @@ struct TrackEnvironmentAssets<'w> {
     flooded: Option<Res<'w, crate::flooded_metro::FloodedMetroAssets>>,
     sky_rail: Option<Res<'w, crate::sky_rail::SkyRailAssets>>,
     forbidden: Option<Res<'w, crate::forbidden_line::ForbiddenLineAssets>>,
+    echo_core: Option<Res<'w, crate::echo_core::EchoCoreAssets>>,
 }
 
 impl Default for TrackManager {
@@ -133,6 +134,7 @@ fn handle_run_reset_track(
                 environment_assets.flooded.as_deref(),
                 environment_assets.sky_rail.as_deref(),
                 environment_assets.forbidden.as_deref(),
+                environment_assets.echo_core.as_deref(),
                 z_center,
                 SEGMENT_LENGTH,
                 (-z_center).max(0.0),
@@ -193,6 +195,7 @@ fn maintain_rolling_track(
             environment_assets.flooded.as_deref(),
             environment_assets.sky_rail.as_deref(),
             environment_assets.forbidden.as_deref(),
+            environment_assets.echo_core.as_deref(),
             z_center,
             SEGMENT_LENGTH,
             (-z_center).max(0.0),
@@ -1754,6 +1757,7 @@ fn spawn_segment(
     flooded_assets: Option<&crate::flooded_metro::FloodedMetroAssets>,
     sky_rail_assets: Option<&crate::sky_rail::SkyRailAssets>,
     forbidden_assets: Option<&crate::forbidden_line::ForbiddenLineAssets>,
+    echo_core_assets: Option<&crate::echo_core::EchoCoreAssets>,
     z_center: f32,
     length: f32,
     distance: f32,
@@ -1768,6 +1772,7 @@ fn spawn_segment(
         flooded_assets,
         sky_rail_assets,
         forbidden_assets,
+        echo_core_assets,
         z_center,
         length,
         distance,

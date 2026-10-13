@@ -7,7 +7,7 @@ pub struct DebugStartPreset {
     pub distance: f32,
 }
 
-pub const DEBUG_START_PRESETS: [DebugStartPreset; 25] = [
+pub const DEBUG_START_PRESETS: [DebugStartPreset; 31] = [
     DebugStartPreset {
         label: "NORMAL RUN",
         distance: 0.0,
@@ -105,8 +105,32 @@ pub const DEBUG_START_PRESETS: [DebugStartPreset; 25] = [
         distance: 11960.0,
     },
     DebugStartPreset {
-        label: "ZONE 7 // ECHO CORE 12000M",
+        label: "ZONE 7 // THRESHOLD 12000M",
         distance: 12000.0,
+    },
+    DebugStartPreset {
+        label: "ZONE 7 // GATEWAY 12080M",
+        distance: 12080.0,
+    },
+    DebugStartPreset {
+        label: "ZONE 7 // RESONANCE 12400M",
+        distance: 12400.0,
+    },
+    DebugStartPreset {
+        label: "ZONE 7 // COLLAPSE 12800M",
+        distance: 12800.0,
+    },
+    DebugStartPreset {
+        label: "ZONE 7 // PURSUIT 13300M",
+        distance: 13300.0,
+    },
+    DebugStartPreset {
+        label: "ZONE 7 // CORE 13700M",
+        distance: 13700.0,
+    },
+    DebugStartPreset {
+        label: "ZONE 7 // APEX 13950M",
+        distance: 13950.0,
     },
 ];
 
@@ -322,6 +346,10 @@ impl DebugStartConfig {
                 selected_preset = preset_for_zone_id(6);
                 autostart = true;
                 explicit_selection = true;
+            } else if lower == "--echocore" || lower == "--echo" || lower == "--core" {
+                selected_preset = preset_for_zone_id(7);
+                autostart = true;
+                explicit_selection = true;
             } else if lower == "--metro" {
                 selected_preset = preset_for_zone_id(1);
                 autostart = true;
@@ -417,7 +445,8 @@ mod tests {
             vec![
                 0.0, 0.0, 1000.0, 1800.0, 2000.0, 3000.0, 3800.0, 4000.0, 4500.0, 5100.0, 5500.0,
                 5850.0, 6000.0, 8000.0, 8300.0, 8700.0, 9200.0, 9650.0, 10000.0, 10450.0, 10850.0,
-                11350.0, 11800.0, 11960.0, 12000.0
+                11350.0, 11800.0, 11960.0, 12000.0, 12080.0, 12400.0, 12800.0, 13300.0, 13700.0,
+                13950.0
             ]
         );
     }
