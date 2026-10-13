@@ -9,6 +9,9 @@ pub enum AppState {
     Paused,
     GameOver,
     StoryLog,
+    EndingChoice,
+    EndingCinematic,
+    Credits,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

@@ -4,6 +4,7 @@ mod collectibles;
 mod debug_start;
 mod director;
 mod echo_core;
+mod echo_ending;
 mod echo_prime_boss;
 mod enemies;
 mod environment;
@@ -91,13 +92,15 @@ fn main() {
             forbidden_line::ForbiddenLinePlugin,
             echo_core::EchoCorePlugin,
             echo_prime_boss::EchoPrimeBossPlugin,
+            echo_ending::EchoEndingPlugin,
             debug_start::DebugStartPlugin,
         ))
         .add_systems(Startup, setup_scene)
         .add_systems(
             Update,
             (
-                camera_follow_player.run_if(in_state(AppState::InGame)),
+                camera_follow_player
+                    .run_if(in_state(AppState::InGame).or_else(in_state(AppState::EndingChoice))),
                 handle_run_reset_camera,
             ),
         )
