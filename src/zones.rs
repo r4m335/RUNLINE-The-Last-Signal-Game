@@ -17,6 +17,7 @@ pub struct ZoneConfig {
 }
 
 pub const BOSS_MILESTONE_4_DISTANCE: f32 = 6000.0;
+#[allow(dead_code)]
 pub const BOSS_MILESTONE_7_DISTANCE: f32 = 12000.0;
 
 pub const ZONES: [ZoneConfig; 7] = [

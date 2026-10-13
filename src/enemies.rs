@@ -815,7 +815,7 @@ fn update_enemy_spawning_and_pacing(
             &mut boss_start_events,
             &mut boss_state,
         );
-    } else if stats.distance >= crate::zones::BOSS_MILESTONE_7_DISTANCE
+    } else if stats.distance >= 13300.0
         && !squad_mgr.boss_spawned_milestone_7
         && !squad_mgr.active_boss
     {

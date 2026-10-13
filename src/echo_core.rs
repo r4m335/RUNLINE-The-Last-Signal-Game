@@ -202,35 +202,35 @@ pub fn init_echo_core_assets(
         mesh_spatial_shard_near: meshes.add(Cuboid::new(0.3, 3.6, 0.6)),
 
         // 3. MID Layer Architecture & Machinery
-        mesh_accelerator_ring_36m: meshes.add(Torus::new(0.85, 18.0)),
+        mesh_accelerator_ring_36m: meshes.add(Torus::new(20.4, 22.0)),
         mesh_ring_inductor_node: meshes.add(Cuboid::new(2.4, 3.2, 1.8)),
         mesh_obsidian_monolith: meshes.add(Cuboid::new(4.5, 65.0, 4.5)),
         mesh_hanging_monolith: meshes.add(Cuboid::new(5.0, 50.0, 5.0)),
         mesh_energy_cascade_beam: meshes.add(Cylinder::new(0.4, 80.0)),
         mesh_inverted_rail_truss: meshes.add(Cuboid::new(7.2, 0.8, length)),
         mesh_tilted_structural_beam: meshes.add(Cuboid::new(1.2, 35.0, 1.2)),
-        mesh_amphitheater_rib: meshes.add(Torus::new(1.2, 24.0)),
+        mesh_amphitheater_rib: meshes.add(Torus::new(26.4, 28.0)),
         mesh_silence_plinth: meshes.add(Cuboid::new(3.0, 8.0, 3.0)),
 
         // Past Zone Relic Meshes
-        mesh_relic_metro_arch: meshes.add(Torus::new(0.35, 4.5)),
+        mesh_relic_metro_arch: meshes.add(Torus::new(4.4, 5.0)),
         mesh_relic_neon_frame: meshes.add(Cuboid::new(6.0, 3.5, 0.2)),
         mesh_relic_industrial_pipe: meshes.add(Cylinder::new(0.7, 12.0)),
-        mesh_relic_flooded_ring: meshes.add(Torus::new(0.5, 5.0)),
+        mesh_relic_flooded_ring: meshes.add(Torus::new(5.2, 6.0)),
         mesh_relic_sky_pylon: meshes.add(Cuboid::new(0.8, 16.0, 0.8)),
         mesh_relic_blast_door: meshes.add(Cuboid::new(4.8, 4.2, 0.6)),
 
         // 4. FAR Layer Void & Grand Scale
         mesh_cavern_column_giant: meshes.add(Cylinder::new(8.0, 140.0)),
         mesh_distant_crystal_cluster: meshes.add(Cuboid::new(14.0, 85.0, 14.0)),
-        mesh_concentric_halo_ring: meshes.add(Torus::new(1.4, 45.0)),
+        mesh_concentric_halo_ring: meshes.add(Torus::new(51.6, 54.0)),
         mesh_core_sphere_horizon: meshes.add(Sphere::new(35.0)),
-        mesh_core_orbit_polyhedron: meshes.add(Torus::new(1.1, 40.0)),
+        mesh_core_orbit_polyhedron: meshes.add(Torus::new(40.2, 42.0)),
 
         // 5. Hero Landmark Meshes
-        mesh_gateway_portal_ring: meshes.add(Torus::new(1.2, 14.0)),
-        mesh_gateway_portal_spire: meshes.add(Cuboid::new(2.8, 38.0, 2.8)),
-        mesh_nexus_outer_gimbal: meshes.add(Torus::new(1.5, 22.0)),
+        mesh_gateway_portal_ring: meshes.add(Torus::new(18.4, 20.0)),
+        mesh_gateway_portal_spire: meshes.add(Cuboid::new(3.0, 42.0, 3.0)),
+        mesh_nexus_outer_gimbal: meshes.add(Torus::new(24.4, 26.0)),
         mesh_nexus_energy_collector: meshes.add(Cylinder::new(1.2, 18.0)),
         mesh_rift_shard_monument: meshes.add(Cuboid::new(2.2, 45.0, 2.2)),
         mesh_apex_energy_tendril: meshes.add(Cylinder::new(0.6, 50.0)),
@@ -750,27 +750,28 @@ fn spawn_resonance_chamber_dressing(seg: &mut ChildBuilder, ec: &EchoCoreAssets,
         ));
     }
 
-    // MID: Enormous 36m-diameter circular accelerator ring encircling void
-    // Alternates between overhead tilt and under-track tilt
+    // MID: Enormous circular accelerator ring encircling void
+    // Rotated 90° around X so its aperture stands vertically across the tracks
     let (ring_rot_x, ring_y) = match variant {
-        0 => (0.25f32, 10.0f32),
-        1 => (-0.2f32, 12.0f32),
+        0 => (0.15f32, 10.0f32),
+        1 => (-0.15f32, 12.0f32),
         _ => (0.0f32, 11.0f32),
     };
 
     seg.spawn(PbrBundle {
         mesh: ec.mesh_accelerator_ring_36m.clone(),
         material: ec.mat_core_obsidian_structure.clone(),
-        transform: Transform::from_xyz(0.0, ring_y, 0.0)
-            .with_rotation(Quat::from_rotation_x(ring_rot_x)),
+        transform: Transform::from_xyz(0.0, ring_y, 0.0).with_rotation(Quat::from_rotation_x(
+            std::f32::consts::FRAC_PI_2 + ring_rot_x,
+        )),
         ..default()
     });
 
     // Four radial energy inductor nodes along ring perimeter
     for angle_idx in 0..4 {
         let angle = angle_idx as f32 * std::f32::consts::FRAC_PI_2 + 0.3;
-        let node_x = angle.cos() * 18.0;
-        let node_y = ring_y + angle.sin() * 18.0;
+        let node_x = angle.cos() * 21.2;
+        let node_y = ring_y + angle.sin() * 21.2;
 
         seg.spawn(PbrBundle {
             mesh: ec.mesh_ring_inductor_node.clone(),
@@ -962,7 +963,7 @@ fn spawn_final_pursuit_dressing(seg: &mut ChildBuilder, ec: &EchoCoreAssets, var
         material: ec.mat_core_obsidian_structure.clone(),
         transform: Transform::from_xyz(0.0, rib_y, 0.0).with_rotation(Quat::from_euler(
             EulerRot::XYZ,
-            0.35,
+            std::f32::consts::FRAC_PI_2 + 0.35,
             0.0,
             0.0,
         )),
@@ -1020,59 +1021,53 @@ fn spawn_echo_core_landmark(
 ) {
     match landmark {
         EchoCoreLandmark::OuterResonanceGateway => {
-            // ~12,080m: Monumental 30m polygon gateway portal hovering over track
+            // ~12,080m: Monumental 40m polygon gateway portal framing track
+            // Rotated 90° around X so its 36.8m open aperture frames the running corridor
+            // Bottom of the ring is at y = -10.0m (below track), top is at y = +30.0m
             seg.spawn(PbrBundle {
                 mesh: ec.mesh_gateway_portal_ring.clone(),
                 material: ec.mat_core_obsidian_structure.clone(),
-                transform: Transform::from_xyz(0.0, 14.0, 0.0),
+                transform: Transform::from_xyz(0.0, 10.0, 0.0)
+                    .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
                 ..default()
             });
 
-            // Rotating inner energy ring
-            seg.spawn((
-                PbrBundle {
-                    mesh: ec.mesh_gateway_portal_ring.clone(),
-                    material: ec.mat_core_cyan_radiant.clone(),
-                    transform: Transform::from_xyz(0.0, 14.0, 0.0).with_scale(Vec3::splat(0.85)),
-                    ..default()
-                },
-                EchoCoreRotator {
-                    speed: 0.6,
-                    axis: Vec3::Z,
-                },
-            ));
+            // Concentric radiant cyan energy ring inside portal frame
+            seg.spawn(PbrBundle {
+                mesh: ec.mesh_gateway_portal_ring.clone(),
+                material: ec.mat_core_cyan_radiant.clone(),
+                transform: Transform::from_xyz(0.0, 10.0, 0.0)
+                    .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2))
+                    .with_scale(Vec3::splat(0.92)),
+                ..default()
+            });
 
-            // Flanking obsidian spires (x = -16.0, +16.0)
+            // Flanking obsidian spires safely placed far outside (|x| = 22.0m)
             for sign in [-1.0f32, 1.0f32] {
                 seg.spawn(PbrBundle {
                     mesh: ec.mesh_gateway_portal_spire.clone(),
                     material: ec.mat_core_obsidian.clone(),
-                    transform: Transform::from_xyz(sign * 16.0, 16.0, 0.0),
+                    transform: Transform::from_xyz(sign * 22.0, 16.0, 0.0),
                     ..default()
                 });
             }
         }
         EchoCoreLandmark::ResonanceGrandHarmonic => {
             // ~12,580m: Massive double-tier accelerator nexus
-            seg.spawn((
-                PbrBundle {
-                    mesh: ec.mesh_nexus_outer_gimbal.clone(),
-                    material: ec.mat_core_obsidian_structure.clone(),
-                    transform: Transform::from_xyz(0.0, 16.0, 0.0),
-                    ..default()
-                },
-                EchoCoreRotator {
-                    speed: 0.25,
-                    axis: Vec3::Y,
-                },
-            ));
+            seg.spawn(PbrBundle {
+                mesh: ec.mesh_nexus_outer_gimbal.clone(),
+                material: ec.mat_core_obsidian_structure.clone(),
+                transform: Transform::from_xyz(0.0, 10.0, 0.0)
+                    .with_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
+                ..default()
+            });
 
             // Four vertical energy collectors
             for sign in [-1.0f32, 1.0f32] {
                 seg.spawn(PbrBundle {
                     mesh: ec.mesh_nexus_energy_collector.clone(),
                     material: ec.mat_core_cyan_radiant.clone(),
-                    transform: Transform::from_xyz(sign * 18.0, 14.0, 0.0),
+                    transform: Transform::from_xyz(sign * 22.0, 14.0, 0.0),
                     ..default()
                 });
             }
