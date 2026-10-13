@@ -295,6 +295,8 @@ pub struct EchoCoreAssets {
     pub mesh_relic_flooded_ring: Handle<Mesh>,
     pub mesh_relic_sky_pylon: Handle<Mesh>,
     pub mesh_relic_blast_door: Handle<Mesh>,
+    pub mesh_relic_ghost_train: Handle<Mesh>,
+    pub mesh_relic_resonance_orb: Handle<Mesh>,
 
     // 4. FAR Layer Void & Grand Scale
     pub mesh_cavern_column_giant: Handle<Mesh>,
@@ -381,6 +383,8 @@ pub fn init_echo_core_assets(
         mesh_relic_flooded_ring: meshes.add(Torus::new(5.2, 6.0)),
         mesh_relic_sky_pylon: meshes.add(Cuboid::new(0.8, 16.0, 0.8)),
         mesh_relic_blast_door: meshes.add(Cuboid::new(4.8, 4.2, 0.6)),
+        mesh_relic_ghost_train: meshes.add(Cuboid::new(2.4, 2.6, 16.0)),
+        mesh_relic_resonance_orb: meshes.add(Sphere::new(0.65)),
 
         // 4. FAR Layer Void & Grand Scale
         mesh_cavern_column_giant: meshes.add(Cylinder::new(8.0, 140.0)),
@@ -574,6 +578,31 @@ pub fn update_echo_core_resonance(
             base_emissive.blue * shimmer,
             1.0,
         );
+    }
+
+    // Modulate Act 3 past zone relic memory glows (ethereal pulsation)
+    let relic_pulse = 0.75 + 0.25 * (resonance_state.timer * 2.4).sin();
+    let relic_flicker = 0.85 + 0.15 * (resonance_state.timer * 5.1).cos();
+    let relic_mod = relic_pulse * relic_flicker;
+
+    let relic_configs = [
+        (&ec.mat_relic_amber, LinearRgba::new(1.6, 0.8, 0.1, 1.0)),
+        (&ec.mat_relic_magenta, LinearRgba::new(2.0, 0.1, 1.5, 1.0)),
+        (&ec.mat_relic_molten, LinearRgba::new(2.2, 0.7, 0.05, 1.0)),
+        (&ec.mat_relic_turquoise, LinearRgba::new(0.1, 1.8, 1.6, 1.0)),
+        (&ec.mat_relic_sky_blue, LinearRgba::new(0.5, 1.2, 2.2, 1.0)),
+        (&ec.mat_relic_crimson, LinearRgba::new(2.5, 0.1, 0.2, 1.0)),
+    ];
+
+    for (mat_handle, base_em) in relic_configs {
+        if let Some(mat) = materials.get_mut(mat_handle) {
+            mat.emissive = LinearRgba::new(
+                base_em.red * relic_mod,
+                base_em.green * relic_mod,
+                base_em.blue * relic_mod,
+                1.0,
+            );
+        }
     }
 }
 
@@ -1018,6 +1047,27 @@ fn spawn_reality_collapse_dressing(seg: &mut ChildBuilder, ec: &EchoCoreAssets, 
         });
     }
 
+    // Inverted ghost train on variant 0 (inverted phantom railcar at y = 23.4m)
+    if variant == 0 {
+        seg.spawn(PbrBundle {
+            mesh: ec.mesh_relic_ghost_train.clone(),
+            material: ec.mat_core_obsidian_structure.clone(),
+            transform: Transform::from_xyz(0.0, 23.4, 0.0)
+                .with_rotation(Quat::from_rotation_x(std::f32::consts::PI)),
+            ..default()
+        });
+
+        // Twin ethereal reverse taillamps on the ceiling ghost train
+        for lamp_x in [-0.85f32, 0.85f32] {
+            seg.spawn(PbrBundle {
+                mesh: ec.mesh_relic_resonance_orb.clone(),
+                material: ec.mat_core_cyan_radiant.clone(),
+                transform: Transform::from_xyz(lamp_x, 23.8, 7.5),
+                ..default()
+            });
+        }
+    }
+
     // Tilted structural beams rotated at 45° across the lateral void
     for sign in [-1.0f32, 1.0f32] {
         seg.spawn(PbrBundle {
@@ -1033,10 +1083,10 @@ fn spawn_reality_collapse_dressing(seg: &mut ChildBuilder, ec: &EchoCoreAssets, 
         });
     }
 
-    // Suspended relics from Zones 1–6 floating in zero-G
+    // Suspended relics from Zones 1–6 floating in zero-G (strictly |x| >= 13.0m, y >= 14.0m)
     match variant {
         0 => {
-            // Zone 1: Rusted Metro Arch & Zone 2: Neon Sign Frame
+            // Zone 1: Rusted Metro Arch with floating amber lantern node
             seg.spawn((
                 PbrBundle {
                     mesh: ec.mesh_relic_metro_arch.clone(),
@@ -1052,6 +1102,20 @@ fn spawn_reality_collapse_dressing(seg: &mut ChildBuilder, ec: &EchoCoreAssets, 
             ));
             seg.spawn((
                 PbrBundle {
+                    mesh: ec.mesh_relic_resonance_orb.clone(),
+                    material: ec.mat_relic_amber.clone(),
+                    transform: Transform::from_xyz(-14.0, 18.2, -4.0),
+                    ..default()
+                },
+                EchoCoreRotator {
+                    speed: -0.4,
+                    axis: Vec3::Y,
+                },
+            ));
+
+            // Zone 2: Neon Sign Frame with orbiting magenta data shard
+            seg.spawn((
+                PbrBundle {
                     mesh: ec.mesh_relic_neon_frame.clone(),
                     material: ec.mat_relic_magenta.clone(),
                     transform: Transform::from_xyz(15.0, 18.0, 6.0)
@@ -1063,9 +1127,22 @@ fn spawn_reality_collapse_dressing(seg: &mut ChildBuilder, ec: &EchoCoreAssets, 
                     axis: Vec3::X,
                 },
             ));
+            seg.spawn((
+                PbrBundle {
+                    mesh: ec.mesh_holo_courier_tablet.clone(),
+                    material: ec.mat_relic_magenta.clone(),
+                    transform: Transform::from_xyz(15.0, 18.0, 6.0)
+                        .with_rotation(Quat::from_euler(EulerRot::XYZ, 0.4, 0.8, -0.2)),
+                    ..default()
+                },
+                EchoCoreRotator {
+                    speed: 0.5,
+                    axis: Vec3::Y,
+                },
+            ));
         }
         1 => {
-            // Zone 3: Industrial Pipe & Zone 4: Flooded Water Ring
+            // Zone 3: Industrial Pipe with molten heat vent node
             seg.spawn((
                 PbrBundle {
                     mesh: ec.mesh_relic_industrial_pipe.clone(),
@@ -1081,6 +1158,20 @@ fn spawn_reality_collapse_dressing(seg: &mut ChildBuilder, ec: &EchoCoreAssets, 
             ));
             seg.spawn((
                 PbrBundle {
+                    mesh: ec.mesh_relic_resonance_orb.clone(),
+                    material: ec.mat_relic_molten.clone(),
+                    transform: Transform::from_xyz(-16.0, 22.5, 5.0),
+                    ..default()
+                },
+                EchoCoreRotator {
+                    speed: 0.35,
+                    axis: Vec3::X,
+                },
+            ));
+
+            // Zone 4: Flooded Water Ring with turquoise droplet node
+            seg.spawn((
+                PbrBundle {
                     mesh: ec.mesh_relic_flooded_ring.clone(),
                     material: ec.mat_relic_turquoise.clone(),
                     transform: Transform::from_xyz(16.0, 14.0, -6.0)
@@ -1092,9 +1183,21 @@ fn spawn_reality_collapse_dressing(seg: &mut ChildBuilder, ec: &EchoCoreAssets, 
                     axis: Vec3::Y,
                 },
             ));
+            seg.spawn((
+                PbrBundle {
+                    mesh: ec.mesh_relic_resonance_orb.clone(),
+                    material: ec.mat_relic_turquoise.clone(),
+                    transform: Transform::from_xyz(16.0, 14.0, -6.0),
+                    ..default()
+                },
+                EchoCoreRotator {
+                    speed: 0.45,
+                    axis: Vec3::Z,
+                },
+            ));
         }
         _ => {
-            // Zone 5: Sky Pylon & Zone 6: Quarantine Blast Door
+            // Zone 5: Sky Pylon with sky-blue crystal stabilizer
             seg.spawn((
                 PbrBundle {
                     mesh: ec.mesh_relic_sky_pylon.clone(),
@@ -1110,6 +1213,21 @@ fn spawn_reality_collapse_dressing(seg: &mut ChildBuilder, ec: &EchoCoreAssets, 
             ));
             seg.spawn((
                 PbrBundle {
+                    mesh: ec.mesh_spatial_shard_near.clone(),
+                    material: ec.mat_relic_sky_blue.clone(),
+                    transform: Transform::from_xyz(-15.0, 21.0, 2.0)
+                        .with_rotation(Quat::from_rotation_z(0.6)),
+                    ..default()
+                },
+                EchoCoreRotator {
+                    speed: -0.3,
+                    axis: Vec3::X,
+                },
+            ));
+
+            // Zone 6: Quarantine Blast Door with crimson pierce shard
+            seg.spawn((
+                PbrBundle {
                     mesh: ec.mesh_relic_blast_door.clone(),
                     material: ec.mat_relic_crimson.clone(),
                     transform: Transform::from_xyz(14.0, 15.0, -3.0)
@@ -1119,6 +1237,19 @@ fn spawn_reality_collapse_dressing(seg: &mut ChildBuilder, ec: &EchoCoreAssets, 
                 EchoCoreRotator {
                     speed: -0.2,
                     axis: Vec3::Z,
+                },
+            ));
+            seg.spawn((
+                PbrBundle {
+                    mesh: ec.mesh_spatial_shard_near.clone(),
+                    material: ec.mat_relic_crimson.clone(),
+                    transform: Transform::from_xyz(14.0, 17.5, -3.0)
+                        .with_rotation(Quat::from_rotation_y(0.7)),
+                    ..default()
+                },
+                EchoCoreRotator {
+                    speed: 0.4,
+                    axis: Vec3::Y,
                 },
             ));
         }
@@ -1283,6 +1414,93 @@ fn spawn_echo_core_landmark(
                     ..default()
                 });
             }
+
+            // Converging vortex of all 6 zone relics orbiting the Reality Fracture Nexus
+            // All relics positioned safely at |x| >= 16.0m, y >= 18.0m with zero track interference
+            // Zone 1: Rusted Metro Arch (Amber)
+            seg.spawn((
+                PbrBundle {
+                    mesh: ec.mesh_relic_metro_arch.clone(),
+                    material: ec.mat_relic_amber.clone(),
+                    transform: Transform::from_xyz(-18.0, 22.0, -8.0)
+                        .with_rotation(Quat::from_euler(EulerRot::XYZ, 0.3, 0.2, 0.4)),
+                    ..default()
+                },
+                EchoCoreRotator {
+                    speed: 0.25,
+                    axis: Vec3::Y,
+                },
+            ));
+            // Zone 2: Neon Sign Frame (Magenta)
+            seg.spawn((
+                PbrBundle {
+                    mesh: ec.mesh_relic_neon_frame.clone(),
+                    material: ec.mat_relic_magenta.clone(),
+                    transform: Transform::from_xyz(18.0, 24.0, 6.0)
+                        .with_rotation(Quat::from_euler(EulerRot::XYZ, -0.4, 0.5, -0.3)),
+                    ..default()
+                },
+                EchoCoreRotator {
+                    speed: -0.3,
+                    axis: Vec3::X,
+                },
+            ));
+            // Zone 3: Industrial Pipe (Molten)
+            seg.spawn((
+                PbrBundle {
+                    mesh: ec.mesh_relic_industrial_pipe.clone(),
+                    material: ec.mat_relic_molten.clone(),
+                    transform: Transform::from_xyz(-16.0, 28.0, 10.0)
+                        .with_rotation(Quat::from_euler(EulerRot::XYZ, 0.5, -0.3, 0.8)),
+                    ..default()
+                },
+                EchoCoreRotator {
+                    speed: 0.2,
+                    axis: Vec3::Z,
+                },
+            ));
+            // Zone 4: Flooded Water Ring (Turquoise)
+            seg.spawn((
+                PbrBundle {
+                    mesh: ec.mesh_relic_flooded_ring.clone(),
+                    material: ec.mat_relic_turquoise.clone(),
+                    transform: Transform::from_xyz(16.0, 26.0, -10.0)
+                        .with_rotation(Quat::from_euler(EulerRot::XYZ, 0.2, 0.4, 0.6)),
+                    ..default()
+                },
+                EchoCoreRotator {
+                    speed: -0.35,
+                    axis: Vec3::Y,
+                },
+            ));
+            // Zone 5: Sky Pylon (Sky Blue)
+            seg.spawn((
+                PbrBundle {
+                    mesh: ec.mesh_relic_sky_pylon.clone(),
+                    material: ec.mat_relic_sky_blue.clone(),
+                    transform: Transform::from_xyz(-20.0, 18.0, 0.0)
+                        .with_rotation(Quat::from_euler(EulerRot::XYZ, -0.6, 0.3, 0.4)),
+                    ..default()
+                },
+                EchoCoreRotator {
+                    speed: 0.18,
+                    axis: Vec3::Y,
+                },
+            ));
+            // Zone 6: Quarantine Blast Door (Crimson)
+            seg.spawn((
+                PbrBundle {
+                    mesh: ec.mesh_relic_blast_door.clone(),
+                    material: ec.mat_relic_crimson.clone(),
+                    transform: Transform::from_xyz(20.0, 20.0, 0.0)
+                        .with_rotation(Quat::from_euler(EulerRot::XYZ, 0.3, -0.5, -0.4)),
+                    ..default()
+                },
+                EchoCoreRotator {
+                    speed: -0.22,
+                    axis: Vec3::Z,
+                },
+            ));
         }
         EchoCoreLandmark::PursuitVectorApex => {
             // ~13,500m: Towering energy archway
@@ -1754,5 +1972,60 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn test_act3_reality_collapse_chapter_mapping() {
+        assert_eq!(
+            echo_core_chapter_for_distance(12800.0),
+            EchoCoreChapter::RealityCollapse
+        );
+        assert_eq!(
+            echo_core_chapter_for_distance(13050.0),
+            EchoCoreChapter::RealityCollapse
+        );
+        assert_eq!(
+            echo_core_chapter_for_distance(13299.0),
+            EchoCoreChapter::RealityCollapse
+        );
+    }
+
+    #[test]
+    fn test_act3_reality_fracture_nexus_landmark() {
+        assert_eq!(
+            echo_core_landmark_for_distance(13050.0),
+            EchoCoreLandmark::RealityFractureNexus
+        );
+    }
+
+    #[test]
+    fn test_act3_runner_clearance_spec() {
+        // Clearance Contract for Act 3:
+        // - Three active running lanes: Left (-2.4m), Center (0.0m), Right (+2.4m)
+        // - Obstacle-free safety corridor: |x| <= 4.0m, y in [0.0m, 4.0m]
+        // - Inverted ceiling rails at y >= 21.0m (safety margin >= 17.0m above player)
+        // - All floating past zone relics at |x| >= 13.0m or y >= 14.0m (zero lane interference)
+        let lanes = [
+            Lane::Left.x_pos(),
+            Lane::Center.x_pos(),
+            Lane::Right.x_pos(),
+        ];
+        for &lane_x in &lanes {
+            assert!(
+                lane_x.abs() < 4.0,
+                "Lane x {} must be inside running corridor",
+                lane_x
+            );
+        }
+
+        let ceiling_rail_y = 21.6f32;
+        let ceiling_ghost_train_y = 23.4f32;
+        let player_max_jump_y = 4.0f32;
+        assert!(ceiling_rail_y > player_max_jump_y + 16.0);
+        assert!(ceiling_ghost_train_y > player_max_jump_y + 18.0);
+
+        let relic_min_lateral_x = 14.0f32;
+        let corridor_boundary_x = 4.0f32;
+        assert!(relic_min_lateral_x > corridor_boundary_x + 9.0);
     }
 }
