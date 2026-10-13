@@ -242,6 +242,20 @@ pub fn spawn_pattern_chunk(
         let world_z = z_start + obs_def.rel_z;
         let lane_x = obs_def.lane.x_pos();
         let obstacle_distance = (-world_z).max(0.0);
+
+        // Zone 7 absolute safety guarantee:
+        // 1. Never spawn physical ground trains in Zone 7 (The ECHO Core: 12,000m - 14,000m).
+        // 2. Never spawn procedural obstacles in Acts 4 & 5 (13,300m - 14,000m) to preserve boss and finale exclusivity.
+        let is_zone_7 = (12000.0..=14000.0).contains(&obstacle_distance);
+        if is_zone_7
+            && (matches!(
+                obs_def.obstacle_type,
+                ObstacleType::MovingTrain { .. } | ObstacleType::StaticTrain
+            ) || obstacle_distance >= 13300.0)
+        {
+            continue;
+        }
+
         let visual_pool_type = resolve_obstacle_pool_type(obs_def.obstacle_type, obstacle_distance);
         let is_zone_2 = matches!(
             visual_pool_type,

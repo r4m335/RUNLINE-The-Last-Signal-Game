@@ -1069,6 +1069,103 @@ pub fn select_validated_pattern(
         } else {
             matching
         }
+    } else if zone.id == 7 {
+        // Zone 7 (The ECHO Core: 12,000 - 14,000m):
+        // Pacing & Fairness Guarantee:
+        // 1. Acts 4 & 5 (13,300m - 14,000m): The player faces the authored ECHO Prime boss
+        //    encounter and the Core Singularity interactive finale. Spawning procedural hazards
+        //    would overlap with boss telegraphs / core nodes, so these acts exclusively spawn
+        //    pure flow crystal streams ("Resonance Wave").
+        // 2. Acts 1 - 3 (12,000m - 13,300m): The light bridge over the digital singularity void
+        //    never features ground freight or metro trains. In addition, dual-pillar pinches
+        //    that block both outer lanes simultaneously are purged to prevent unfair traps at
+        //    hyperspeed (32 m/s).
+        let zone7_progress = normalized_zone_progress(7, distance);
+        if distance >= 13300.0 || zone7_progress >= 0.65 {
+            catalog
+                .into_iter()
+                .filter(|p| p.name == "Resonance Wave" || p.obstacles.is_empty())
+                .collect()
+        } else {
+            let train_and_pinch_free: Vec<PatternChunk> = catalog
+                .into_iter()
+                .filter(|p| {
+                    // Absolute ban on moving and static trains in Zone 7
+                    let has_train = p.obstacles.iter().any(|obs| {
+                        matches!(
+                            obs.obstacle_type,
+                            ObstacleType::MovingTrain { .. } | ObstacleType::StaticTrain
+                        )
+                    });
+                    if has_train {
+                        return false;
+                    }
+
+                    // Absolute ban on dual-pillar side-lane pinches leaving only center lane
+                    let left_pillar = p.obstacles.iter().any(|obs| {
+                        obs.lane == Lane::Left && obs.obstacle_type == ObstacleType::TallPillar
+                    });
+                    let right_pillar = p.obstacles.iter().any(|obs| {
+                        obs.lane == Lane::Right && obs.obstacle_type == ObstacleType::TallPillar
+                    });
+                    if left_pillar && right_pillar {
+                        return false;
+                    }
+
+                    p.min_complexity <= complexity
+                })
+                .collect();
+
+            // Act 1 (0-20%): Clean low-intensity entry on the light bridge
+            // Act 2 (20-40%): Resonant hurdles, wires, and lateral sweeps
+            // Act 3 (40-65%): Reality collapse dynamic combos and rhythmic sprints
+            let matching: Vec<PatternChunk> = if zone7_progress < 0.20 {
+                train_and_pinch_free
+                    .iter()
+                    .filter(|p| {
+                        p.name == "Resonance Wave"
+                            || p.name.contains("Pulse")
+                            || p.name == "Vault Sequence"
+                            || p.name == "Slide Under"
+                            || p.name == "Side Hurdle Vault"
+                            || p.name == "High Wire Duct"
+                    })
+                    .cloned()
+                    .collect()
+            } else if zone7_progress < 0.40 {
+                train_and_pinch_free
+                    .iter()
+                    .filter(|p| {
+                        p.name.contains("Pulse")
+                            || p.name.contains("Gate")
+                            || p.name == "Vault-and-Weave"
+                            || p.name == "Neon Flow Combo"
+                            || p.name == "Neon Choice Split"
+                            || p.name == "Resonance Wave"
+                    })
+                    .cloned()
+                    .collect()
+            } else {
+                train_and_pinch_free
+                    .iter()
+                    .filter(|p| {
+                        p.name.contains("Slalom")
+                            || p.name == "Triple Hurdle Sprint"
+                            || p.name == "Vault-to-Slide Combo"
+                            || p.name == "Neon Flow Combo"
+                            || p.name == "Vault-and-Weave"
+                            || p.name == "Resonance Wave"
+                    })
+                    .cloned()
+                    .collect()
+            };
+
+            if matching.is_empty() {
+                train_and_pinch_free
+            } else {
+                matching
+            }
+        }
     } else {
         catalog
             .into_iter()
@@ -1795,5 +1892,89 @@ mod tests {
             high_intensity,
             "Zone 3 transition patterns must remain solvable"
         );
+    }
+
+    #[test]
+    fn test_zone_7_never_spawns_trains() {
+        // Sample throughout all of Zone 7 (12,000m - 14,000m)
+        let sample_distances = [
+            12000.0, 12150.0, 12380.0, 12450.0, 12600.0, 12790.0, 12850.0, 13100.0, 13290.0,
+            13350.0, 13500.0, 13680.0, 13750.0, 13900.0, 13999.0,
+        ];
+
+        for &distance in &sample_distances {
+            for _ in 0..64 {
+                let pattern = select_validated_pattern(5, None, 32.0, distance);
+                let has_train = pattern.obstacles.iter().any(|obs| {
+                    matches!(
+                        obs.obstacle_type,
+                        ObstacleType::MovingTrain { .. } | ObstacleType::StaticTrain
+                    )
+                });
+                assert!(
+                    !has_train,
+                    "Zone 7 at {distance}m must NEVER spawn a train, but got pattern '{}'",
+                    pattern.name
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_zone_7_never_spawns_dual_pillar_pinch() {
+        let sample_distances = [
+            12000.0, 12200.0, 12400.0, 12600.0, 12800.0, 13000.0, 13250.0,
+        ];
+
+        for &distance in &sample_distances {
+            for _ in 0..64 {
+                let pattern = select_validated_pattern(5, None, 32.0, distance);
+                let left_pillar = pattern.obstacles.iter().any(|obs| {
+                    obs.lane == Lane::Left && obs.obstacle_type == ObstacleType::TallPillar
+                });
+                let right_pillar = pattern.obstacles.iter().any(|obs| {
+                    obs.lane == Lane::Right && obs.obstacle_type == ObstacleType::TallPillar
+                });
+                assert!(
+                    !(left_pillar && right_pillar),
+                    "Zone 7 at {distance}m must NEVER spawn dual side-pillars pinching center lane: '{}'",
+                    pattern.name
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_zone_7_acts_4_and_5_pure_flow() {
+        let boss_and_ending_distances = [
+            13300.0, 13350.0, 13500.0, 13680.0, 13700.0, 13850.0, 13950.0,
+        ];
+
+        for &distance in &boss_and_ending_distances {
+            for _ in 0..64 {
+                let pattern = select_validated_pattern(5, None, 32.0, distance);
+                assert!(
+                    pattern.name == "Resonance Wave" || pattern.obstacles.is_empty(),
+                    "Zone 7 Acts 4 & 5 at {distance}m must spawn pure crystal flow only, but got: '{}' with {} obstacles",
+                    pattern.name,
+                    pattern.obstacles.len()
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_zone_7_acts_1_to_3_pacing() {
+        // Act 1 (12,000 - 12,400m)
+        let act1_pattern = select_validated_pattern(5, None, 32.0, 12100.0);
+        assert!(verify_intra_chunk_solvability(&act1_pattern).is_ok());
+
+        // Act 2 (12,400 - 12,800m)
+        let act2_pattern = select_validated_pattern(5, None, 32.0, 12500.0);
+        assert!(verify_intra_chunk_solvability(&act2_pattern).is_ok());
+
+        // Act 3 (12,800 - 13,300m)
+        let act3_pattern = select_validated_pattern(5, None, 32.0, 13000.0);
+        assert!(verify_intra_chunk_solvability(&act3_pattern).is_ok());
     }
 }
