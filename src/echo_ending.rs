@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 
 use crate::types::{
-    ActiveObstacle, AppState, GameRunStats, Lane, ObstacleType, Player, RunResetEvent, SoundEffect,
-    StoryMessage,
+    ActiveObstacle, AppState, EndingType, GameRunStats, Lane, ObstacleType, Player, RunResetEvent,
+    SoundEffect, StoryMessage,
 };
 
 // -------------------------------------------------------------
@@ -16,12 +16,6 @@ pub const ACT5_CORE_SANCTUM_DISTANCE: f32 = 14000.0;
 // -------------------------------------------------------------
 // TYPES & ENUMS
 // -------------------------------------------------------------
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum EndingType {
-    Disconnect,  // Ending A: The Last Signal (Purge / Sever)
-    Synchronize, // Ending B: The Signal Restored (Unleash / Transcend)
-}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum EchoFinalePhase {
@@ -672,6 +666,7 @@ fn setup_ending_choice_ui(mut commands: Commands) {
 fn handle_ending_choice_input(
     keyboard: Res<ButtonInput<KeyCode>>,
     mut manager: ResMut<EchoFinaleArenaManager>,
+    mut stats: ResMut<GameRunStats>,
     mut next_state: ResMut<NextState<AppState>>,
     mut sfx: EventWriter<SoundEffect>,
 ) {
@@ -683,6 +678,8 @@ fn handle_ending_choice_input(
         manager.chosen_ending = Some(EndingType::Disconnect);
         manager.cinematic_stage = 0;
         manager.cinematic_timer = 0.0;
+        stats.campaign_completed = true;
+        stats.ending_achieved = Some(EndingType::Disconnect);
         sfx.send(SoundEffect::ZoneTransition);
         next_state.set(AppState::EndingCinematic);
     } else if keyboard.just_pressed(KeyCode::KeyE)
@@ -693,6 +690,8 @@ fn handle_ending_choice_input(
         manager.chosen_ending = Some(EndingType::Synchronize);
         manager.cinematic_stage = 0;
         manager.cinematic_timer = 0.0;
+        stats.campaign_completed = true;
+        stats.ending_achieved = Some(EndingType::Synchronize);
         sfx.send(SoundEffect::PowerupPickup);
         next_state.set(AppState::EndingCinematic);
     }

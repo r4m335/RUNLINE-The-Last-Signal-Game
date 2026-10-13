@@ -285,6 +285,12 @@ pub struct ThreatAlertState {
     pub heavy_warning_lane: Option<Lane>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EndingType {
+    Disconnect,  // Ending A: The Last Signal (Purge / Sever)
+    Synchronize, // Ending B: The Signal Restored (Unleash / Transcend)
+}
+
 #[derive(Resource)]
 pub struct GameRunStats {
     pub distance: f32,
@@ -301,6 +307,8 @@ pub struct GameRunStats {
     pub stumble_intensity: f32,
     pub selected_character: CharacterType,
     pub story_dialogue: Option<StoryMessage>,
+    pub campaign_completed: bool,
+    pub ending_achieved: Option<EndingType>,
 }
 
 impl Default for GameRunStats {
@@ -320,6 +328,8 @@ impl Default for GameRunStats {
             stumble_intensity: 0.0,
             selected_character: CharacterType::Kai,
             story_dialogue: None,
+            campaign_completed: false,
+            ending_achieved: None,
         }
     }
 }

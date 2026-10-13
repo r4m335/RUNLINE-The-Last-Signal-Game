@@ -295,6 +295,40 @@ fn setup_main_menu(
                 ));
             });
 
+            // Campaign Completion & Endless Mode Status Banner
+            if stats.campaign_completed {
+                root.spawn(NodeBundle {
+                    style: Style {
+                        padding: UiRect::axes(Val::Px(16.0), Val::Px(6.0)),
+                        margin: UiRect::bottom(Val::Px(12.0)),
+                        border: UiRect::all(Val::Px(1.0)),
+                        align_items: AlignItems::Center,
+                        ..default()
+                    },
+                    border_color: BorderColor(Color::srgb(0.1, 0.9, 1.0)),
+                    background_color: BackgroundColor(Color::srgba(0.04, 0.16, 0.22, 0.9)),
+                    ..default()
+                })
+                .with_children(|banner| {
+                    let ending_label = match stats.ending_achieved {
+                        Some(EndingType::Disconnect) => "ENDING A (DISCONNECTED)",
+                        Some(EndingType::Synchronize) => "ENDING B (SYNCHRONIZED)",
+                        None => "COMPLETED",
+                    };
+                    banner.spawn(TextBundle::from_section(
+                        format!(
+                            "★ CAMPAIGN CONQUERED // ENDLESS MODE ACTIVE // {} ★",
+                            ending_label
+                        ),
+                        TextStyle {
+                            font_size: 13.0,
+                            color: Color::srgb(0.2, 0.95, 1.0),
+                            ..default()
+                        },
+                    ));
+                });
+            }
+
             // Development-only zone selector. It uses the same run reset path
             // as a normal start, so selected distances affect the real world,
             // rolling track, encounters, and environment routing.
